@@ -1,9 +1,11 @@
 import 'dart:async';
 
+import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
@@ -135,7 +137,7 @@ class _LivechatViewState extends State<LivechatView> {
                 Icons.add_photo_alternate_outlined,
                 color: widget.primaryColor,
               ),
-              onPressed: () => _handlePickImage(controller),
+              onPressed: () => _showAttachmentOptions(context, controller),
             ),
             Expanded(
               child: TextField(
@@ -172,12 +174,48 @@ class _LivechatViewState extends State<LivechatView> {
     );
   }
 
-  Future<void> _handlePickImage(LivechatController controller) async {
-    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
-    if (image != null) {
-      await controller.sendImage(image);
-      Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
-    }
+  Future<void> _showAttachmentOptions(
+    BuildContext context,
+    LivechatController controller,
+  ) async {
+    showModalBottomSheet(
+      context: context,
+      builder: (context) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.image),
+              title: const Text('Image'),
+              onTap: () async {
+                Navigator.pop(context);
+                final XFile? image = await _picker.pickImage(
+                  source: ImageSource.gallery,
+                );
+                if (image != null) {
+                  await controller.sendFile(image.path);
+                  _scrollToBottom();
+                }
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.picture_as_pdf),
+              title: const Text('PDF Document'),
+              onTap: () async {
+                Navigator.pop(context);
+                final result = await FilePicker.platform.pickFiles(
+                  type: FileType.custom,
+                  allowedExtensions: ['pdf'],
+                );
+                if (result != null && result.files.single.path != null) {
+                  await controller.sendFile(result.files.single.path!);
+                  _scrollToBottom();
+                }
+              },
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   void _handleSend(LivechatController controller) {
@@ -244,41 +282,9 @@ class _ChatBubble extends StatelessWidget {
               ),
             ),
             child: isImage
-                ? ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      message.fileUrl!,
-                      fit: BoxFit.cover,
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return Container(
-                          width: 200,
-                          height: 200,
-                          color: Colors.grey[300],
-                          child: const Center(
-                            child: CircularProgressIndicator(),
-                          ),
-                        );
-                      },
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          width: 200,
-                          height: 100,
-                          color: Colors.grey[300],
-                          child: const Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.error_outline),
-                              Text(
-                                'Failed to load image',
-                                style: TextStyle(fontSize: 10),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-                  )
+                ? _buildImage(context)
+                : message.contentType == ContentType.pdf
+                ? _buildPdf(context)
                 : Text(
                     message.content,
                     style: TextStyle(
@@ -295,6 +301,89 @@ class _ChatBubble extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildImage(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(12),
+      child: Image.network(
+        message.fileUrl!,
+        fit: BoxFit.cover,
+        loadingBuilder: (context, child, loadingProgress) {
+          if (loadingProgress == null) return child;
+          return Container(
+            width: 200,
+            height: 200,
+            color: Colors.grey[300],
+            child: const Center(child: CircularProgressIndicator()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 200,
+            height: 100,
+            color: Colors.grey[300],
+            child: const Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline),
+                Text('Failed to load image', style: TextStyle(fontSize: 10)),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildPdf(BuildContext context) {
+    final isMe = message.senderType == SenderType.visitor;
+    return InkWell(
+      onTap: () async {
+        if (message.fileUrl != null) {
+          final uri = Uri.parse(message.fileUrl!);
+          if (await canLaunchUrl(uri)) {
+            await launchUrl(uri);
+          }
+        }
+      },
+      child: Padding(
+        padding: const EdgeInsets.all(8.0),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.picture_as_pdf,
+              color: isMe ? Colors.white : primaryColor,
+              size: 32,
+            ),
+            const SizedBox(width: 8),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    message.fileName ?? 'Document.pdf',
+                    style: TextStyle(
+                      color: isMe ? Colors.white : Colors.black87,
+                      fontWeight: FontWeight.bold,
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  Text(
+                    'Tap to view document',
+                    style: TextStyle(
+                      color: isMe ? Colors.white70 : Colors.black54,
+                      fontSize: 12,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

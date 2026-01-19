@@ -3,7 +3,6 @@ import 'dart:convert';
 
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
-import 'package:image_picker/image_picker.dart';
 import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
@@ -210,15 +209,15 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
-  /// Picks and sends an image
-  Future<void> sendImage(XFile file) async {
+  /// Picks and sends a file (image or PDF)
+  Future<void> sendFile(String filePath) async {
     // 1. Upload file to backend
     final token = await AuthManager.getToken();
     final uri = Uri.parse(_api.httpUrl).replace(path: '/upload');
 
     final request = http.MultipartRequest('POST', uri)
       ..headers['Authorization'] = 'Bearer $token'
-      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+      ..files.add(await http.MultipartFile.fromPath('file', filePath));
 
     final response = await request.send();
     if (response.statusCode != 200) {
@@ -228,13 +227,22 @@ class LivechatController extends ChangeNotifier {
     final responseBody = await response.stream.bytesToString();
     final decoded = json.decode(responseBody);
     final fileUrl = decoded['url'];
+    final fileName = path.basename(filePath);
+    final extension = path.extension(filePath).toLowerCase();
 
-    // 2. Send message with IMAGE type
+    ContentType contentType = ContentType.text;
+    if (['.jpg', '.jpeg', '.png', '.gif', '.webp'].contains(extension)) {
+      contentType = ContentType.image;
+    } else if (extension == '.pdf') {
+      contentType = ContentType.pdf;
+    }
+
+    // 2. Send message with detected type
     await sendMessage(
-      'Sent an image: ${path.basename(file.path)}',
-      contentType: ContentType.image,
+      'Sent a ${contentType == ContentType.image ? 'image' : 'file'}: $fileName',
+      contentType: contentType,
       fileUrl: fileUrl,
-      fileName: path.basename(file.path),
+      fileName: fileName,
     );
   }
 
