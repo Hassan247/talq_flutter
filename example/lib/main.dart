@@ -1,0 +1,67 @@
+import 'package:flutter/material.dart';
+import 'package:livechat_sdk/livechat_sdk.dart';
+import 'package:provider/provider.dart';
+
+void main() {
+  // 1. Setup the API client
+  final livechatApi = LivechatClient(
+    httpUrl: 'http://localhost:8081/graphql',
+    wsUrl: 'ws://localhost:8081/graphql',
+    apiKey: 'lc_6fc80297-54e7-4d08-90db-d4ea58bda34a69e22ea0',
+  );
+
+  runApp(
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => LivechatController(livechatApi)),
+      ],
+      child: const MyApp(),
+    ),
+  );
+}
+
+class MyApp extends StatelessWidget {
+  const MyApp({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return MaterialApp(
+      title: 'Livechat SDK Example',
+      theme: ThemeData(primarySwatch: Colors.blue, useMaterial3: true),
+      home: const MyHomePage(),
+    );
+  }
+}
+
+class MyHomePage extends StatefulWidget {
+  const MyHomePage({super.key});
+
+  @override
+  State<MyHomePage> createState() => _MyHomePageState();
+}
+
+class _MyHomePageState extends State<MyHomePage> {
+  @override
+  void initState() {
+    super.initState();
+    // 2. Initialize the chat session AFTER the first frame to avoid "setState during build"
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<LivechatController>().initialize(
+        name: 'John Doe',
+        email: 'john@example.com',
+      );
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('My App')),
+      body: const Center(
+        child: Text('Click the chat button below to start talking!'),
+      ),
+      // 3. Drop in the FAB
+      floatingActionButton: const LivechatFAB(),
+    );
+  }
+}
