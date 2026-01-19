@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -24,6 +25,7 @@ class LivechatView extends StatefulWidget {
 class _LivechatViewState extends State<LivechatView> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _picker = ImagePicker();
   Timer? _typingThrottle;
 
   @override
@@ -128,6 +130,13 @@ class _LivechatViewState extends State<LivechatView> {
       child: SafeArea(
         child: Row(
           children: [
+            IconButton(
+              icon: Icon(
+                Icons.add_photo_alternate_outlined,
+                color: widget.primaryColor,
+              ),
+              onPressed: () => _handlePickImage(controller),
+            ),
             Expanded(
               child: TextField(
                 controller: _messageController,
@@ -161,6 +170,14 @@ class _LivechatViewState extends State<LivechatView> {
         ),
       ),
     );
+  }
+
+  Future<void> _handlePickImage(LivechatController controller) async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      await controller.sendImage(image);
+      Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
+    }
   }
 
   void _handleSend(LivechatController controller) {
@@ -199,6 +216,7 @@ class _ChatBubble extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isMe = message.senderType == SenderType.visitor;
+    final isImage = message.contentType == ContentType.image;
     final timeStr = DateFormat('jm').format(message.createdAt);
 
     return Align(
@@ -210,7 +228,9 @@ class _ChatBubble extends StatelessWidget {
         children: [
           Container(
             margin: const EdgeInsets.symmetric(vertical: 4),
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            padding: isImage
+                ? const EdgeInsets.all(4)
+                : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
             constraints: BoxConstraints(
               maxWidth: MediaQuery.of(context).size.width * 0.75,
             ),
@@ -223,13 +243,49 @@ class _ChatBubble extends StatelessWidget {
                 bottomRight: Radius.circular(isMe ? 0 : 16),
               ),
             ),
-            child: Text(
-              message.content,
-              style: TextStyle(
-                color: isMe ? Colors.white : Colors.black87,
-                fontSize: 15,
-              ),
-            ),
+            child: isImage
+                ? ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      message.fileUrl!,
+                      fit: BoxFit.cover,
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          width: 200,
+                          height: 200,
+                          color: Colors.grey[300],
+                          child: const Center(
+                            child: CircularProgressIndicator(),
+                          ),
+                        );
+                      },
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          width: 200,
+                          height: 100,
+                          color: Colors.grey[300],
+                          child: const Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.error_outline),
+                              Text(
+                                'Failed to load image',
+                                style: TextStyle(fontSize: 10),
+                              ),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  )
+                : Text(
+                    message.content,
+                    style: TextStyle(
+                      color: isMe ? Colors.white : Colors.black87,
+                      fontSize: 15,
+                    ),
+                  ),
           ),
           Padding(
             padding: const EdgeInsets.only(bottom: 8, left: 4, right: 4),

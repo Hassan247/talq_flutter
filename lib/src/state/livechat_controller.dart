@@ -1,6 +1,10 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
+import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
 import '../core/livechat_client.dart';
@@ -110,7 +114,7 @@ class LivechatController extends ChangeNotifier {
         visitorMessages(first: 50) {
           edges {
             node { 
-              id content senderType createdAt read 
+              id content senderType contentType fileUrl createdAt read 
               room { id }
             }
           }
@@ -137,13 +141,18 @@ class LivechatController extends ChangeNotifier {
   }
 
   /// Sends a new message
-  Future<void> sendMessage(String content) async {
-    if (content.trim().isEmpty) return;
+  Future<void> sendMessage(
+    String content, {
+    ContentType contentType = ContentType.text,
+    String? fileUrl,
+    String? fileName,
+  }) async {
+    if (content.trim().isEmpty && fileUrl == null) return;
 
     const String mutation = r'''
       mutation SendVisitorMessage($input: SendMessageInput!) {
         sendVisitorMessage(input: $input) {
-          id content senderType createdAt
+          id content senderType contentType fileUrl createdAt
           room { id }
         }
       }
@@ -155,6 +164,9 @@ class LivechatController extends ChangeNotifier {
       id: tempId,
       content: content,
       senderType: SenderType.visitor,
+      contentType: contentType,
+      fileUrl: fileUrl,
+      fileName: fileName,
       createdAt: DateTime.now(),
     );
     _messages.add(optMsg);
@@ -163,7 +175,16 @@ class LivechatController extends ChangeNotifier {
     final result = await _api.mutate(
       mutation,
       variables: {
-        'input': {'content': content, 'contentType': 'TEXT'},
+        'input': {
+          'content': content,
+          'contentType': contentType == ContentType.image
+              ? 'IMAGE'
+              : contentType == ContentType.pdf
+              ? 'PDF'
+              : 'TEXT',
+          'fileUrl': fileUrl,
+          'fileName': fileName,
+        },
       },
     );
 
@@ -189,6 +210,34 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
+  /// Picks and sends an image
+  Future<void> sendImage(XFile file) async {
+    // 1. Upload file to backend
+    final token = await AuthManager.getToken();
+    final uri = Uri.parse(_api.httpUrl).replace(path: '/upload');
+
+    final request = http.MultipartRequest('POST', uri)
+      ..headers['Authorization'] = 'Bearer $token'
+      ..files.add(await http.MultipartFile.fromPath('file', file.path));
+
+    final response = await request.send();
+    if (response.statusCode != 200) {
+      return;
+    }
+
+    final responseBody = await response.stream.bytesToString();
+    final decoded = json.decode(responseBody);
+    final fileUrl = decoded['url'];
+
+    // 2. Send message with IMAGE type
+    await sendMessage(
+      'Sent an image: ${path.basename(file.path)}',
+      contentType: ContentType.image,
+      fileUrl: fileUrl,
+      fileName: path.basename(file.path),
+    );
+  }
+
   /// Notifies the backend that the visitor is typing
   Future<void> sendTyping(String roomId) async {
     const String mutation = r'''
@@ -205,7 +254,7 @@ class LivechatController extends ChangeNotifier {
     const String sub = r'''
       subscription {
         visitorNewMessage {
-          id content senderType createdAt read
+          id content senderType contentType fileUrl createdAt read
         }
       }
     ''';

@@ -1,9 +1,14 @@
 enum SenderType { visitor, agent, system }
 
+enum ContentType { text, image, pdf }
+
 class LivechatMessage {
   final String id;
   final String content;
   final SenderType senderType;
+  final ContentType contentType;
+  final String? fileUrl;
+  final String? fileName;
   final DateTime createdAt;
   final bool isRead;
 
@@ -11,6 +16,9 @@ class LivechatMessage {
     required this.id,
     required this.content,
     required this.senderType,
+    this.contentType = ContentType.text,
+    this.fileUrl,
+    this.fileName,
     required this.createdAt,
     this.isRead = false,
   });
@@ -20,6 +28,9 @@ class LivechatMessage {
       id: json['id'],
       content: json['content'],
       senderType: _parseSenderType(json['senderType']),
+      contentType: _parseContentType(json['contentType']),
+      fileUrl: json['fileUrl'],
+      fileName: json['fileName'],
       createdAt: DateTime.parse(json['createdAt']),
       isRead: json['read'] ?? false,
     );
@@ -33,6 +44,17 @@ class LivechatMessage {
         return SenderType.system;
       default:
         return SenderType.visitor;
+    }
+  }
+
+  static ContentType _parseContentType(String? type) {
+    switch (type) {
+      case 'IMAGE':
+        return ContentType.image;
+      case 'PDF':
+        return ContentType.pdf;
+      default:
+        return ContentType.text;
     }
   }
 }
