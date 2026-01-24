@@ -63,14 +63,30 @@ class LivechatVisitor {
   final String id;
   final String? name;
   final String? email;
+  final String? currentPage;
 
-  LivechatVisitor({required this.id, this.name, this.email});
+  LivechatVisitor({required this.id, this.name, this.email, this.currentPage});
 
   factory LivechatVisitor.fromJson(Map<String, dynamic> json) {
     return LivechatVisitor(
       id: json['id'],
       name: json['name'],
       email: json['email'],
+      currentPage: json['currentPage'],
+    );
+  }
+
+  LivechatVisitor copyWith({
+    String? id,
+    String? name,
+    String? email,
+    String? currentPage,
+  }) {
+    return LivechatVisitor(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      email: email ?? this.email,
+      currentPage: currentPage ?? this.currentPage,
     );
   }
 }

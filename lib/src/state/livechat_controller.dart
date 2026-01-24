@@ -32,7 +32,11 @@ class LivechatController extends ChangeNotifier {
   bool get isAgentTyping => _isAgentTyping;
 
   /// Initializes the livechat session
-  Future<void> initialize({String? name, String? email}) async {
+  Future<void> initialize({
+    String? name,
+    String? email,
+    String? currentPage,
+  }) async {
     if (_isInitialized) return;
 
     _isLoading = true;
@@ -97,6 +101,11 @@ class LivechatController extends ChangeNotifier {
       _startMessageSubscription();
       if (_roomId != null) {
         _startTypingSubscription();
+      }
+
+      // Update current page if provided
+      if (currentPage != null) {
+        await updatePage(currentPage);
       }
 
       _isInitialized = true;
@@ -254,6 +263,27 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
     await _api.mutate(mutation, variables: {'roomId': roomId});
+  }
+
+  /// Updates the visitor's current viewing page
+  Future<void> updatePage(String page) async {
+    if (_roomId == null) return;
+
+    const String mutation = r'''
+      mutation UpdateVisitorPage($roomId: ID!, $page: String!) {
+        updateVisitorPage(roomId: $roomId, page: $page) {
+          id
+          currentPage
+        }
+      }
+    ''';
+
+    await _api.mutate(mutation, variables: {'roomId': _roomId, 'page': page});
+
+    if (_visitor != null) {
+      _visitor = _visitor!.copyWith(currentPage: page);
+      notifyListeners();
+    }
   }
 
   void _startMessageSubscription() {
