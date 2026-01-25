@@ -96,6 +96,7 @@ class LivechatController extends ChangeNotifier {
 
       // 4. Load initial messages
       await fetchMessages();
+      await markAsRead();
 
       // 5. Start subscriptions
       _startMessageSubscription();
@@ -145,6 +146,7 @@ class LivechatController extends ChangeNotifier {
 
       _messages = _messages.reversed.toList(); // Newest at bottom
       notifyListeners();
+      markAsRead();
     }
   }
 
@@ -286,6 +288,19 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
+  /// Marks all messages in the current room as read
+  Future<void> markAsRead() async {
+    if (_roomId == null) return;
+
+    const String mutation = r'''
+      mutation MarkMessagesAsRead($roomId: ID!) {
+        markMessagesAsRead(roomId: $roomId)
+      }
+    ''';
+
+    await _api.mutate(mutation, variables: {'roomId': _roomId});
+  }
+
   void _startMessageSubscription() {
     _messageSubscription?.cancel();
 
@@ -306,6 +321,9 @@ class LivechatController extends ChangeNotifier {
         // Avoid duplicates if we sent it ourselves
         if (!_messages.any((m) => m.id == newMessage.id)) {
           _messages.add(newMessage);
+          if (newMessage.senderType != SenderType.visitor) {
+            markAsRead();
+          }
           notifyListeners();
         }
       }
