@@ -138,6 +138,20 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
+  /// Completely resets the current session and visitor identity
+  Future<void> resetSession() async {
+    await AuthManager.resetSession();
+    _isInitialized = false;
+    _visitor = null;
+    _roomId = null;
+    _messages = [];
+    _isLoading = false;
+    _messageSubscription?.cancel();
+    _typingSubscription?.cancel();
+    _roomSubscription?.cancel();
+    notifyListeners();
+  }
+
   /// Fetches conversation history
   Future<void> fetchMessages() async {
     const String query = r'''

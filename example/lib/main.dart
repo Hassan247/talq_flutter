@@ -57,8 +57,35 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(title: const Text('My App')),
-      body: const Center(
-        child: Text('Click the chat button below to start talking!'),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const Text('Click the chat button below to start talking!'),
+            const SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                final controller = context.read<LivechatController>();
+                await controller.resetSession();
+                // Re-initialize to register as a new user
+                await controller.initialize(
+                  name:
+                      'New User ${DateTime.now().millisecondsSinceEpoch % 1000}',
+                  email:
+                      'user${DateTime.now().millisecondsSinceEpoch % 1000}@example.com',
+                );
+                if (mounted) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(
+                      content: Text('Session Reset! New identity created.'),
+                    ),
+                  );
+                }
+              },
+              child: const Text('Reset Session'),
+            ),
+          ],
+        ),
       ),
       // 3. Drop in the FAB
       floatingActionButton: const LivechatFAB(),

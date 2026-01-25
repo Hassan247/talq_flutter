@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
@@ -18,9 +19,15 @@ class AuthManager {
     await _storage.write(key: _tokenKey, value: token);
   }
 
-  /// Clears the current session
+  /// Clears the current session and token
   static Future<void> clearSession() async {
     await _storage.delete(key: _tokenKey);
+  }
+
+  /// Completely resets the visitor identity (clears token and device ID)
+  static Future<void> resetSession() async {
+    await _storage.delete(key: _tokenKey);
+    await _storage.delete(key: _deviceIdKey);
   }
 
   /// Gets or generates a unique device ID

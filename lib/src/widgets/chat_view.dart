@@ -79,18 +79,48 @@ class _LivechatViewState extends State<LivechatView> {
               Column(
                 children: [
                   Expanded(
-                    child: ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: controller.messages.length,
-                      itemBuilder: (context, index) {
-                        final message = controller.messages[index];
-                        return _ChatBubble(
-                          message: message,
-                          primaryColor: widget.primaryColor,
-                        );
-                      },
-                    ),
+                    child: controller.messages.isEmpty
+                        ? Center(
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(
+                                  Icons.chat_bubble_outline,
+                                  size: 64,
+                                  color: widget.primaryColor.withOpacity(0.2),
+                                ),
+                                const SizedBox(height: 16),
+                                Text(
+                                  'Start a conversation!',
+                                  style: TextStyle(
+                                    color: Colors.grey[600],
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  'Type a message below to begin.',
+                                  style: TextStyle(
+                                    color: Colors.grey[400],
+                                    fontSize: 14,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          )
+                        : ListView.builder(
+                            controller: _scrollController,
+                            padding: const EdgeInsets.all(16),
+                            itemCount: controller.messages.length,
+                            itemBuilder: (context, index) {
+                              final message = controller.messages[index];
+                              return _ChatBubble(
+                                message: message,
+                                primaryColor: widget.primaryColor,
+                              );
+                            },
+                          ),
                   ),
                   if (controller.isAgentTyping)
                     Padding(
@@ -111,24 +141,36 @@ class _LivechatViewState extends State<LivechatView> {
                         ],
                       ),
                     ),
-                  if (controller.roomStatus != RoomStatus.resolved)
-                    _buildInputArea(controller),
+                  _buildInputArea(controller),
                   if (controller.roomStatus == RoomStatus.resolved)
                     Container(
+                      width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        vertical: 20,
+                        vertical: 12,
                         horizontal: 24,
                       ),
-                      color: Colors.grey[50],
+                      color: Colors.amber[50],
                       child: SafeArea(
-                        child: Center(
-                          child: Text(
-                            'This conversation has been resolved.',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              'This conversation was marked as resolved.',
+                              style: TextStyle(
+                                color: Colors.amber[900],
+                                fontSize: 13,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Sending a new message will reopen it.',
+                              style: TextStyle(
+                                color: Colors.amber[800],
+                                fontSize: 11,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ),
