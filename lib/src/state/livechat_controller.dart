@@ -17,9 +17,15 @@ class LivechatController extends ChangeNotifier {
   bool _isInitialized = false;
   LivechatVisitor? _visitor;
   String? _roomId;
+  RoomStatus _roomStatus = RoomStatus.open;
+  bool _isRatingSubmitted = false;
+  int? _rating;
+  String? _ratingComment;
+  bool _showRatingPrompt = false;
   bool _isAgentTyping = false;
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
+  StreamSubscription? _roomSubscription;
   Timer? _typingTimer;
 
   LivechatController(this._api);
@@ -29,6 +35,11 @@ class LivechatController extends ChangeNotifier {
   bool get isInitialized => _isInitialized;
   LivechatVisitor? get visitor => _visitor;
   String? get roomId => _roomId;
+  RoomStatus get roomStatus => _roomStatus;
+  bool get isRatingSubmitted => _isRatingSubmitted;
+  int? get rating => _rating;
+  String? get ratingComment => _ratingComment;
+  bool get showRatingPrompt => _showRatingPrompt;
   bool get isAgentTyping => _isAgentTyping;
 
   /// Initializes the livechat session
@@ -58,7 +69,7 @@ class LivechatController extends ChangeNotifier {
               id
               name
               email
-              rooms { id status }
+              rooms { id status rating ratingComment }
             }
           }
         }
@@ -87,6 +98,17 @@ class LivechatController extends ChangeNotifier {
       for (var r in rooms) {
         if (r['status'] == 'OPEN' || r['status'] == 'ASSIGNED') {
           _roomId = r['id'];
+          _roomStatus = _parseRoomStatus(r['status']);
+          _isRatingSubmitted = r['rating'] != null;
+          break;
+        } else if (r['status'] == 'RESOLVED') {
+          _roomId = r['id'];
+          _roomStatus = RoomStatus.resolved;
+          _rating = r['rating'];
+          _ratingComment = r['ratingComment'];
+          _isRatingSubmitted = r['rating'] != null;
+          // Only show prompt if not rated yet (on initial load)
+          _showRatingPrompt = _rating == null;
           break;
         }
       }
@@ -142,6 +164,9 @@ class LivechatController extends ChangeNotifier {
         // Extract room ID from the first message
         _roomId =
             result.data?['visitorMessages']['edges'][0]['node']['room']['id'];
+
+        // When fetching messages, we also need the room status
+        await _fetchRoomStatus();
       }
 
       _messages = _messages.reversed.toList(); // Newest at bottom
@@ -301,6 +326,21 @@ class LivechatController extends ChangeNotifier {
     await _api.mutate(mutation, variables: {'roomId': _roomId});
   }
 
+  static RoomStatus _parseRoomStatus(String status) {
+    switch (status) {
+      case 'OPEN':
+        return RoomStatus.open;
+      case 'ASSIGNED':
+        return RoomStatus.assigned;
+      case 'RESOLVED':
+        return RoomStatus.resolved;
+      case 'CLOSED':
+        return RoomStatus.closed;
+      default:
+        return RoomStatus.open;
+    }
+  }
+
   void _startMessageSubscription() {
     _messageSubscription?.cancel();
 
@@ -324,6 +364,41 @@ class LivechatController extends ChangeNotifier {
           if (newMessage.senderType != SenderType.visitor) {
             markAsRead();
           }
+          notifyListeners();
+        }
+      }
+    });
+
+    _startRoomSubscription();
+  }
+
+  void _startRoomSubscription() {
+    _roomSubscription?.cancel();
+
+    const String sub = r'''
+      subscription {
+        visitorRoomUpdated {
+          id status rating ratingComment
+        }
+      }
+    ''';
+
+    _roomSubscription = _api.subscribe(sub).listen((result) {
+      if (result.data != null) {
+        final roomData = result.data!['visitorRoomUpdated'];
+        if (roomData['id'] == _roomId) {
+          final newStatus = _parseRoomStatus(roomData['status']);
+
+          // If transitioning to RESOLVED, always show prompt (re-rating flow)
+          if (newStatus == RoomStatus.resolved &&
+              _roomStatus != RoomStatus.resolved) {
+            _showRatingPrompt = true;
+          }
+
+          _roomStatus = newStatus;
+          _rating = roomData['rating'];
+          _ratingComment = roomData['ratingComment'];
+          _isRatingSubmitted = roomData['rating'] != null;
           notifyListeners();
         }
       }
@@ -362,10 +437,67 @@ class LivechatController extends ChangeNotifier {
         });
   }
 
+  /// Submits a rating for the current room
+  Future<void> rateRoom(int rating, {String? comment}) async {
+    if (_roomId == null) return;
+
+    const String mutation = r'''
+      mutation RateRoom($roomId: ID!, $rating: Int!, $comment: String) {
+        rateRoom(roomId: $roomId, rating: $rating, comment: $comment) {
+          id
+          rating
+        }
+      }
+    ''';
+
+    final result = await _api.mutate(
+      mutation,
+      variables: {'roomId': _roomId, 'rating': rating, 'comment': comment},
+    );
+
+    if (!result.hasException) {
+      _showRatingPrompt = false; // Hide prompt on success
+      _isRatingSubmitted = true;
+      _rating = rating;
+      _ratingComment = comment;
+      notifyListeners();
+    }
+  }
+
+  Future<void> _fetchRoomStatus() async {
+    if (_roomId == null) return;
+
+    const String query = r'''
+      query GetRoom($id: ID!) {
+        room(id: $id) {
+          id
+          status
+          rating
+          ratingComment
+        }
+      }
+    ''';
+
+    final result = await _api.query(query, variables: {'id': _roomId});
+    if (!result.hasException && result.data != null) {
+      final roomData = result.data!['room'];
+      _roomStatus = _parseRoomStatus(roomData['status']);
+      _rating = roomData['rating'];
+      _ratingComment = roomData['ratingComment'];
+      _isRatingSubmitted = roomData['rating'] != null;
+      // On fetch (refresh), only show prompt if unrated
+      if (_roomStatus == RoomStatus.resolved && _rating == null) {
+        _showRatingPrompt = true;
+      }
+      notifyListeners();
+    }
+  }
+
   @override
   void dispose() {
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
+    _roomSubscription?.cancel();
     _typingTimer?.cancel();
     super.dispose();
   }

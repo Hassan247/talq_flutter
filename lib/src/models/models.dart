@@ -2,6 +2,8 @@ enum SenderType { visitor, agent, system }
 
 enum ContentType { text, image, pdf }
 
+enum RoomStatus { open, assigned, resolved, closed }
+
 class LivechatMessage {
   final String id;
   final String content;

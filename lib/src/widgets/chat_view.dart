@@ -9,6 +9,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
+import 'rating_view.dart';
 
 class LivechatView extends StatefulWidget {
   final String title;
@@ -73,42 +74,71 @@ class _LivechatViewState extends State<LivechatView> {
             backgroundColor: widget.primaryColor,
             foregroundColor: Colors.white,
           ),
-          body: Column(
+          body: Stack(
             children: [
-              Expanded(
-                child: ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: controller.messages.length,
-                  itemBuilder: (context, index) {
-                    final message = controller.messages[index];
-                    return _ChatBubble(
-                      message: message,
-                      primaryColor: widget.primaryColor,
-                    );
-                  },
-                ),
-              ),
-              if (controller.isAgentTyping)
-                Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 8,
+              Column(
+                children: [
+                  Expanded(
+                    child: ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: controller.messages.length,
+                      itemBuilder: (context, index) {
+                        final message = controller.messages[index];
+                        return _ChatBubble(
+                          message: message,
+                          primaryColor: widget.primaryColor,
+                        );
+                      },
+                    ),
                   ),
-                  child: Row(
-                    children: [
-                      Text(
-                        'Agent is typing...',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey[600],
-                          fontStyle: FontStyle.italic,
+                  if (controller.isAgentTyping)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                      child: Row(
+                        children: [
+                          Text(
+                            'Agent is typing...',
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey[600],
+                              fontStyle: FontStyle.italic,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  if (controller.roomStatus != RoomStatus.resolved)
+                    _buildInputArea(controller),
+                  if (controller.roomStatus == RoomStatus.resolved)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        vertical: 20,
+                        horizontal: 24,
+                      ),
+                      color: Colors.grey[50],
+                      child: SafeArea(
+                        child: Center(
+                          child: Text(
+                            'This conversation has been resolved.',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                ],
+              ),
+              if (controller.showRatingPrompt)
+                Container(
+                  color: Colors.black.withOpacity(0.5),
+                  child: RatingView(primaryColor: widget.primaryColor),
                 ),
-              _buildInputArea(controller),
             ],
           ),
         );

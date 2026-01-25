@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:provider/provider.dart';
+import '../state/livechat_controller.dart';
+
+class RatingView extends StatefulWidget {
+  final Color primaryColor;
+
+  const RatingView({super.key, required this.primaryColor});
+
+  @override
+  State<RatingView> createState() => _RatingViewState();
+}
+
+class _RatingViewState extends State<RatingView>
+    with SingleTickerProviderStateMixin {
+  int _rating = 0;
+  final TextEditingController _commentController = TextEditingController();
+  late AnimationController _animationController;
+  late Animation<double> _scaleAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    _animationController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 400),
+    );
+    _scaleAnimation = CurvedAnimation(
+      parent: _animationController,
+      curve: Curves.elasticOut,
+    );
+    _animationController.forward();
+
+    final controller = Provider.of<LivechatController>(context, listen: false);
+    if (controller.rating != null) {
+      _rating = controller.rating!;
+      // Text controller needs to be set after build? No, sync is fine here usually.
+      _commentController.text = controller.ratingComment ?? '';
+    }
+  }
+
+  @override
+  void dispose() {
+    _commentController.dispose();
+    _animationController.dispose();
+    super.dispose();
+  }
+
+  void _onStarTap(int index) {
+    setState(() {
+      _rating = index + 1;
+    });
+  }
+
+  Future<void> _submit(LivechatController controller) async {
+    if (_rating == 0) return;
+    await controller.rateRoom(_rating, comment: _commentController.text);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ScaleTransition(
+      scale: _scaleAnimation,
+      child: Center(
+        child: Container(
+          margin: const EdgeInsets.symmetric(horizontal: 24),
+          padding: const EdgeInsets.all(24),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(28),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.1),
+                blurRadius: 20,
+                offset: const Offset(0, 10),
+              ),
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  color: widget.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  Icons.star_rounded,
+                  color: widget.primaryColor,
+                  size: 32,
+                ),
+              ),
+              const SizedBox(height: 16),
+              const Text(
+                'How did we do?',
+                style: TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.bold,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Please rate your conversation',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: List.generate(5, (index) {
+                  final isSelected = index < _rating;
+                  return GestureDetector(
+                    onTap: () => _onStarTap(index),
+                    child: TweenAnimationBuilder<double>(
+                      duration: const Duration(milliseconds: 300),
+                      tween: Tween(begin: 1.0, end: isSelected ? 1.2 : 1.0),
+                      builder: (context, scale, child) {
+                        return Transform.scale(
+                          scale: scale,
+                          child: Icon(
+                            isSelected
+                                ? Icons.star_rounded
+                                : Icons.star_outline_rounded,
+                            color: isSelected ? Colors.amber : Colors.grey[300],
+                            size: 44,
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                }),
+              ),
+              const SizedBox(height: 24),
+              if (_rating > 0) ...[
+                TextField(
+                  controller: _commentController,
+                  maxLines: 3,
+                  decoration: InputDecoration(
+                    hintText: 'Share your feedback (optional)',
+                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                    filled: true,
+                    fillColor: Colors.grey[50],
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide.none,
+                    ),
+                    contentPadding: const EdgeInsets.all(16),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Consumer<LivechatController>(
+                  builder: (context, controller, child) {
+                    return SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: () => _submit(controller),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: widget.primaryColor,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Text(
+                          'Submit Feedback',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
