@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'chat_view.dart';
+
+import 'rooms_list_view.dart';
 
 class LivechatFAB extends StatelessWidget {
   final Color backgroundColor;
@@ -15,9 +16,11 @@ class LivechatFAB extends StatelessWidget {
   Widget build(BuildContext context) {
     return FloatingActionButton(
       onPressed: () {
-        Navigator.of(
-          context,
-        ).push(MaterialPageRoute(builder: (context) => const LivechatView()));
+        Navigator.of(context).push(
+          MaterialPageRoute(
+            builder: (context) => RoomsListView(primaryColor: backgroundColor),
+          ),
+        );
       },
       backgroundColor: backgroundColor,
       child: icon,

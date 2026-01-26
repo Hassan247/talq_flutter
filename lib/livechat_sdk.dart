@@ -5,3 +5,4 @@ export 'src/models/models.dart';
 export 'src/state/livechat_controller.dart';
 export 'src/widgets/chat_view.dart';
 export 'src/widgets/livechat_fab.dart';
+export 'src/widgets/rooms_list_view.dart';
