@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 enum SenderType { visitor, agent, system }
 
 enum ContentType { text, image, pdf }
@@ -16,6 +18,8 @@ class LivechatMessage {
   final String? fileName;
   final DateTime createdAt;
   final bool isRead;
+  final LivechatMessage? replyTo;
+  final Map<String, dynamic> reactions;
 
   LivechatMessage({
     required this.id,
@@ -29,22 +33,59 @@ class LivechatMessage {
     this.fileName,
     required this.createdAt,
     this.isRead = false,
+    this.replyTo,
+    this.reactions = const {},
   });
 
   factory LivechatMessage.fromJson(Map<String, dynamic> json) {
-    return LivechatMessage(
-      id: json['id'],
-      roomId: json['room'] != null ? json['room']['id'] : null,
-      content: json['content'],
-      senderType: _parseSenderType(json['senderType']),
-      senderName: json['senderName'],
-      senderAvatarUrl: json['senderAvatarUrl'],
-      contentType: _parseContentType(json['contentType']),
-      fileUrl: json['fileUrl'],
-      fileName: json['fileName'],
-      createdAt: DateTime.parse(json['createdAt']),
-      isRead: json['read'] ?? false,
-    );
+    try {
+      return LivechatMessage(
+        id: json['id'] ?? 'unknown',
+        roomId: json['room'] != null ? json['room']['id'] : null,
+        content: json['content'] ?? '',
+        senderType: _parseSenderType(json['senderType'] ?? 'VISITOR'),
+        senderName: json['senderName'],
+        senderAvatarUrl: json['senderAvatarUrl'],
+        contentType: _parseContentType(json['contentType']),
+        fileUrl: json['fileUrl'],
+        fileName: json['fileName'],
+        createdAt: json['createdAt'] != null
+            ? DateTime.parse(json['createdAt'])
+            : DateTime.now(),
+        isRead: json['read'] ?? false,
+        replyTo: json['replyTo'] != null
+            ? LivechatMessage.fromJson(json['replyTo'])
+            : null,
+        reactions: json['reactions'] != null
+            ? Map<String, dynamic>.from(
+                json['reactions'] is String
+                    ? _safeJsonDecode(json['reactions'])
+                    : json['reactions'],
+              )
+            : {},
+      );
+    } catch (e) {
+      // debugPrint is typically from 'package:flutter/foundation.dart'
+      // If this is a pure Dart project, you might use print() or a custom logger.
+      // For this example, assuming debugPrint is available or will be handled.
+      // ignore: avoid_print
+      print('Error parsing LivechatMessage: $e. Data: $json');
+      // Return a shim message instead of throwing to keep the UI alive
+      return LivechatMessage(
+        id: 'err-${json['id'] ?? DateTime.now().millisecondsSinceEpoch}', // Ensure unique ID for error messages
+        content: 'Message parsing error',
+        senderType: SenderType.system,
+        createdAt: DateTime.now(),
+      );
+    }
+  }
+
+  static dynamic _safeJsonDecode(String str) {
+    try {
+      return json.decode(str);
+    } catch (_) {
+      return {};
+    }
   }
 
   static SenderType _parseSenderType(String type) {

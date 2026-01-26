@@ -164,9 +164,30 @@ class _LivechatViewState extends State<LivechatView> {
                               itemCount: controller.messages.length,
                               itemBuilder: (context, index) {
                                 final message = controller.messages[index];
+                                final messages = controller.messages;
+
+                                // Determine if this is the first/last message in a group
+                                final isFirstInGroup =
+                                    index == 0 ||
+                                    messages[index - 1].senderType !=
+                                        message.senderType;
+                                final isLastInGroup =
+                                    index == messages.length - 1 ||
+                                    messages[index + 1].senderType !=
+                                        message.senderType;
+
                                 return _ChatBubble(
                                   message: message,
                                   primaryColor: widget.primaryColor,
+                                  isFirstInGroup: isFirstInGroup,
+                                  isLastInGroup: isLastInGroup,
+                                  onSwipe: () =>
+                                      controller.setReplyingTo(message),
+                                  onLongPress: () => _showReactions(
+                                    context,
+                                    controller,
+                                    message,
+                                  ),
                                 );
                               },
                             ),
@@ -200,6 +221,8 @@ class _LivechatViewState extends State<LivechatView> {
                         ],
                       ),
                     ),
+                  if (controller.replyingTo != null)
+                    _buildReplyOverlay(controller),
                   _buildInputArea(controller),
                   if (controller.roomStatus == RoomStatus.resolved)
                     Container(
@@ -412,6 +435,108 @@ class _LivechatViewState extends State<LivechatView> {
     }
   }
 
+  Widget _buildReplyOverlay(LivechatController controller) {
+    final reply = controller.replyingTo!;
+    final senderName =
+        reply.senderName ??
+        (reply.senderType == SenderType.visitor ? 'YOU' : 'AGENT');
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        border: Border(top: BorderSide(color: Colors.grey[300]!)),
+      ),
+      child: IntrinsicHeight(
+        child: Row(
+          children: [
+            Container(
+              width: 4,
+              decoration: BoxDecoration(
+                color: widget.primaryColor,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(
+                    senderName,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      color: widget.primaryColor,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    reply.contentType == ContentType.image
+                        ? 'Image'
+                        : reply.content,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                ],
+              ),
+            ),
+            IconButton(
+              icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+              onPressed: () => controller.setReplyingTo(null),
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showReactions(
+    BuildContext context,
+    LivechatController controller,
+    LivechatMessage message,
+  ) {
+    final reactions = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
+
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        margin: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(40),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.1),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: reactions
+              .map(
+                (emoji) => InkWell(
+                  onTap: () {
+                    Navigator.pop(context);
+                    controller.addReaction(message.id, emoji);
+                  },
+                  child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                ),
+              )
+              .toList(),
+        ),
+      ),
+    );
+  }
+
   @override
   void dispose() {
     _messageController.dispose();
@@ -423,9 +548,20 @@ class _LivechatViewState extends State<LivechatView> {
 
 class _ChatBubble extends StatelessWidget {
   final LivechatMessage message;
+  final bool isFirstInGroup;
+  final bool isLastInGroup;
+  final VoidCallback onSwipe;
+  final VoidCallback onLongPress;
   final Color primaryColor;
 
-  const _ChatBubble({required this.message, required this.primaryColor});
+  const _ChatBubble({
+    required this.message,
+    required this.primaryColor,
+    required this.onSwipe,
+    required this.onLongPress,
+    this.isFirstInGroup = true,
+    this.isLastInGroup = true,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -437,80 +573,208 @@ class _ChatBubble extends StatelessWidget {
     final timeStr = DateFormat('jm').format(message.createdAt);
 
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: EdgeInsets.only(
+        bottom: isLastInGroup ? 12 : 3,
+        top: isFirstInGroup && !isMe ? 0 : 0,
+      ),
       child: Row(
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          if (!isMe) _buildAvatar(),
+          // Only show avatar for the last message in a group, or reserve space
+          if (!isMe)
+            isLastInGroup
+                ? _buildAvatar()
+                : const SizedBox(width: 32), // Reserve space for alignment
           const SizedBox(width: 8),
           Flexible(
-            child: Column(
-              crossAxisAlignment: isMe
-                  ? CrossAxisAlignment.end
-                  : CrossAxisAlignment.start,
-              children: [
-                if (!isMe && message.senderName != null)
-                  Padding(
-                    padding: const EdgeInsets.only(left: 4, bottom: 4),
-                    child: Text(
-                      message.senderName!,
-                      style: TextStyle(
-                        fontSize: 11,
-                        color: Colors.grey[600],
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                Container(
-                  padding: isImage
-                      ? const EdgeInsets.all(4)
-                      : const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 10,
-                        ),
-                  decoration: BoxDecoration(
-                    color: isMe ? primaryColor : Colors.white,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.05),
-                        blurRadius: 5,
-                        offset: const Offset(0, 2),
-                      ),
-                    ],
-                    borderRadius: BorderRadius.only(
-                      topLeft: const Radius.circular(20),
-                      topRight: const Radius.circular(20),
-                      bottomLeft: Radius.circular(isMe ? 20 : 4),
-                      bottomRight: Radius.circular(isMe ? 4 : 20),
-                    ),
-                  ),
-                  child: isImage
-                      ? _buildImage(context)
-                      : message.contentType == ContentType.pdf
-                      ? _buildPdf(context)
-                      : Text(
-                          message.content,
-                          style: TextStyle(
-                            color: isMe ? Colors.white : Colors.black87,
-                            fontSize: 14,
+            child: GestureDetector(
+              onHorizontalDragEnd: (details) {
+                if (details.primaryVelocity != null &&
+                    details.primaryVelocity! < -100) {
+                  onSwipe();
+                }
+              },
+              onLongPress: onLongPress,
+              child: Column(
+                crossAxisAlignment: isMe
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      Container(
+                        padding: isImage
+                            ? const EdgeInsets.all(4)
+                            : const EdgeInsets.only(
+                                left: 14,
+                                right: 14,
+                                top: 8,
+                                bottom: 14,
+                              ),
+                        decoration: BoxDecoration(
+                          color: isMe ? primaryColor : Colors.white,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 5,
+                              offset: const Offset(0, 2),
+                            ),
+                          ],
+                          borderRadius: BorderRadius.only(
+                            topLeft: const Radius.circular(16),
+                            topRight: const Radius.circular(16),
+                            bottomLeft: Radius.circular(isMe ? 16 : 4),
+                            bottomRight: Radius.circular(isMe ? 4 : 16),
                           ),
                         ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.only(top: 4, left: 4, right: 4),
-                  child: Text(
-                    timeStr,
-                    style: TextStyle(color: Colors.grey[400], fontSize: 10),
+                        child: isImage
+                            ? _buildImage(context)
+                            : message.contentType == ContentType.pdf
+                            ? _buildPdf(context)
+                            : Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  if (message.replyTo != null)
+                                    _buildQuote(context, isMe),
+                                  Text(
+                                    message.content,
+                                    style: TextStyle(
+                                      color: isMe
+                                          ? Colors.white
+                                          : Colors.black87,
+                                      fontSize: 14,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 14),
+                                ],
+                              ),
+                      ),
+                      Positioned(
+                        bottom: 4,
+                        right: 10,
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              timeStr,
+                              style: TextStyle(
+                                color: (isMe && !isImage)
+                                    ? Colors.white.withOpacity(0.7)
+                                    : Colors.grey[400],
+                                fontSize: 9,
+                                fontWeight: FontWeight.w400,
+                              ),
+                            ),
+                            if (isMe) ...[
+                              const SizedBox(width: 4),
+                              Icon(
+                                Icons.done_all,
+                                size: 13,
+                                color: isImage
+                                    ? Colors.blueAccent
+                                    : Colors.white.withOpacity(0.8),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                      if (message.reactions.isNotEmpty)
+                        Positioned(
+                          bottom: -10,
+                          right: isMe ? 0 : null,
+                          left: isMe ? null : 0,
+                          child: _buildReactionsDisplay(),
+                        ),
+                    ],
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
           const SizedBox(width: 8),
           if (isMe) _buildAvatar(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReactionsDisplay() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.1),
+            blurRadius: 4,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: message.reactions.keys
+            .map(
+              (emoji) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 1),
+                child: Text(emoji, style: const TextStyle(fontSize: 12)),
+              ),
+            )
+            .toList(),
+      ),
+    );
+  }
+
+  Widget _buildQuote(BuildContext context, bool isMe) {
+    final quote = message.replyTo!;
+    final senderName =
+        quote.senderName ??
+        (quote.senderType == SenderType.visitor ? 'VISITOR' : 'AGENT');
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      decoration: BoxDecoration(
+        color: isMe
+            ? Colors.white.withOpacity(0.15)
+            : Colors.black.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(8),
+        border: Border(
+          left: BorderSide(
+            color: isMe ? Colors.white70 : primaryColor,
+            width: 3,
+          ),
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            senderName.toUpperCase(),
+            style: TextStyle(
+              fontSize: 10,
+              fontWeight: FontWeight.bold,
+              color: isMe ? Colors.white : primaryColor,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            quote.contentType == ContentType.image
+                ? 'Sent a image: ${quote.content}'
+                : quote.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontSize: 12,
+              color: isMe ? Colors.white.withOpacity(0.9) : Colors.black54,
+            ),
+          ),
         ],
       ),
     );
@@ -535,6 +799,82 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildSystemMessage() {
+    final isReassignment = message.content.startsWith('Reassigned to');
+    final timeStr = DateFormat('MMM d, h:mm a').format(message.createdAt);
+
+    if (isReassignment) {
+      // Beautiful divider with horizontal lines for reassignment events
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        child: Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.grey[300]!,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+            Container(
+              margin: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.grey[300]!, width: 1),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.swap_horiz_rounded,
+                    size: 14,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    message.content,
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey[700],
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    '• $timeStr',
+                    style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                  ),
+                ],
+              ),
+            ),
+            Expanded(
+              child: Container(
+                height: 1,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      Colors.transparent,
+                      Colors.grey[300]!,
+                      Colors.transparent,
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    // Default system message style
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 16),

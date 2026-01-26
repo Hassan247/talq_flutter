@@ -29,6 +29,7 @@ class LivechatController extends ChangeNotifier {
   StreamSubscription? _typingSubscription;
   StreamSubscription? _roomSubscription;
   Timer? _typingTimer;
+  LivechatMessage? _replyingTo;
 
   LivechatController(this._api);
 
@@ -45,6 +46,12 @@ class LivechatController extends ChangeNotifier {
   String? get ratingComment => _ratingComment;
   bool get showRatingPrompt => _showRatingPrompt;
   bool get isAgentTyping => _isAgentTyping;
+  LivechatMessage? get replyingTo => _replyingTo;
+
+  void setReplyingTo(LivechatMessage? message) {
+    _replyingTo = message;
+    notifyListeners();
+  }
 
   /// Initializes the livechat session
   Future<void> initialize({
@@ -278,13 +285,13 @@ class LivechatController extends ChangeNotifier {
     if (targetRoomId == null) return;
 
     const String query = r'''
-      query GetVisitorMessages($roomId: ID) {
+      query GetVisitorMessages($roomId: ID!) {
         room(id: $roomId) {
           messages(first: 50) {
             edges {
               node { 
-                id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read 
-                room { id }
+                id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read reactions
+                replyTo { id content senderType senderName contentType createdAt }
               }
             }
           }
@@ -296,29 +303,45 @@ class LivechatController extends ChangeNotifier {
     ''';
 
     final result = await _api.query(query, variables: {'roomId': targetRoomId});
+    if (result.hasException) {
+      // Handle production logging if needed
+    }
+
     if (!result.hasException) {
       final roomData = result.data?['room'];
-      final List edges = roomData['messages']['edges'] ?? [];
+      if (roomData == null) {
+        return;
+      }
+
+      final List edges = roomData['messages']?['edges'] ?? [];
       final List eventList = roomData['events'] ?? [];
 
-      _messages = edges
-          .map((e) => LivechatMessage.fromJson(e['node']))
+      try {
+        _messages = edges
+            .map((e) => LivechatMessage.fromJson(e['node']))
+            .toList();
+      } catch (e) {
+        // Handle production logging if needed
+      }
+
+      // Interleave reassignment events as system messages (skip first one - initial assignment)
+      final assignedEvents = eventList
+          .where((e) => e['type'] == 'ROOM_ASSIGNED')
           .toList();
 
-      // Interleave events as system messages
-      for (final event in eventList) {
-        if (event['type'] == 'ROOM_ASSIGNED') {
-          final metadata = event['metadata'] ?? {};
-          final agentName = metadata['agentName'] ?? 'an agent';
-          _messages.add(
-            LivechatMessage(
-              id: event['id'],
-              content: 'Conversation was assigned to $agentName',
-              senderType: SenderType.system,
-              createdAt: DateTime.parse(event['createdAt']),
-            ),
-          );
-        }
+      // Skip the first assignment, only show reassignments
+      for (int i = 1; i < assignedEvents.length; i++) {
+        final event = assignedEvents[i];
+        final metadata = event['metadata'] ?? {};
+        final agentName = metadata['agent_name'] ?? 'another agent';
+        _messages.add(
+          LivechatMessage(
+            id: event['id'],
+            content: 'Reassigned to $agentName',
+            senderType: SenderType.system,
+            createdAt: DateTime.parse(event['createdAt']),
+          ),
+        );
       }
 
       _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
@@ -344,17 +367,9 @@ class LivechatController extends ChangeNotifier {
   }) async {
     if (content.trim().isEmpty && fileUrl == null) return;
 
-    const String mutation = r'''
-      mutation SendVisitorMessage($input: SendMessageInput!) {
-        sendVisitorMessage(input: $input) {
-          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt
-          room { id }
-        }
-      }
-    ''';
-
-    // Optimistic update
     final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
+    final replyToId = _replyingTo?.id;
+
     final optMsg = LivechatMessage(
       id: tempId,
       content: content,
@@ -363,9 +378,21 @@ class LivechatController extends ChangeNotifier {
       fileUrl: fileUrl,
       fileName: fileName,
       createdAt: DateTime.now(),
+      replyTo: _replyingTo,
     );
     _messages.add(optMsg);
+    _replyingTo = null; // Clear after sending
     notifyListeners();
+
+    const String mutation = r'''
+      mutation SendVisitorMessage($input: SendMessageInput!) {
+        sendVisitorMessage(input: $input) {
+          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read reactions
+          replyTo { id content senderType senderName contentType createdAt }
+          room { id }
+        }
+      }
+    ''';
 
     final result = await _api.mutate(
       mutation,
@@ -380,6 +407,7 @@ class LivechatController extends ChangeNotifier {
               : 'TEXT',
           'fileUrl': fileUrl,
           'fileName': fileName,
+          'replyToId': replyToId,
         },
       },
     );
@@ -508,7 +536,8 @@ class LivechatController extends ChangeNotifier {
     const String sub = r'''
       subscription {
         visitorNewMessage {
-          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read
+          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read reactions
+          replyTo { id content senderType senderName contentType createdAt }
           room { id }
         }
       }
@@ -682,5 +711,91 @@ class LivechatController extends ChangeNotifier {
     _roomSubscription?.cancel();
     _typingTimer?.cancel();
     super.dispose();
+  }
+
+  Future<void> addReaction(String messageId, String emoji) async {
+    const String mutation = r'''
+      mutation AddReaction($messageId: ID!, $emoji: String!) {
+        addReaction(messageId: $messageId, emoji: $emoji) {
+          id reactions
+        }
+      }
+    ''';
+
+    final result = await _api.mutate(
+      mutation,
+      variables: {'messageId': messageId, 'emoji': emoji},
+    );
+
+    if (!result.hasException) {
+      final updatedData = result.data!['addReaction'];
+      final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex != -1) {
+        final oldMsg = _messages[messageIndex];
+        _messages[messageIndex] = LivechatMessage(
+          id: oldMsg.id,
+          roomId: oldMsg.roomId,
+          content: oldMsg.content,
+          senderType: oldMsg.senderType,
+          senderName: oldMsg.senderName,
+          senderAvatarUrl: oldMsg.senderAvatarUrl,
+          contentType: oldMsg.contentType,
+          fileUrl: oldMsg.fileUrl,
+          fileName: oldMsg.fileName,
+          createdAt: oldMsg.createdAt,
+          isRead: oldMsg.isRead,
+          replyTo: oldMsg.replyTo,
+          reactions: Map<String, dynamic>.from(
+            updatedData['reactions'] is String
+                ? json.decode(updatedData['reactions'])
+                : updatedData['reactions'],
+          ),
+        );
+        notifyListeners();
+      }
+    }
+  }
+
+  Future<void> removeReaction(String messageId, String emoji) async {
+    const String mutation = r'''
+      mutation RemoveReaction($messageId: ID!, $emoji: String!) {
+        removeReaction(messageId: $messageId, emoji: $emoji) {
+          id reactions
+        }
+      }
+    ''';
+
+    final result = await _api.mutate(
+      mutation,
+      variables: {'messageId': messageId, 'emoji': emoji},
+    );
+
+    if (!result.hasException) {
+      final updatedData = result.data!['removeReaction'];
+      final messageIndex = _messages.indexWhere((m) => m.id == messageId);
+      if (messageIndex != -1) {
+        final oldMsg = _messages[messageIndex];
+        _messages[messageIndex] = LivechatMessage(
+          id: oldMsg.id,
+          roomId: oldMsg.roomId,
+          content: oldMsg.content,
+          senderType: oldMsg.senderType,
+          senderName: oldMsg.senderName,
+          senderAvatarUrl: oldMsg.senderAvatarUrl,
+          contentType: oldMsg.contentType,
+          fileUrl: oldMsg.fileUrl,
+          fileName: oldMsg.fileName,
+          createdAt: oldMsg.createdAt,
+          isRead: oldMsg.isRead,
+          replyTo: oldMsg.replyTo,
+          reactions: Map<String, dynamic>.from(
+            updatedData['reactions'] is String
+                ? json.decode(updatedData['reactions'])
+                : updatedData['reactions'],
+          ),
+        );
+        notifyListeners();
+      }
+    }
   }
 }
