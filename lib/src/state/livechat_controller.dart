@@ -590,6 +590,7 @@ class LivechatController extends ChangeNotifier {
       subscription {
         visitorRoomUpdated {
           id status rating ratingComment
+          assignee { id name }
         }
       }
     ''';
@@ -604,6 +605,11 @@ class LivechatController extends ChangeNotifier {
           if (newStatus == RoomStatus.resolved &&
               _roomStatus != RoomStatus.resolved) {
             _showRatingPrompt = true;
+          }
+
+          // If assignee changed (reassignment), refetch messages to get new events
+          if (roomData['assignee'] != null) {
+            fetchMessages(roomId: _roomId);
           }
 
           _roomStatus = newStatus;
