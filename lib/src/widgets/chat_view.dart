@@ -25,7 +25,8 @@ class LivechatView extends StatefulWidget {
   State<LivechatView> createState() => _LivechatViewState();
 }
 
-class _LivechatViewState extends State<LivechatView> {
+class _LivechatViewState extends State<LivechatView>
+    with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
@@ -34,11 +35,17 @@ class _LivechatViewState extends State<LivechatView> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
       // notify controller that chat is now visible
       context.read<LivechatController>().setChatVisible(true);
     });
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    context.read<LivechatController>().setLifecycleState(state);
   }
 
   void _scrollToBottom() {
@@ -541,6 +548,7 @@ class _LivechatViewState extends State<LivechatView> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     // notify controller that chat is no longer visible
     context.read<LivechatController>().setChatVisible(false);
     _messageController.dispose();

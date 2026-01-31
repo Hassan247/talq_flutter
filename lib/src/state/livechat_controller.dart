@@ -31,6 +31,7 @@ class LivechatController extends ChangeNotifier {
   Timer? _typingTimer;
   LivechatMessage? _replyingTo;
   bool _isChatVisible = false;
+  AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
 
   LivechatController(this._api);
 
@@ -49,11 +50,24 @@ class LivechatController extends ChangeNotifier {
   bool get isAgentTyping => _isAgentTyping;
   LivechatMessage? get replyingTo => _replyingTo;
   bool get isChatVisible => _isChatVisible;
+  AppLifecycleState get lifecycleState => _lifecycleState;
+
+  /// Call this when the app lifecycle changes
+  void setLifecycleState(AppLifecycleState state) {
+    _lifecycleState = state;
+    if (state == AppLifecycleState.resumed &&
+        _isChatVisible &&
+        _roomId != null) {
+      markAsRead();
+    }
+  }
 
   /// Call this when the chat view becomes visible (mounted/resumed)
   void setChatVisible(bool visible) {
     _isChatVisible = visible;
-    if (visible && _roomId != null) {
+    if (visible &&
+        _roomId != null &&
+        _lifecycleState == AppLifecycleState.resumed) {
       // when chat becomes visible, mark messages as read
       markAsRead();
     }
@@ -518,6 +532,7 @@ class LivechatController extends ChangeNotifier {
   /// Marks all messages in the current room as read
   Future<void> markAsRead() async {
     if (_roomId == null) return;
+    if (!_isChatVisible || _lifecycleState != AppLifecycleState.resumed) return;
 
     const String mutation = r'''
       mutation MarkMessagesAsRead($roomId: ID!) {
