@@ -207,6 +207,12 @@ class LivechatController extends ChangeNotifier {
 
   /// Forces creation of a brand new conversation
   Future<void> startNewConversation() async {
+    // If we're not initialized (e.g. after resetSession), we must initialize first
+    // to get a valid token before we can start a conversation.
+    if (!_isInitialized) {
+      await initialize();
+    }
+
     _isLoading = true;
     notifyListeners();
 
