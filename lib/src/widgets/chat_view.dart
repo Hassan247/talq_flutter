@@ -36,6 +36,8 @@ class _LivechatViewState extends State<LivechatView> {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToBottom();
+      // notify controller that chat is now visible
+      context.read<LivechatController>().setChatVisible(true);
     });
   }
 
@@ -539,6 +541,8 @@ class _LivechatViewState extends State<LivechatView> {
 
   @override
   void dispose() {
+    // notify controller that chat is no longer visible
+    context.read<LivechatController>().setChatVisible(false);
     _messageController.dispose();
     _scrollController.dispose();
     _typingThrottle?.cancel();

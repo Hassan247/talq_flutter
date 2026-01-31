@@ -30,6 +30,7 @@ class LivechatController extends ChangeNotifier {
   StreamSubscription? _roomSubscription;
   Timer? _typingTimer;
   LivechatMessage? _replyingTo;
+  bool _isChatVisible = false;
 
   LivechatController(this._api);
 
@@ -47,6 +48,16 @@ class LivechatController extends ChangeNotifier {
   bool get showRatingPrompt => _showRatingPrompt;
   bool get isAgentTyping => _isAgentTyping;
   LivechatMessage? get replyingTo => _replyingTo;
+  bool get isChatVisible => _isChatVisible;
+
+  /// Call this when the chat view becomes visible (mounted/resumed)
+  void setChatVisible(bool visible) {
+    _isChatVisible = visible;
+    if (visible && _roomId != null) {
+      // when chat becomes visible, mark messages as read
+      markAsRead();
+    }
+  }
 
   void setReplyingTo(LivechatMessage? message) {
     _replyingTo = message;
@@ -157,10 +168,9 @@ class LivechatController extends ChangeNotifier {
       // 3. Re-init client with token
       await _api.init();
 
-      // 4. Load initial messages
+      // 4. Load initial messages (markAsRead will be called by setChatVisible when chat opens)
       if (_roomId != null) {
         await fetchMessages(roomId: _roomId);
-        await markAsRead();
       }
 
       // 5. Start subscriptions
@@ -354,7 +364,10 @@ class LivechatController extends ChangeNotifier {
       }
 
       notifyListeners();
-      markAsRead();
+      // only mark as read if chat is currently visible
+      if (_isChatVisible) {
+        markAsRead();
+      }
     }
   }
 
@@ -572,7 +585,7 @@ class LivechatController extends ChangeNotifier {
         // Avoid duplicates if we sent it ourselves
         if (!_messages.any((m) => m.id == newMessage.id)) {
           _messages.add(newMessage);
-          if (newMessage.senderType != SenderType.visitor) {
+          if (newMessage.senderType != SenderType.visitor && _isChatVisible) {
             markAsRead();
           }
           notifyListeners();
