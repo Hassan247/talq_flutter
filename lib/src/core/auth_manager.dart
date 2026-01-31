@@ -24,10 +24,12 @@ class AuthManager {
     await _storage.delete(key: _tokenKey);
   }
 
-  /// Completely resets the visitor identity (clears token and device ID)
+  /// Completely resets the visitor identity (clears token and generates new device ID)
   static Future<void> resetSession() async {
     await _storage.delete(key: _tokenKey);
-    await _storage.delete(key: _deviceIdKey);
+    // generate a new random device ID to create a fresh visitor identity
+    final newDeviceId = const Uuid().v4();
+    await _storage.write(key: _deviceIdKey, value: newDeviceId);
   }
 
   /// Gets or generates a unique device ID

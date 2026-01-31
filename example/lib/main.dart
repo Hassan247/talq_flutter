@@ -7,7 +7,7 @@ void main() {
   final livechatApi = LivechatClient(
     httpUrl: 'http://localhost:8081/graphql',
     wsUrl: 'ws://localhost:8081/graphql',
-    apiKey: 'lc_6fc80297-54e7-4d08-90db-d4ea58bda34a69e22ea0',
+    apiKey: 'lc_0a034c8d-3047-4b99-9184-1cd57e6ef0ed75fd1f88',
   );
 
   runApp(
