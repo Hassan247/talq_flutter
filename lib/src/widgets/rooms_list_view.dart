@@ -169,16 +169,27 @@ class _RoomsListViewState extends State<RoomsListView> {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            final controller = context.read<LivechatController>();
-            await controller.startNewConversation();
-            if (mounted) {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) =>
-                      LivechatView(primaryColor: widget.primaryColor),
-                ),
-              );
+            try {
+              final controller = context.read<LivechatController>();
+              await controller.startNewConversation();
+              if (mounted) {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        LivechatView(primaryColor: widget.primaryColor),
+                  ),
+                );
+              }
+            } catch (e) {
+              if (mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text('Failed to start conversation: $e'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             }
           },
           child: Padding(
