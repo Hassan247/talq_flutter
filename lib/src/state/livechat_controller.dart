@@ -80,7 +80,8 @@ class LivechatController extends ChangeNotifier {
 
   /// Initializes the livechat session
   Future<void> initialize({
-    String? name,
+    String? firstName,
+    String? lastName,
     String? email,
     String? currentPage,
   }) async {
@@ -103,7 +104,8 @@ class LivechatController extends ChangeNotifier {
             token
             visitor {
               id
-              name
+              firstName
+              lastName
               email
               rooms { 
                 id 
@@ -119,7 +121,11 @@ class LivechatController extends ChangeNotifier {
                   createdAt
                 }
                 rating 
-                ratingComment 
+                ratingComment
+                assignee {
+                  firstName
+                  lastName
+                } 
               }
             }
             workspace {
@@ -131,6 +137,7 @@ class LivechatController extends ChangeNotifier {
               autoReplyEnabled
               autoReplyMessage
             }
+            agentAvatars
           }
         }
       ''';
@@ -141,7 +148,8 @@ class LivechatController extends ChangeNotifier {
           'input': {
             'deviceId': deviceId,
             'platform': platform,
-            'name': name,
+            'firstName': firstName,
+            'lastName': lastName,
             'email': email,
           },
         },
@@ -152,7 +160,10 @@ class LivechatController extends ChangeNotifier {
       final authData = result.data!['initVisitor'];
       await AuthManager.saveToken(authData['token']);
       _visitor = LivechatVisitor.fromJson(authData['visitor']);
-      _workspace = LivechatWorkspace.fromJson(authData['workspace']);
+
+      final ws = LivechatWorkspace.fromJson(authData['workspace']);
+      final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
+      _workspace = ws.copyWith(agentAvatars: avatars);
 
       // Populate rooms list
       final List roomsList = authData['visitor']['rooms'] ?? [];
@@ -205,7 +216,22 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
-  /// Forces creation of a brand new conversation
+  /// Prepares the controller for a new conversation locally without creating a room on the backend.
+  /// The room will be created when the first message is sent.
+  void prepareNewConversation() {
+    _roomId = null;
+    _messages = [];
+    _roomStatus = RoomStatus.open;
+    _rating = null;
+    _ratingComment = null;
+    _isRatingSubmitted = false;
+    _showRatingPrompt = false;
+    _isAgentTyping = false;
+    _replyingTo = null;
+    notifyListeners();
+  }
+
+  /// Forces creation of a brand new conversation on the backend
   Future<void> startNewConversation() async {
     // If we're not initialized (e.g. after resetSession), we must initialize first
     // to get a valid token before we can start a conversation.
@@ -400,6 +426,50 @@ class LivechatController extends ChangeNotifier {
   }) async {
     if (content.trim().isEmpty && fileUrl == null) return;
 
+    // IF _roomId is null, it means we are in "new conversation" mode (e.g. from "Send us a message").
+    // We must force the creation of a NEW room first, otherwise the backend might attach
+    // this message to an existing open room.
+    if (_roomId == null) {
+      try {
+        const String createMutation = r'''
+          mutation {
+            startNewConversation {
+              id
+              status
+              lastMessageAt
+              lastMessage {
+                id
+                content
+                senderType
+                senderName
+                senderAvatarUrl
+                createdAt
+              }
+            }
+          }
+        ''';
+
+        final createResult = await _api.mutate(createMutation);
+        if (!createResult.hasException) {
+          final roomData = createResult.data!['startNewConversation'];
+          final newRoom = LivechatRoom.fromJson(roomData);
+
+          // Update local state
+          _rooms.insert(0, newRoom);
+          _roomId = newRoom.id;
+          _roomStatus = newRoom.status;
+          // _messages is already empty or has optimistic message, don't clear it
+          _showRatingPrompt = false;
+          _isRatingSubmitted = false;
+          _startTypingSubscription();
+        }
+      } catch (e) {
+        // If creation fails, we will fall through and try to send with null roomId
+        // which might attach to old room or fail.
+        debugPrint('Failed to force create new conversation: $e');
+      }
+    }
+
     final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
     final replyToId = _replyingTo?.id;
 
@@ -457,7 +527,7 @@ class LivechatController extends ChangeNotifier {
       final data = result.data!['sendVisitorMessage'];
       _messages[index] = LivechatMessage.fromJson(data);
 
-      // Update room ID if it was null (first message)
+      // Update room ID if it was still null (fallback)
       if (_roomId == null) {
         _roomId = data['room']['id'];
         _startTypingSubscription();

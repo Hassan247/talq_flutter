@@ -7,7 +7,7 @@ import 'package:uuid/uuid.dart';
 class AuthManager {
   static const _storage = FlutterSecureStorage();
   static const _tokenKey = 'livechat_visitor_token';
-  static const _deviceIdKey = 'livechat_device_id';
+  static const _deviceIdKey = 'livechat_device_id_v2';
 
   /// Returns the current visitor token or null if not authenticated
   static Future<String?> getToken() async {
@@ -26,18 +26,24 @@ class AuthManager {
 
   /// Completely resets the visitor identity (clears token and generates new device ID)
   static Future<void> resetSession() async {
+    print('[AuthManager] Resetting session...');
     await _storage.delete(key: _tokenKey);
-    // generate a new random device ID to create a fresh visitor identity
+    // generate a new random device id to create a fresh visitor identity
     final newDeviceId = const Uuid().v4();
+    print('[AuthManager] Generated NEW device ID: $newDeviceId');
     await _storage.write(key: _deviceIdKey, value: newDeviceId);
   }
 
   /// Gets or generates a unique device ID
   static Future<String> getDeviceId() async {
     String? deviceId = await _storage.read(key: _deviceIdKey);
-    if (deviceId != null) return deviceId;
+    if (deviceId != null) {
+      print('[AuthManager] Using EXISTING device ID: $deviceId');
+      return deviceId;
+    }
 
     deviceId = await _calculateDeviceId();
+    print('[AuthManager] Generated FALLBACK/INITIAL device ID: $deviceId');
     await _storage.write(key: _deviceIdKey, value: deviceId);
     return deviceId;
   }

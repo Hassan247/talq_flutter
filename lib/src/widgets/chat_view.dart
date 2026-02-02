@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -58,6 +59,15 @@ class _LivechatViewState extends State<LivechatView>
     }
   }
 
+  String _formatResponseTime(String? time) {
+    if (time == null) return 'Usually replies in minutes';
+    if (time.toLowerCase().trim().startsWith('replies') ||
+        time.toLowerCase().trim().startsWith('usually')) {
+      return time;
+    }
+    return 'Reply in $time';
+  }
+
   @override
   Widget build(BuildContext context) {
     return Consumer<LivechatController>(
@@ -70,6 +80,7 @@ class _LivechatViewState extends State<LivechatView>
 
         return Scaffold(
           appBar: AppBar(
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
             elevation: 0,
             title: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -79,22 +90,21 @@ class _LivechatViewState extends State<LivechatView>
                   style: const TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black, // Explicitly black
                   ),
                 ),
                 Text(
-                  controller.workspace?.responseTime != null
-                      ? 'Reply in ${controller.workspace!.responseTime}'
-                      : 'Usually replies in minutes',
-                  style: const TextStyle(
+                  _formatResponseTime(controller.workspace?.responseTime),
+                  style: TextStyle(
                     fontSize: 11,
                     fontWeight: FontWeight.normal,
-                    color: Colors.white70,
+                    color: Colors.grey[600], // Grey for subtitle
                   ),
                 ),
               ],
             ),
-            backgroundColor: widget.primaryColor,
-            foregroundColor: Colors.white,
+            backgroundColor: Colors.white, // White background
+            foregroundColor: Colors.black, // Black icons/back button
           ),
           body: Stack(
             children: [
@@ -120,8 +130,7 @@ class _LivechatViewState extends State<LivechatView>
                                           Icon(
                                             Icons.chat_bubble_outline,
                                             size: 64,
-                                            color: widget.primaryColor
-                                                .withOpacity(0.2),
+                                            color: Colors.grey[300],
                                           ),
                                           const SizedBox(height: 16),
                                           Text(
@@ -281,55 +290,72 @@ class _LivechatViewState extends State<LivechatView>
 
   Widget _buildInputArea(LivechatController controller) {
     return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
-      ),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      color: Colors.white, // Or transparent if background allows
       child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-          child: Row(
-            children: [
-              IconButton(
-                icon: Icon(
-                  Icons.add_circle_outline,
-                  color: Colors.grey[600],
-                  size: 28,
+        child: Row(
+          children: [
+            // Floating pill input
+            Expanded(
+              child: Container(
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6), // Light grey input bg
+                  borderRadius: BorderRadius.circular(30),
                 ),
-                onPressed: () => _showAttachmentOptions(context, controller),
-              ),
-              Expanded(
-                child: TextField(
-                  controller: _messageController,
-                  decoration: InputDecoration(
-                    hintText: 'Message',
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24),
-                      borderSide: BorderSide.none,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: Row(
+                  children: [
+                    // Plus Button
+                    GestureDetector(
+                      onTap: () => _showAttachmentOptions(context, controller),
+                      child: Container(
+                        width: 36,
+                        height: 36,
+                        decoration: const BoxDecoration(
+                          color: Color(0xFF151515), // Black plus button
+                          shape: BoxShape.circle,
+                        ),
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                          size: 24,
+                        ),
+                      ),
                     ),
-                    fillColor: Colors.grey[100],
-                    filled: true,
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: TextField(
+                        controller: _messageController,
+                        decoration: const InputDecoration(
+                          hintText: 'Type something',
+                          hintStyle: TextStyle(
+                            color: Color(0xFF9CA3AF),
+                            fontWeight: FontWeight.w500,
+                          ),
+                          border: InputBorder.none,
+                          contentPadding: EdgeInsets.symmetric(horizontal: 8),
+                          isDense: true,
+                        ),
+                        minLines: 1,
+                        maxLines: 4,
+                        style: const TextStyle(fontSize: 16),
+                        onChanged: (text) => _onTextChanged(text, controller),
+                      ),
                     ),
-                  ),
-                  maxLines: 5,
-                  minLines: 1,
-                  onChanged: (text) => _onTextChanged(text, controller),
+                    // Send Button
+                    IconButton(
+                      icon: const Icon(
+                        Icons.send_outlined, // Outline style in prototype?
+                        color: Colors.black, // or slight grey
+                        size: 24,
+                      ),
+                      onPressed: () => _handleSend(controller),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 4),
-              IconButton(
-                icon: Icon(
-                  Icons.send_rounded,
-                  color: widget.primaryColor,
-                  size: 28,
-                ),
-                onPressed: () => _handleSend(controller),
-              ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
@@ -545,17 +571,6 @@ class _LivechatViewState extends State<LivechatView>
       ),
     );
   }
-
-  @override
-  void dispose() {
-    WidgetsBinding.instance.removeObserver(this);
-    // notify controller that chat is no longer visible
-    context.read<LivechatController>().setChatVisible(false);
-    _messageController.dispose();
-    _scrollController.dispose();
-    _typingThrottle?.cancel();
-    super.dispose();
-  }
 }
 
 class _ChatBubble extends StatelessWidget {
@@ -586,8 +601,10 @@ class _ChatBubble extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: isLastInGroup ? 12 : 3,
-        top: isFirstInGroup && !isMe ? 0 : 0,
+        bottom: isLastInGroup ? 16 : 4, // More spacing between groups
+        top: 0,
+        left: isMe ? 0 : 0,
+        right: isMe ? 0 : 0,
       ),
       child: Row(
         mainAxisAlignment: isMe
@@ -595,12 +612,14 @@ class _ChatBubble extends StatelessWidget {
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Only show avatar for the last message in a group, or reserve space
-          if (!isMe)
+          // Agent Avatar (only if not me)
+          if (!isMe) ...[
             isLastInGroup
                 ? _buildAvatar()
-                : const SizedBox(width: 32), // Reserve space for alignment
-          const SizedBox(width: 8),
+                : const SizedBox(width: 36), // Alignment spacer
+            const SizedBox(width: 8),
+          ],
+
           Flexible(
             child: GestureDetector(
               onHorizontalDragEnd: (details) {
@@ -615,101 +634,80 @@ class _ChatBubble extends StatelessWidget {
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  Stack(
-                    clipBehavior: Clip.none,
-                    children: [
-                      Container(
-                        padding: isImage
-                            ? const EdgeInsets.all(4)
-                            : const EdgeInsets.only(
-                                left: 14,
-                                right: 14,
-                                top: 8,
-                                bottom: 14,
-                              ),
-                        decoration: BoxDecoration(
-                          color: isMe ? primaryColor : Colors.white,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 5,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                          borderRadius: BorderRadius.only(
-                            topLeft: const Radius.circular(16),
-                            topRight: const Radius.circular(16),
-                            bottomLeft: Radius.circular(isMe ? 16 : 4),
-                            bottomRight: Radius.circular(isMe ? 4 : 16),
+                  Container(
+                    padding: isImage
+                        ? const EdgeInsets.all(4)
+                        : const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 12,
                           ),
-                        ),
-                        child: isImage
-                            ? _buildImage(context)
-                            : message.contentType == ContentType.pdf
-                            ? _buildPdf(context)
-                            : Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  if (message.replyTo != null)
-                                    _buildQuote(context, isMe),
-                                  Text(
-                                    message.content,
-                                    style: TextStyle(
-                                      color: isMe
-                                          ? Colors.white
-                                          : Colors.black87,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 14),
-                                ],
-                              ),
+                    decoration: BoxDecoration(
+                      color: isMe
+                          ? const Color(0xFF151515) // Black for user
+                          : Colors.white, // White for agent
+                      borderRadius: BorderRadius.only(
+                        topLeft: const Radius.circular(20),
+                        topRight: const Radius.circular(20),
+                        bottomLeft: Radius.circular(
+                          isMe ? 20 : 4,
+                        ), // Sharp on agent bottom-left
+                        bottomRight: Radius.circular(
+                          isMe ? 4 : 20,
+                        ), // Sharp on user bottom-right? Prototype specific
                       ),
-                      Positioned(
-                        bottom: 4,
-                        right: 10,
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
+                      boxShadow: [
+                        if (!isMe)
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.05),
+                            blurRadius: 4,
+                            offset: const Offset(0, 2),
+                          ),
+                      ],
+                    ),
+                    child: IntrinsicWidth(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          if (message.replyTo != null)
+                            _buildQuote(context, isMe),
+
+                          if (isImage)
+                            _buildImage(context)
+                          else if (message.contentType == ContentType.pdf)
+                            _buildPdf(context)
+                          else
                             Text(
+                              message.content,
+                              style: TextStyle(
+                                color: isMe ? Colors.white : Colors.black87,
+                                fontSize: 15,
+                                height: 1.4,
+                              ),
+                            ),
+                          const SizedBox(height: 4),
+                          Align(
+                            alignment: Alignment.bottomRight,
+                            child: Text(
                               timeStr,
                               style: TextStyle(
-                                color: (isMe && !isImage)
+                                fontSize: 10,
+                                color: isMe
                                     ? Colors.white.withOpacity(0.7)
-                                    : Colors.grey[400],
-                                fontSize: 9,
-                                fontWeight: FontWeight.w400,
+                                    : Colors.grey[500],
                               ),
                             ),
-                            if (isMe) ...[
-                              const SizedBox(width: 4),
-                              Icon(
-                                Icons.done_all,
-                                size: 13,
-                                color: isImage
-                                    ? Colors.blueAccent
-                                    : Colors.white.withOpacity(0.8),
-                              ),
-                            ],
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                      if (message.reactions.isNotEmpty)
-                        Positioned(
-                          bottom: -10,
-                          right: isMe ? 0 : null,
-                          left: isMe ? null : 0,
-                          child: _buildReactionsDisplay(),
-                        ),
-                    ],
+                    ),
                   ),
+                  if (message.reactions.isNotEmpty) _buildReactionsDisplay(),
                 ],
               ),
             ),
           ),
-          const SizedBox(width: 8),
-          if (isMe) _buildAvatar(),
+
+          if (isMe) const SizedBox(width: 16), // Right margin for user bubbles
         ],
       ),
     );

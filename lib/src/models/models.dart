@@ -113,16 +113,24 @@ class LivechatMessage {
 
 class LivechatVisitor {
   final String id;
-  final String? name;
+  final String? firstName;
+  final String? lastName;
   final String? email;
   final String? currentPage;
 
-  LivechatVisitor({required this.id, this.name, this.email, this.currentPage});
+  LivechatVisitor({
+    required this.id,
+    this.firstName,
+    this.lastName,
+    this.email,
+    this.currentPage,
+  });
 
   factory LivechatVisitor.fromJson(Map<String, dynamic> json) {
     return LivechatVisitor(
       id: json['id'],
-      name: json['name'],
+      firstName: json['firstName'],
+      lastName: json['lastName'],
       email: json['email'],
       currentPage: json['currentPage'],
     );
@@ -130,13 +138,15 @@ class LivechatVisitor {
 
   LivechatVisitor copyWith({
     String? id,
-    String? name,
+    String? firstName,
+    String? lastName,
     String? email,
     String? currentPage,
   }) {
     return LivechatVisitor(
       id: id ?? this.id,
-      name: name ?? this.name,
+      firstName: firstName ?? this.firstName,
+      lastName: lastName ?? this.lastName,
       email: email ?? this.email,
       currentPage: currentPage ?? this.currentPage,
     );
@@ -151,6 +161,7 @@ class LivechatRoom {
   final LivechatMessage? lastMessage;
   final int? rating;
   final String? ratingComment;
+  final String? assigneeName;
 
   LivechatRoom({
     required this.id,
@@ -160,6 +171,7 @@ class LivechatRoom {
     this.lastMessage,
     this.rating,
     this.ratingComment,
+    this.assigneeName,
   });
 
   factory LivechatRoom.fromJson(Map<String, dynamic> json) {
@@ -175,6 +187,9 @@ class LivechatRoom {
           : null,
       rating: json['rating'],
       ratingComment: json['ratingComment'],
+      assigneeName: json['assignee'] != null
+          ? '${json['assignee']['firstName']} ${json['assignee']['lastName']}'
+          : null,
     );
   }
 
@@ -200,6 +215,7 @@ class LivechatWorkspace {
   final String? responseTime;
   final String? autoReplyMessage;
   final bool autoReplyEnabled;
+  final List<String> agentAvatars;
 
   LivechatWorkspace({
     required this.id,
@@ -207,15 +223,17 @@ class LivechatWorkspace {
     this.responseTime,
     this.autoReplyMessage,
     this.autoReplyEnabled = false,
+    this.agentAvatars = const [],
   });
 
   factory LivechatWorkspace.fromJson(Map<String, dynamic> json) {
     String? rt;
     if (json['showResponseTime'] == true) {
-      if (json['responseTimeType'] == 'CUSTOM') {
+      if (json['customResponseTime'] != null &&
+          json['customResponseTime'].toString().isNotEmpty) {
         rt = json['customResponseTime'];
       } else {
-        rt = 'minutes'; // Default or calculate from stats
+        rt = 'A few minutes'; // Default fallback
       }
     }
 
@@ -225,6 +243,27 @@ class LivechatWorkspace {
       responseTime: rt,
       autoReplyMessage: json['autoReplyMessage'],
       autoReplyEnabled: json['autoReplyEnabled'] ?? false,
+      // agentAvatars is typically populated from the parent payload, not the workspace object itself
+      // but if the backend ever adds it to workspace, we can parse it here.
+      // For now, default to empty.
+    );
+  }
+
+  LivechatWorkspace copyWith({
+    String? id,
+    String? name,
+    String? responseTime,
+    String? autoReplyMessage,
+    bool? autoReplyEnabled,
+    List<String>? agentAvatars,
+  }) {
+    return LivechatWorkspace(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      responseTime: responseTime ?? this.responseTime,
+      autoReplyMessage: autoReplyMessage ?? this.autoReplyMessage,
+      autoReplyEnabled: autoReplyEnabled ?? this.autoReplyEnabled,
+      agentAvatars: agentAvatars ?? this.agentAvatars,
     );
   }
 }

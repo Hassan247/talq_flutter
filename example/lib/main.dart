@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 void main() {
   // 1. Setup the API client
   final livechatApi = LivechatClient(
-    httpUrl: 'http://localhost:8081/graphql',
-    wsUrl: 'ws://localhost:8081/graphql',
-    apiKey: 'lc_0a034c8d-3047-4b99-9184-1cd57e6ef0ed75fd1f88',
+    httpUrl: 'http://127.0.0.1:8081/graphql',
+    wsUrl: 'ws://127.0.0.1:8081/graphql',
+    apiKey: 'lc_e88ea623-c069-49d6-b13c-919f50b6de324e4b42dc',
   );
 
   runApp(
@@ -41,14 +41,21 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  String _generateUniqueId() =>
+      DateTime.now().millisecondsSinceEpoch.toString().substring(7);
+
   @override
   void initState() {
     super.initState();
     // 2. Initialize the chat session AFTER the first frame to avoid "setState during build"
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LivechatController>().initialize(
-        name: 'John Doe',
-        email: 'john@example.com',
+    WidgetsBinding.instance.addPostFrameCallback((_) async {
+      if (!mounted) return;
+      final controller = context.read<LivechatController>();
+      final id = _generateUniqueId();
+      await controller.initialize(
+        firstName: 'Visitor',
+        lastName: id,
+        email: 'visitor_$id@payasap.com',
       );
     });
   }
@@ -68,11 +75,11 @@ class _MyHomePageState extends State<MyHomePage> {
                 final controller = context.read<LivechatController>();
                 await controller.resetSession();
                 // Re-initialize to register as a new user
+                final id = _generateUniqueId();
                 await controller.initialize(
-                  name:
-                      'New User ${DateTime.now().millisecondsSinceEpoch % 1000}',
-                  email:
-                      'user${DateTime.now().millisecondsSinceEpoch % 1000}@example.com',
+                  firstName: 'Visitor',
+                  lastName: id,
+                  email: 'visitor_$id@payasap.com',
                 );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(

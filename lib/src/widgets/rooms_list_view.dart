@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:flutter/services.dart';
 import 'package:provider/provider.dart';
 
-import '../models/models.dart';
 import '../state/livechat_controller.dart';
 import 'chat_view.dart';
+import 'messages_list_view.dart';
 
 class RoomsListView extends StatefulWidget {
   final Color primaryColor;
@@ -20,337 +20,227 @@ class _RoomsListViewState extends State<RoomsListView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      context.read<LivechatController>().fetchRooms();
+      if (mounted) {
+        context.read<LivechatController>().fetchRooms();
+      }
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: RefreshIndicator(
-        onRefresh: () => context.read<LivechatController>().fetchRooms(),
-        child: CustomScrollView(
-          slivers: [
-            _buildAppBar(context),
-            SliverToBoxAdapter(child: _buildNewChatSection(context)),
-            SliverPadding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              sliver: Consumer<LivechatController>(
-                builder: (context, controller, child) {
-                  if (controller.isLoading && controller.rooms.isEmpty) {
-                    return const SliverFillRemaining(
-                      child: Center(child: CircularProgressIndicator()),
-                    );
-                  }
+    const darkBgColor = Color(
+      0xFF151515,
+    ); // Approximate dark color from prototype
 
-                  if (controller.rooms.isEmpty) {
-                    return SliverFillRemaining(
-                      child: Center(
-                        child: Column(
-                          mainAxisAlignment: MainAxisAlignment.center,
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: Scaffold(
+        backgroundColor: Colors.grey[100],
+        body: Stack(
+          children: [
+            // 1. Dark Header Background
+            Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: MediaQuery.of(context).padding.top + 280, // Adjust height
+              child: Container(
+                color: darkBgColor,
+                padding: EdgeInsets.only(
+                  top: MediaQuery.of(context).padding.top + 10,
+                  left: 24,
+                  right: 24,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Logo + Close Icon Row
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        // Logo Placeholder (Since we don't have SVG)
+                        Row(
                           children: [
-                            Icon(
-                              Icons.chat_bubble_outline,
-                              size: 64,
-                              color: widget.primaryColor.withOpacity(0.1),
+                            Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(
+                                Icons.flash_on,
+                                color: Colors.black,
+                                size: 20,
+                              ),
                             ),
-                            const SizedBox(height: 16),
-                            Text(
-                              'No conversations yet',
+                            const SizedBox(width: 8),
+                            const Text(
+                              'monosend',
                               style: TextStyle(
-                                color: Colors.grey[400],
-                                fontSize: 16,
-                                fontWeight: FontWeight.w500,
+                                color: Colors.white,
+                                fontSize: 18,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Inter', // fallback
                               ),
                             ),
                           ],
                         ),
-                      ),
-                    );
-                  }
-
-                  return SliverList(
-                    delegate: SliverChildBuilderDelegate((context, index) {
-                      final room = controller.rooms[index];
-                      return _ConversationListItem(
-                        room: room,
-                        primaryColor: widget.primaryColor,
-                        onTap: () async {
-                          await controller.fetchMessages(roomId: room.id);
-                          if (mounted) {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (_) => LivechatView(
-                                  primaryColor: widget.primaryColor,
-                                ),
-                              ),
-                            );
-                          }
-                        },
-                      );
-                    }, childCount: controller.rooms.length),
-                  );
-                },
-              ),
-            ),
-            const SliverPadding(padding: EdgeInsets.only(bottom: 40)),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppBar(BuildContext context) {
-    return SliverAppBar(
-      expandedHeight: 120.0,
-      floating: false,
-      pinned: true,
-      backgroundColor: widget.primaryColor,
-      leading: IconButton(
-        icon: const Icon(Icons.close, color: Colors.white),
-        onPressed: () => Navigator.pop(context),
-      ),
-      flexibleSpace: FlexibleSpaceBar(
-        title: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Messages',
-              style: TextStyle(
-                color: Colors.white,
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-            Consumer<LivechatController>(
-              builder: (context, controller, child) {
-                final ws = controller.workspace;
-                if (ws?.responseTime == null) return const SizedBox.shrink();
-                return Text(
-                  'We typically reply in ${ws!.responseTime}',
-                  style: const TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
-                  ),
-                );
-              },
-            ),
-          ],
-        ),
-        titlePadding: const EdgeInsetsDirectional.only(start: 56, bottom: 16),
-        background: Container(
-          decoration: BoxDecoration(
-            gradient: LinearGradient(
-              begin: Alignment.topCenter,
-              end: Alignment.bottomCenter,
-              colors: [
-                widget.primaryColor,
-                widget.primaryColor.withOpacity(0.8),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildNewChatSection(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Material(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        elevation: 2,
-        shadowColor: Colors.black.withOpacity(0.1),
-        child: InkWell(
-          borderRadius: BorderRadius.circular(16),
-          onTap: () async {
-            try {
-              final controller = context.read<LivechatController>();
-              await controller.startNewConversation();
-              if (mounted) {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) =>
-                        LivechatView(primaryColor: widget.primaryColor),
-                  ),
-                );
-              }
-            } catch (e) {
-              if (mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text('Failed to start conversation: $e'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            }
-          },
-          child: Padding(
-            padding: const EdgeInsets.all(20.0),
-            child: Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: widget.primaryColor.withOpacity(0.1),
-                  child: Icon(Icons.send, color: widget.primaryColor, size: 20),
-                ),
-                const SizedBox(width: 16),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Send us a message',
-                        style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
-                      ),
-                      const SizedBox(height: 2),
-                      Consumer<LivechatController>(
-                        builder: (context, controller, child) {
-                          final ws = controller.workspace;
-                          return Text(
-                            ws?.responseTime != null
-                                ? 'We typically reply in ${ws!.responseTime}'
-                                : 'We typically reply in minutes',
-                            style: const TextStyle(
-                              color: Colors.grey,
-                              fontSize: 13,
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right, color: Colors.grey),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _ConversationListItem extends StatelessWidget {
-  final LivechatRoom room;
-  final Color primaryColor;
-  final VoidCallback onTap;
-
-  const _ConversationListItem({
-    required this.room,
-    required this.primaryColor,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final hasUnread = room.unreadCount > 0;
-    final lastMsg = room.lastMessage;
-    final timeStr = room.lastMessageAt != null
-        ? _formatDateTime(room.lastMessageAt!)
-        : '';
-
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-        border: Border.all(
-          color: hasUnread ? primaryColor.withOpacity(0.1) : Colors.transparent,
-        ),
-      ),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(16),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Row(
-            children: [
-              _buildAvatar(),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            'Support Team',
-                            style: TextStyle(
-                              fontWeight: hasUnread
-                                  ? FontWeight.bold
-                                  : FontWeight.w600,
-                              fontSize: 15,
-                              color: Colors.black87,
-                            ),
-                          ),
-                        ),
-                        Text(
-                          timeStr,
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: hasUnread ? primaryColor : Colors.grey[400],
-                            fontWeight: hasUnread
-                                ? FontWeight.bold
-                                : FontWeight.normal,
+                        IconButton(
+                          onPressed: () => Navigator.pop(context),
+                          icon: const Icon(
+                            Icons.close,
+                            color: Colors.white,
+                            size: 28,
                           ),
                         ),
                       ],
                     ),
+                    const SizedBox(height: 40),
+                    // Title
+                    const Text(
+                      'Hello there How can we\nhelp you today?',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        height: 1.2,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+
+            // 2. Scrollable Content overlapping the header
+            Positioned.fill(
+              top: MediaQuery.of(context).padding.top + 180,
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.symmetric(horizontal: 20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const SizedBox(height: 20),
+                    // Start Conversation Card
+                    _buildStartConversationCard(context),
+                    const SizedBox(height: 20),
+                    // Messages Section
+                    _buildMessagesSection(context),
+                    const SizedBox(height: 24),
+                    // Help & Resources Title
+                    const Text(
+                      'Help & Resources',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.black87,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Resources List
+                    _buildHelpResourcesWait(context),
+                    const SizedBox(height: 40),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildStartConversationCard(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 15,
+            offset: const Offset(0, 5),
+          ),
+        ],
+      ),
+      padding: const EdgeInsets.all(24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Start a conversation',
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              // Avatar Stack
+              SizedBox(
+                width: 90,
+                height: 40,
+                child: Consumer<LivechatController>(
+                  builder: (context, controller, _) {
+                    final avatars = controller.workspace?.agentAvatars ?? [];
+                    return Stack(
+                      children: [
+                        _buildAvatar(
+                          0,
+                          imageUrl: avatars.isNotEmpty ? avatars[0] : null,
+                          isFaded: avatars.isEmpty,
+                        ),
+                        _buildAvatar(
+                          25,
+                          imageUrl: avatars.length > 1 ? avatars[1] : null,
+                          isFaded: avatars.length < 2,
+                        ),
+                        _buildAvatar(
+                          50,
+                          imageUrl: avatars.length > 2 ? avatars[2] : null,
+                          isFaded: avatars.length < 3,
+                        ),
+                      ],
+                    );
+                  },
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Our usual reply time',
+                      style: TextStyle(
+                        color: Colors.grey[500],
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                      ),
+                    ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Expanded(
-                          child: Text(
-                            lastMsg?.content ?? 'No messages yet',
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(
-                              color: hasUnread
-                                  ? Colors.black87
-                                  : Colors.grey[600],
-                              fontSize: 13,
-                              fontWeight: hasUnread
-                                  ? FontWeight.w500
-                                  : FontWeight.normal,
-                            ),
+                        const Icon(
+                          Icons.access_time_filled,
+                          size: 16,
+                          color: Colors.black,
+                        ),
+                        const SizedBox(width: 6),
+                        Flexible(
+                          child: Consumer<LivechatController>(
+                            builder: (context, controller, child) {
+                              return Text(
+                                controller.workspace?.responseTime ??
+                                    'A few minutes',
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 14,
+                                  color: Colors.black,
+                                ),
+                              );
+                            },
                           ),
                         ),
-                        if (hasUnread) ...[
-                          const SizedBox(width: 8),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: primaryColor,
-                              shape: BoxShape.circle,
-                            ),
-                            child: Text(
-                              room.unreadCount.toString(),
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
                       ],
                     ),
                   ],
@@ -358,58 +248,206 @@ class _ConversationListItem extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: 24),
+          // CTA Button
+          SizedBox(
+            width: double.infinity,
+            height: 54,
+            child: ElevatedButton(
+              onPressed: () {
+                final controller = context.read<LivechatController>();
+                controller.prepareNewConversation();
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        LivechatView(primaryColor: widget.primaryColor),
+                  ),
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF151515), // Dark button
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                elevation: 0,
+              ),
+              child: const Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Icon(Icons.send_rounded, size: 18),
+                  SizedBox(width: 12),
+                  Text(
+                    'Start new conversation',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAvatar(double left, {String? imageUrl, bool isFaded = false}) {
+    return Positioned(
+      left: left,
+      child: Container(
+        padding: const EdgeInsets.all(2),
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+        ),
+        child: CircleAvatar(
+          radius: 18,
+          backgroundColor: isFaded ? Colors.grey[100] : Colors.grey[300],
+          backgroundImage: imageUrl != null ? NetworkImage(imageUrl) : null,
+          child: imageUrl == null
+              ? Icon(
+                  Icons.person,
+                  size: 20,
+                  color: isFaded ? Colors.grey[300] : Colors.grey[500],
+                )
+              : null,
         ),
       ),
     );
   }
 
-  Widget _buildAvatar() {
-    final lastMsg = room.lastMessage;
-    final isAgent = lastMsg?.senderType == SenderType.agent;
-    final avatarUrl = lastMsg?.senderAvatarUrl;
+  Widget _buildMessagesSection(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) =>
+                    MessagesListView(primaryColor: widget.primaryColor),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(24),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                const CircleAvatar(
+                  backgroundColor: Colors.black,
+                  radius: 20,
+                  child: Icon(Icons.chat_bubble, color: Colors.white, size: 20),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Text(
+                    'Messages',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ),
+                Consumer<LivechatController>(
+                  builder: (context, controller, _) {
+                    final unreadTotal = controller.rooms.fold<int>(
+                      0,
+                      (sum, room) => sum + room.unreadCount,
+                    );
 
-    return Stack(
-      children: [
-        CircleAvatar(
-          radius: 28,
-          backgroundColor: Colors.grey[100],
-          backgroundImage: (isAgent && avatarUrl != null)
-              ? NetworkImage(avatarUrl)
-              : null,
-          child: (!isAgent || avatarUrl == null)
-              ? Icon(
-                  isAgent ? Icons.support_agent : Icons.person_outline,
-                  color: Colors.grey[400],
-                  size: 28,
-                )
-              : null,
-        ),
-        Positioned(
-          right: 0,
-          bottom: 0,
-          child: Container(
-            width: 14,
-            height: 14,
-            decoration: BoxDecoration(
-              color:
-                  room.status == RoomStatus.open ||
-                      room.status == RoomStatus.assigned
-                  ? Colors.green
-                  : Colors.grey,
-              shape: BoxShape.circle,
-              border: Border.all(color: Colors.white, width: 2),
+                    if (unreadTotal == 0) return const SizedBox.shrink();
+
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 12,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFBECEB), // Light red bg
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '$unreadTotal unread',
+                        style: const TextStyle(
+                          color: Color(0xFFD3453D), // Red text
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+              ],
             ),
           ),
         ),
-      ],
+      ),
     );
   }
 
-  String _formatDateTime(DateTime dt) {
-    final now = DateTime.now();
-    if (now.day == dt.day && now.month == dt.month && now.year == dt.year) {
-      return DateFormat('jm').format(dt);
-    }
-    return DateFormat('MMM d').format(dt);
+  Widget _buildHelpResourcesWait(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          _buildResourceItem(
+            'How do I upgrade my plan?',
+            Icons.description_outlined,
+          ),
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          _buildResourceItem(
+            'Where can I find my API keys?',
+            Icons.code,
+          ), // approximate icon
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          _buildResourceItem('Do you offer a free trial?', Icons.card_giftcard),
+          const Divider(height: 1, indent: 20, endIndent: 20),
+          _buildResourceItem(
+            'Can I invite team members?',
+            Icons.group_add_outlined,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildResourceItem(String title, IconData icon) {
+    return ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      leading: Container(
+        padding: const EdgeInsets.all(10),
+        decoration: BoxDecoration(
+          color: const Color(0xFFF1F5F9),
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Icon(icon, color: const Color(0xFF475569), size: 20),
+      ),
+      title: Text(
+        title,
+        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+      ),
+      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      onTap: () {},
+    );
   }
 }
