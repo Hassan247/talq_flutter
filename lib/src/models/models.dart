@@ -267,3 +267,26 @@ class LivechatWorkspace {
     );
   }
 }
+
+class LivechatFAQ {
+  final String id;
+  final String question;
+  final String answer;
+  final int sortOrder;
+
+  LivechatFAQ({
+    required this.id,
+    required this.question,
+    required this.answer,
+    required this.sortOrder,
+  });
+
+  factory LivechatFAQ.fromJson(Map<String, dynamic> json) {
+    return LivechatFAQ(
+      id: json['id'],
+      question: json['question'],
+      answer: json['answer'],
+      sortOrder: json['sortOrder'] ?? 0,
+    );
+  }
+}

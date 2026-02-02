@@ -14,6 +14,7 @@ class LivechatController extends ChangeNotifier {
 
   List<LivechatMessage> _messages = [];
   List<LivechatRoom> _rooms = [];
+  List<LivechatFAQ> _faqs = [];
   bool _isLoading = false;
   bool _isInitialized = false;
   LivechatVisitor? _visitor;
@@ -37,6 +38,7 @@ class LivechatController extends ChangeNotifier {
 
   List<LivechatMessage> get messages => _messages;
   List<LivechatRoom> get rooms => _rooms;
+  List<LivechatFAQ> get faqs => _faqs;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   LivechatVisitor? get visitor => _visitor;
@@ -138,6 +140,12 @@ class LivechatController extends ChangeNotifier {
               autoReplyMessage
             }
             agentAvatars
+            faqs {
+              id
+              question
+              answer
+              sortOrder
+            }
           }
         }
       ''';
@@ -164,6 +172,10 @@ class LivechatController extends ChangeNotifier {
       final ws = LivechatWorkspace.fromJson(authData['workspace']);
       final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
       _workspace = ws.copyWith(agentAvatars: avatars);
+
+      // Populate FAQs
+      final List faqsList = authData['faqs'] ?? [];
+      _faqs = faqsList.map((f) => LivechatFAQ.fromJson(f)).toList();
 
       // Populate rooms list
       final List roomsList = authData['visitor']['rooms'] ?? [];
@@ -783,6 +795,22 @@ class LivechatController extends ChangeNotifier {
       _ratingComment = comment;
       notifyListeners();
     }
+  }
+
+  /// Submits feedback for an FAQ article
+  Future<bool> voteFAQ(String faqId, bool helpful) async {
+    const String mutation = r'''
+      mutation VoteFAQ($id: ID!, $helpful: Boolean!) {
+        voteFAQ(id: $id, helpful: $helpful)
+      }
+    ''';
+
+    final result = await _api.mutate(
+      mutation,
+      variables: {'id': faqId, 'helpful': helpful},
+    );
+
+    return !result.hasException;
   }
 
   Future<void> _fetchRoomStatus() async {

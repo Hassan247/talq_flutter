@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../state/livechat_controller.dart';
 import 'chat_view.dart';
+import 'faq_views.dart';
 import 'messages_list_view.dart';
 
 class RoomsListView extends StatefulWidget {
@@ -45,7 +47,13 @@ class _RoomsListViewState extends State<RoomsListView> {
               right: 0,
               height: MediaQuery.of(context).padding.top + 280, // Adjust height
               child: Container(
-                color: darkBgColor,
+                decoration: const BoxDecoration(
+                  color: darkBgColor,
+                  borderRadius: BorderRadius.only(
+                    bottomLeft: Radius.circular(22),
+                    bottomRight: Radius.circular(22),
+                  ),
+                ),
                 padding: EdgeInsets.only(
                   top: MediaQuery.of(context).padding.top + 10,
                   left: 24,
@@ -59,31 +67,15 @@ class _RoomsListViewState extends State<RoomsListView> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         // Logo Placeholder (Since we don't have SVG)
-                        Row(
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: const Icon(
-                                Icons.flash_on,
-                                color: Colors.black,
-                                size: 20,
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'monosend',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 18,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Inter', // fallback
-                              ),
-                            ),
-                          ],
+                        // Logo SVG
+                        SvgPicture.asset(
+                          'assets/images/monosend_logo.svg',
+                          package: 'livechat_sdk',
+                          height: 32,
+                          colorFilter: const ColorFilter.mode(
+                            Colors.white,
+                            BlendMode.srcIn,
+                          ),
                         ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
@@ -126,18 +118,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                     // Messages Section
                     _buildMessagesSection(context),
                     const SizedBox(height: 24),
-                    // Help & Resources Title
-                    const Text(
-                      'Help & Resources',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.black87,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    // Resources List
-                    _buildHelpResourcesWait(context),
+                    _buildHelpResources(context),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -387,6 +368,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                     );
                   },
                 ),
+                const SizedBox(width: 8),
+                const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
               ],
             ),
           ),
@@ -395,45 +378,122 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildHelpResourcesWait(BuildContext context) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      child: Column(
-        children: [
-          _buildResourceItem(
-            'How do I upgrade my plan?',
-            Icons.description_outlined,
-          ),
-          const Divider(height: 1, indent: 20, endIndent: 20),
-          _buildResourceItem(
-            'Where can I find my API keys?',
-            Icons.code,
-          ), // approximate icon
-          const Divider(height: 1, indent: 20, endIndent: 20),
-          _buildResourceItem('Do you offer a free trial?', Icons.card_giftcard),
-          const Divider(height: 1, indent: 20, endIndent: 20),
-          _buildResourceItem(
-            'Can I invite team members?',
-            Icons.group_add_outlined,
-          ),
-        ],
-      ),
+  Widget _buildHelpResources(BuildContext context) {
+    return Consumer<LivechatController>(
+      builder: (context, controller, _) {
+        final faqs = controller.faqs;
+        if (faqs.isEmpty) {
+          return const SizedBox.shrink();
+        }
+        final displayFaqs = faqs.take(4).toList();
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Help & Resources',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: Colors.black87,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(24),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.05),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
+              ),
+              child: Column(
+                children: [
+                  ...displayFaqs.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final faq = entry.value;
+                    return Column(
+                      children: [
+                        if (index > 0)
+                          const Divider(
+                            height: 1,
+                            indent: 20,
+                            endIndent: 20,
+                            color: Color(0xFFEEEEEE),
+                          ),
+                        _buildResourceItem(
+                          faq.question,
+                          Icons.description_outlined,
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => FAQDetailView(
+                                  faq: faq,
+                                  primaryColor: widget.primaryColor,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
+                      ],
+                    );
+                  }),
+                  if (faqs.length > 4) ...[
+                    const Divider(
+                      height: 1,
+                      indent: 20,
+                      endIndent: 20,
+                      color: Color(0xFFEEEEEE),
+                    ),
+                    ListTile(
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 4,
+                      ),
+                      title: const Text(
+                        'See more articles',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                          color: Colors.blueAccent,
+                        ),
+                      ),
+                      trailing: const Icon(
+                        Icons.chevron_right,
+                        color: Colors.blueAccent,
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                FAQListView(primaryColor: widget.primaryColor),
+                          ),
+                        );
+                      },
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        );
+      },
     );
   }
 
-  Widget _buildResourceItem(String title, IconData icon) {
+  Widget _buildResourceItem(
+    String title,
+    IconData icon, {
+    VoidCallback? onTap,
+  }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
@@ -447,7 +507,7 @@ class _RoomsListViewState extends State<RoomsListView> {
         style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
       ),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
-      onTap: () {},
+      onTap: onTap,
     );
   }
 }

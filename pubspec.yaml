@@ -22,6 +22,8 @@ dependencies:
   file_picker: ^10.3.8
   url_launcher: ^6.3.2
   uuid: ^4.5.2
+  flutter_markdown: ^0.7.3+1
+  flutter_svg: ^2.0.10+1
 
 dev_dependencies:
   flutter_test:
@@ -30,3 +32,23 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/monosend_logo.svg
+
+  fonts:
+    - family: BricolageGrotesque
+      fonts:
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-ExtraLight.ttf
+          weight: 200
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Light.ttf
+          weight: 300
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Bold.ttf
+          weight: 700
+        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-ExtraBold.ttf
+          weight: 800
