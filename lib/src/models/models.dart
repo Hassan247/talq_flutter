@@ -290,3 +290,29 @@ class LivechatFAQ {
     );
   }
 }
+
+class FAQConnection {
+  final List<LivechatFAQ> faqs;
+  final bool hasNextPage;
+  final String? endCursor;
+  final int totalCount;
+
+  FAQConnection({
+    required this.faqs,
+    required this.hasNextPage,
+    this.endCursor,
+    required this.totalCount,
+  });
+
+  factory FAQConnection.fromJson(Map<String, dynamic> json) {
+    final edges = json['edges'] as List? ?? [];
+    final pageInfo = json['pageInfo'] ?? {};
+
+    return FAQConnection(
+      faqs: edges.map((e) => LivechatFAQ.fromJson(e['node'])).toList(),
+      hasNextPage: pageInfo['hasNextPage'] ?? false,
+      endCursor: pageInfo['endCursor'],
+      totalCount: json['totalCount'] ?? 0,
+    );
+  }
+}

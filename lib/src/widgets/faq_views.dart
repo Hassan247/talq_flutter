@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:provider/provider.dart';
@@ -5,10 +7,57 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
 
-class FAQListView extends StatelessWidget {
+class FAQListView extends StatefulWidget {
   final Color primaryColor;
 
   const FAQListView({super.key, required this.primaryColor});
+
+  @override
+  State<FAQListView> createState() => _FAQListViewState();
+}
+
+class _FAQListViewState extends State<FAQListView> {
+  final ScrollController _scrollController = ScrollController();
+  final TextEditingController _searchController = TextEditingController();
+  final FocusNode _searchFocusNode = FocusNode();
+  Timer? _debounce;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+
+    // Initial fetch if empty
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = context.read<LivechatController>();
+      if (controller.paginatedFaqs.isEmpty) {
+        controller.fetchFaqs(reload: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    _searchController.dispose();
+    _searchFocusNode.dispose();
+    _debounce?.cancel();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      context.read<LivechatController>().fetchFaqs();
+    }
+  }
+
+  void _onSearchChanged(String query) {
+    if (_debounce?.isActive ?? false) _debounce?.cancel();
+    _debounce = Timer(const Duration(milliseconds: 500), () {
+      context.read<LivechatController>().fetchFaqs(query: query);
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -35,36 +84,105 @@ class FAQListView extends StatelessWidget {
         ),
         centerTitle: true,
       ),
-      body: Consumer<LivechatController>(
-        builder: (context, controller, _) {
-          final faqs = controller.faqs;
+      body: Column(
+        children: [
+          _buildSearchBar(),
+          Expanded(
+            child: Consumer<LivechatController>(
+              builder: (context, controller, _) {
+                final faqs = controller.paginatedFaqs;
 
-          if (faqs.isEmpty) {
-            return Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.help_outline, size: 64, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No articles found',
-                    style: TextStyle(color: Colors.grey[500], fontSize: 16),
+                if (faqs.isEmpty && controller.isFaqLoading) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                if (faqs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.help_outline,
+                          size: 64,
+                          color: Colors.grey[300],
+                        ),
+                        const SizedBox(height: 16),
+                        Text(
+                          controller.faqSearchQuery.isEmpty
+                              ? 'No articles found'
+                              : 'No results for "${controller.faqSearchQuery}"',
+                          style: TextStyle(
+                            color: Colors.grey[500],
+                            fontSize: 16,
+                          ),
+                        ),
+                      ],
+                    ),
+                  );
+                }
+
+                return ListView.separated(
+                  controller: _scrollController,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 24,
                   ),
-                ],
-              ),
-            );
-          }
+                  itemCount: faqs.length + (controller.faqHasNextPage ? 1 : 0),
+                  separatorBuilder: (context, index) =>
+                      const SizedBox(height: 12),
+                  itemBuilder: (context, index) {
+                    if (index == faqs.length) {
+                      return const Center(
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(vertical: 24),
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      );
+                    }
+                    final faq = faqs[index];
+                    return _buildFAQCard(context, faq);
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
-          return ListView.separated(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-            itemCount: faqs.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final faq = faqs[index];
-              return _buildFAQCard(context, faq);
-            },
-          );
-        },
+  Widget _buildSearchBar() {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
+      color: Colors.white,
+      child: TextField(
+        controller: _searchController,
+        focusNode: _searchFocusNode,
+        onChanged: _onSearchChanged,
+        decoration: InputDecoration(
+          hintText: 'Search for articles...',
+          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
+          suffixIcon: _searchController.text.isNotEmpty
+              ? IconButton(
+                  icon: const Icon(Icons.clear, size: 18),
+                  onPressed: () {
+                    _searchController.clear();
+                    _onSearchChanged('');
+                  },
+                )
+              : null,
+          filled: true,
+          fillColor: const Color(0xFFF1F5F9),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 12,
+          ),
+        ),
       ),
     );
   }
@@ -90,7 +208,7 @@ class FAQListView extends StatelessWidget {
               context,
               MaterialPageRoute(
                 builder: (_) =>
-                    FAQDetailView(faq: faq, primaryColor: primaryColor),
+                    FAQDetailView(faq: faq, primaryColor: widget.primaryColor),
               ),
             );
           },

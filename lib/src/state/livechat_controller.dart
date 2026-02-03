@@ -15,6 +15,14 @@ class LivechatController extends ChangeNotifier {
   List<LivechatMessage> _messages = [];
   List<LivechatRoom> _rooms = [];
   List<LivechatFAQ> _faqs = [];
+
+  // Paginated FAQs
+  List<LivechatFAQ> _paginatedFaqs = [];
+  bool _faqHasNextPage = false;
+  String? _faqEndCursor;
+  String _faqSearchQuery = '';
+  bool _isFaqLoading = false;
+
   bool _isLoading = false;
   bool _isInitialized = false;
   LivechatVisitor? _visitor;
@@ -39,6 +47,10 @@ class LivechatController extends ChangeNotifier {
   List<LivechatMessage> get messages => _messages;
   List<LivechatRoom> get rooms => _rooms;
   List<LivechatFAQ> get faqs => _faqs;
+  List<LivechatFAQ> get paginatedFaqs => _paginatedFaqs;
+  bool get faqHasNextPage => _faqHasNextPage;
+  String get faqSearchQuery => _faqSearchQuery;
+  bool get isFaqLoading => _isFaqLoading;
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   LivechatVisitor? get visitor => _visitor;
@@ -932,8 +944,70 @@ class LivechatController extends ChangeNotifier {
                 : updatedData['reactions'],
           ),
         );
-        notifyListeners();
       }
+    }
+  }
+
+  Future<void> fetchFaqs({bool reload = false, String? query}) async {
+    if (_isFaqLoading) return;
+
+    if (reload || query != _faqSearchQuery) {
+      _paginatedFaqs = [];
+      _faqEndCursor = null;
+      _faqHasNextPage = false;
+      _faqSearchQuery = query ?? '';
+    }
+
+    if (!reload && _paginatedFaqs.isNotEmpty && !_faqHasNextPage) return;
+
+    _isFaqLoading = true;
+    notifyListeners();
+
+    try {
+      const String queryStr = r'''
+        query VisitorFaqs($query: String, $first: Int, $after: String) {
+          visitorFaqs(query: $query, first: $first, after: $after) {
+            edges {
+              node {
+                id
+                question
+                answer
+                sortOrder
+              }
+              cursor
+            }
+            pageInfo {
+              hasNextPage
+              endCursor
+            }
+            totalCount
+          }
+        }
+      ''';
+
+      final result = await _api.query(
+        queryStr,
+        variables: {
+          'query': _faqSearchQuery.isEmpty ? null : _faqSearchQuery,
+          'first': 20,
+          'after': _faqEndCursor,
+        },
+      );
+
+      if (result.hasException) throw result.exception!;
+
+      final connection = FAQConnection.fromJson(result.data!['visitorFaqs']);
+      _paginatedFaqs.addAll(connection.faqs);
+      _faqHasNextPage = connection.hasNextPage;
+      _faqEndCursor = connection.endCursor;
+
+      // Update the main faqs list for background loading if this is the initial/empty search load
+      if (_faqSearchQuery.isEmpty && reload) {
+        _faqs = List.from(connection.faqs);
+      }
+    } finally {
+      _isFaqLoading = false;
+      notifyListeners();
     }
   }
 }
