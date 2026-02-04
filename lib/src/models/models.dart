@@ -18,6 +18,7 @@ class LivechatMessage {
   final String? fileName;
   final DateTime createdAt;
   final bool isRead;
+  final bool isDelivered;
   final LivechatMessage? replyTo;
   final Map<String, dynamic> reactions;
 
@@ -33,6 +34,7 @@ class LivechatMessage {
     this.fileName,
     required this.createdAt,
     this.isRead = false,
+    this.isDelivered = false,
     this.replyTo,
     this.reactions = const {},
   });
@@ -53,6 +55,7 @@ class LivechatMessage {
             ? DateTime.parse(json['createdAt'])
             : DateTime.now(),
         isRead: json['read'] ?? false,
+        isDelivered: json['delivered'] ?? false,
         replyTo: json['replyTo'] != null
             ? LivechatMessage.fromJson(json['replyTo'])
             : null,
@@ -157,43 +160,57 @@ class LivechatRoom {
   final String id;
   final RoomStatus status;
   final int unreadCount;
+  final int visitorUnreadCount;
   final DateTime? lastMessageAt;
   final LivechatMessage? lastMessage;
+  final DateTime createdAt;
   final int? rating;
   final String? ratingComment;
   final String? assigneeName;
+  final String? assigneeAvatarUrl;
 
   LivechatRoom({
     required this.id,
     required this.status,
     this.unreadCount = 0,
+    this.visitorUnreadCount = 0,
     this.lastMessageAt,
     this.lastMessage,
+    required this.createdAt,
     this.rating,
     this.ratingComment,
     this.assigneeName,
+    this.assigneeAvatarUrl,
   });
 
   factory LivechatRoom.fromJson(Map<String, dynamic> json) {
     return LivechatRoom(
-      id: json['id'],
-      status: _parseRoomStatus(json['status']),
+      id: json['id'] ?? '',
+      status: _parseRoomStatus(json['status']?.toString()),
       unreadCount: json['unreadCount'] ?? 0,
+      visitorUnreadCount: json['visitorUnreadCount'] ?? 0,
       lastMessageAt: json['lastMessageAt'] != null
-          ? DateTime.parse(json['lastMessageAt'])
+          ? DateTime.tryParse(json['lastMessageAt'].toString())
           : null,
       lastMessage: json['lastMessage'] != null
           ? LivechatMessage.fromJson(json['lastMessage'])
           : null,
+      createdAt: json['createdAt'] != null
+          ? DateTime.parse(json['createdAt'].toString())
+          : DateTime.now(),
       rating: json['rating'],
       ratingComment: json['ratingComment'],
       assigneeName: json['assignee'] != null
-          ? '${json['assignee']['firstName']} ${json['assignee']['lastName']}'
+          ? '${json['assignee']['firstName'] ?? ''} ${json['assignee']['lastName'] ?? ''}'
+          : null,
+      assigneeAvatarUrl: json['assignee'] != null
+          ? json['assignee']['avatarUrl']
           : null,
     );
   }
 
-  static RoomStatus _parseRoomStatus(String status) {
+  static RoomStatus _parseRoomStatus(String? status) {
+    if (status == null) return RoomStatus.open;
     switch (status) {
       case 'OPEN':
         return RoomStatus.open;
@@ -216,6 +233,7 @@ class LivechatWorkspace {
   final String? autoReplyMessage;
   final bool autoReplyEnabled;
   final List<String> agentAvatars;
+  final String? logoUrl;
 
   LivechatWorkspace({
     required this.id,
@@ -224,6 +242,7 @@ class LivechatWorkspace {
     this.autoReplyMessage,
     this.autoReplyEnabled = false,
     this.agentAvatars = const [],
+    this.logoUrl,
   });
 
   factory LivechatWorkspace.fromJson(Map<String, dynamic> json) {
@@ -246,6 +265,7 @@ class LivechatWorkspace {
       // agentAvatars is typically populated from the parent payload, not the workspace object itself
       // but if the backend ever adds it to workspace, we can parse it here.
       // For now, default to empty.
+      logoUrl: json['logoUrl'],
     );
   }
 
@@ -256,6 +276,7 @@ class LivechatWorkspace {
     String? autoReplyMessage,
     bool? autoReplyEnabled,
     List<String>? agentAvatars,
+    String? logoUrl,
   }) {
     return LivechatWorkspace(
       id: id ?? this.id,
@@ -264,6 +285,7 @@ class LivechatWorkspace {
       autoReplyMessage: autoReplyMessage ?? this.autoReplyMessage,
       autoReplyEnabled: autoReplyEnabled ?? this.autoReplyEnabled,
       agentAvatars: agentAvatars ?? this.agentAvatars,
+      logoUrl: logoUrl ?? this.logoUrl,
     );
   }
 }

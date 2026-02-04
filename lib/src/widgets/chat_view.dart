@@ -10,16 +10,19 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
+import 'messages_list_view.dart';
 import 'rating_view.dart';
 
 class LivechatView extends StatefulWidget {
   final String title;
   final Color primaryColor;
+  final bool isNewConversation;
 
   const LivechatView({
     super.key,
     this.title = 'Live Chat',
     this.primaryColor = Colors.blueAccent,
+    this.isNewConversation = false,
   });
 
   @override
@@ -42,6 +45,16 @@ class _LivechatViewState extends State<LivechatView>
       // notify controller that chat is now visible
       context.read<LivechatController>().setChatVisible(true);
     });
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    context.read<LivechatController>().setChatVisible(false);
+    _messageController.dispose();
+    _scrollController.dispose();
+    _typingThrottle?.cancel();
+    super.dispose();
   }
 
   @override
@@ -78,210 +91,234 @@ class _LivechatViewState extends State<LivechatView>
           );
         }
 
-        return Scaffold(
-          appBar: AppBar(
-            systemOverlayStyle: SystemUiOverlayStyle.dark,
-            elevation: 0,
-            title: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  controller.workspace?.name ?? widget.title,
-                  style: const TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.black, // Explicitly black
-                  ),
+        final hasMessages = controller.messages.isNotEmpty;
+        final shouldRedirect = widget.isNewConversation && hasMessages;
+
+        return PopScope(
+          canPop: !shouldRedirect,
+          onPopInvoked: (didPop) {
+            if (didPop) {
+              context.read<LivechatController>().setChatVisible(false);
+              return;
+            }
+
+            if (shouldRedirect) {
+              context.read<LivechatController>().setChatVisible(false);
+              Navigator.pushReplacement(
+                context,
+                MaterialPageRoute(
+                  builder: (_) =>
+                      MessagesListView(primaryColor: widget.primaryColor),
                 ),
-                Text(
-                  _formatResponseTime(controller.workspace?.responseTime),
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.normal,
-                    color: Colors.grey[600], // Grey for subtitle
-                  ),
-                ),
-              ],
-            ),
-            backgroundColor: Colors.white, // White background
-            foregroundColor: Colors.black, // Black icons/back button
-          ),
-          body: Stack(
-            children: [
-              Column(
+              );
+            }
+          },
+          child: Scaffold(
+            appBar: AppBar(
+              systemOverlayStyle: SystemUiOverlayStyle.dark,
+              elevation: 0,
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Expanded(
-                    child: RefreshIndicator(
-                      onRefresh: () =>
-                          controller.fetchMessages(roomId: controller.roomId),
-                      child: controller.messages.isEmpty
-                          ? ListView(
-                              children: [
-                                SizedBox(
-                                  height:
-                                      MediaQuery.of(context).size.height * 0.6,
-                                  child: Center(
-                                    child: Padding(
-                                      padding: const EdgeInsets.all(32.0),
-                                      child: Column(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.center,
-                                        children: [
-                                          Icon(
-                                            Icons.chat_bubble_outline,
-                                            size: 64,
-                                            color: Colors.grey[300],
-                                          ),
-                                          const SizedBox(height: 16),
-                                          Text(
-                                            controller
-                                                            .workspace
-                                                            ?.autoReplyEnabled ==
-                                                        true &&
-                                                    controller
-                                                            .workspace
-                                                            ?.autoReplyMessage !=
-                                                        null
-                                                ? controller
-                                                      .workspace!
-                                                      .autoReplyMessage!
-                                                : 'Start a conversation!',
-                                            textAlign: TextAlign.center,
-                                            style: TextStyle(
-                                              color: Colors.grey[600],
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.w500,
+                  Text(
+                    controller.workspace?.name ?? widget.title,
+                    style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.black, // Explicitly black
+                    ),
+                  ),
+                  Text(
+                    _formatResponseTime(controller.workspace?.responseTime),
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.normal,
+                      color: Colors.grey[600], // Grey for subtitle
+                    ),
+                  ),
+                ],
+              ),
+              backgroundColor: Colors.white, // White background
+              foregroundColor: Colors.black, // Black icons/back button
+            ),
+            body: Stack(
+              children: [
+                Column(
+                  children: [
+                    Expanded(
+                      child: RefreshIndicator(
+                        onRefresh: () =>
+                            controller.fetchMessages(roomId: controller.roomId),
+                        child: controller.messages.isEmpty
+                            ? ListView(
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                        0.6,
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: Column(
+                                          mainAxisAlignment:
+                                              MainAxisAlignment.center,
+                                          children: [
+                                            Icon(
+                                              Icons.chat_bubble_outline,
+                                              size: 64,
+                                              color: Colors.grey[300],
                                             ),
-                                          ),
-                                          const SizedBox(height: 8),
-                                          if (controller
-                                                      .workspace
-                                                      ?.autoReplyEnabled !=
-                                                  true ||
-                                              controller
-                                                      .workspace
-                                                      ?.autoReplyMessage ==
-                                                  null)
+                                            const SizedBox(height: 16),
                                             Text(
-                                              'Type a message below to begin.',
+                                              controller
+                                                              .workspace
+                                                              ?.autoReplyEnabled ==
+                                                          true &&
+                                                      controller
+                                                              .workspace
+                                                              ?.autoReplyMessage !=
+                                                          null
+                                                  ? controller
+                                                        .workspace!
+                                                        .autoReplyMessage!
+                                                  : 'Start a conversation!',
+                                              textAlign: TextAlign.center,
                                               style: TextStyle(
-                                                color: Colors.grey[400],
-                                                fontSize: 14,
+                                                color: Colors.grey[600],
+                                                fontSize: 16,
+                                                fontWeight: FontWeight.w500,
                                               ),
                                             ),
-                                        ],
+                                            const SizedBox(height: 8),
+                                            if (controller
+                                                        .workspace
+                                                        ?.autoReplyEnabled !=
+                                                    true ||
+                                                controller
+                                                        .workspace
+                                                        ?.autoReplyMessage ==
+                                                    null)
+                                              Text(
+                                                'Type a message below to begin.',
+                                                style: TextStyle(
+                                                  color: Colors.grey[400],
+                                                  fontSize: 14,
+                                                ),
+                                              ),
+                                          ],
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
-                            )
-                          : ListView.builder(
-                              controller: _scrollController,
-                              padding: const EdgeInsets.all(16),
-                              itemCount: controller.messages.length,
-                              itemBuilder: (context, index) {
-                                final message = controller.messages[index];
-                                final messages = controller.messages;
+                                ],
+                              )
+                            : ListView.builder(
+                                controller: _scrollController,
+                                padding: const EdgeInsets.all(16),
+                                itemCount: controller.messages.length,
+                                itemBuilder: (context, index) {
+                                  final message = controller.messages[index];
+                                  final messages = controller.messages;
 
-                                // Determine if this is the first/last message in a group
-                                final isFirstInGroup =
-                                    index == 0 ||
-                                    messages[index - 1].senderType !=
-                                        message.senderType;
-                                final isLastInGroup =
-                                    index == messages.length - 1 ||
-                                    messages[index + 1].senderType !=
-                                        message.senderType;
+                                  // Determine if this is the first/last message in a group
+                                  final isFirstInGroup =
+                                      index == 0 ||
+                                      messages[index - 1].senderType !=
+                                          message.senderType;
+                                  final isLastInGroup =
+                                      index == messages.length - 1 ||
+                                      messages[index + 1].senderType !=
+                                          message.senderType;
 
-                                return _ChatBubble(
-                                  message: message,
-                                  primaryColor: widget.primaryColor,
-                                  isFirstInGroup: isFirstInGroup,
-                                  isLastInGroup: isLastInGroup,
-                                  onSwipe: () =>
-                                      controller.setReplyingTo(message),
-                                  onLongPress: () => _showReactions(
-                                    context,
-                                    controller,
-                                    message,
-                                  ),
-                                );
-                              },
-                            ),
-                    ),
-                  ),
-                  if (controller.isAgentTyping)
-                    Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 8,
-                      ),
-                      child: Row(
-                        children: [
-                          const SizedBox(
-                            width: 14,
-                            height: 14,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor: AlwaysStoppedAnimation(Colors.grey),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Text(
-                            'Support is typing...',
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[600],
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+                                  return _ChatBubble(
+                                    message: message,
+                                    primaryColor: widget.primaryColor,
+                                    isFirstInGroup: isFirstInGroup,
+                                    isLastInGroup: isLastInGroup,
+                                    onSwipe: () =>
+                                        controller.setReplyingTo(message),
+                                    onLongPress: () => _showReactions(
+                                      context,
+                                      controller,
+                                      message,
+                                    ),
+                                  );
+                                },
+                              ),
                       ),
                     ),
-                  if (controller.replyingTo != null)
-                    _buildReplyOverlay(controller),
-                  _buildInputArea(controller),
-                  if (controller.roomStatus == RoomStatus.resolved)
-                    Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 12,
-                        horizontal: 24,
-                      ),
-                      color: Colors.amber[50],
-                      child: SafeArea(
-                        child: Column(
-                          mainAxisSize: MainAxisSize.min,
+                    if (controller.isAgentTyping)
+                      Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
+                        child: Row(
                           children: [
-                            Text(
-                              'This conversation was marked as resolved.',
-                              style: TextStyle(
-                                color: Colors.amber[900],
-                                fontSize: 13,
-                                fontWeight: FontWeight.w500,
+                            const SizedBox(
+                              width: 14,
+                              height: 14,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                valueColor: AlwaysStoppedAnimation(Colors.grey),
                               ),
                             ),
-                            const SizedBox(height: 4),
+                            const SizedBox(width: 8),
                             Text(
-                              'Sending a new message will reopen it.',
+                              'Support is typing...',
                               style: TextStyle(
-                                color: Colors.amber[800],
-                                fontSize: 11,
+                                fontSize: 12,
+                                color: Colors.grey[600],
+                                fontStyle: FontStyle.italic,
                               ),
                             ),
                           ],
                         ),
                       ),
-                    ),
-                ],
-              ),
-              if (controller.showRatingPrompt)
-                Container(
-                  color: Colors.black.withOpacity(0.5),
-                  child: RatingView(primaryColor: widget.primaryColor),
+                    if (controller.replyingTo != null)
+                      _buildReplyOverlay(controller),
+                    _buildInputArea(controller),
+                    if (controller.roomStatus == RoomStatus.resolved)
+                      Container(
+                        width: double.infinity,
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 12,
+                          horizontal: 24,
+                        ),
+                        color: Colors.amber[50],
+                        child: SafeArea(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                'This conversation was marked as resolved.',
+                                style: TextStyle(
+                                  color: Colors.amber[900],
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Sending a new message will reopen it.',
+                                style: TextStyle(
+                                  color: Colors.amber[800],
+                                  fontSize: 11,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                  ],
                 ),
-            ],
+                if (controller.showRatingPrompt)
+                  Container(
+                    color: Colors.black.withOpacity(0.5),
+                    child: RatingView(primaryColor: widget.primaryColor),
+                  ),
+              ],
+            ),
           ),
         );
       },
@@ -342,16 +379,25 @@ class _LivechatViewState extends State<LivechatView>
                         onChanged: (text) => _onTextChanged(text, controller),
                       ),
                     ),
-                    // Send Button
-                    IconButton(
-                      icon: const Icon(
-                        Icons.send_outlined, // Outline style in prototype?
-                        color: Colors.black, // or slight grey
-                        size: 24,
-                      ),
-                      onPressed: () => _handleSend(controller),
-                    ),
                   ],
+                ),
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Send Button
+            GestureDetector(
+              onTap: () => _handleSend(controller),
+              child: Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: widget.primaryColor.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.black,
+                  size: 24,
                 ),
               ),
             ),
@@ -634,70 +680,84 @@ class _ChatBubble extends StatelessWidget {
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: isImage
-                        ? const EdgeInsets.all(4)
-                        : const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 12,
-                          ),
-                    decoration: BoxDecoration(
-                      color: isMe
-                          ? const Color(0xFF151515) // Black for user
-                          : Colors.white, // White for agent
-                      borderRadius: BorderRadius.only(
-                        topLeft: const Radius.circular(20),
-                        topRight: const Radius.circular(20),
-                        bottomLeft: Radius.circular(
-                          isMe ? 20 : 4,
-                        ), // Sharp on agent bottom-left
-                        bottomRight: Radius.circular(
-                          isMe ? 4 : 20,
-                        ), // Sharp on user bottom-right? Prototype specific
-                      ),
-                      boxShadow: [
-                        if (!isMe)
-                          BoxShadow(
-                            color: Colors.black.withOpacity(0.05),
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                      ],
+                  ConstrainedBox(
+                    constraints: BoxConstraints(
+                      maxWidth: MediaQuery.of(context).size.width * 0.70,
                     ),
-                    child: IntrinsicWidth(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          if (message.replyTo != null)
-                            _buildQuote(context, isMe),
-
-                          if (isImage)
-                            _buildImage(context)
-                          else if (message.contentType == ContentType.pdf)
-                            _buildPdf(context)
-                          else
-                            Text(
-                              message.content,
-                              style: TextStyle(
-                                color: isMe ? Colors.white : Colors.black87,
-                                fontSize: 15,
-                                height: 1.4,
-                              ),
+                    child: Container(
+                      padding: isImage
+                          ? const EdgeInsets.all(4)
+                          : const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 12,
                             ),
-                          const SizedBox(height: 4),
-                          Align(
-                            alignment: Alignment.bottomRight,
-                            child: Text(
-                              timeStr,
-                              style: TextStyle(
-                                fontSize: 10,
-                                color: isMe
-                                    ? Colors.white.withOpacity(0.7)
-                                    : Colors.grey[500],
-                              ),
+                      decoration: BoxDecoration(
+                        color: isMe
+                            ? const Color(0xFF151515) // Black for user
+                            : Colors.white, // White for agent
+                        borderRadius: BorderRadius.only(
+                          topLeft: const Radius.circular(20),
+                          topRight: const Radius.circular(20),
+                          bottomLeft: Radius.circular(
+                            isMe ? 20 : 4,
+                          ), // Sharp on agent bottom-left
+                          bottomRight: Radius.circular(
+                            isMe ? 4 : 20,
+                          ), // Sharp on user bottom-right? Prototype specific
+                        ),
+                        boxShadow: [
+                          if (!isMe)
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 4,
+                              offset: const Offset(0, 2),
                             ),
-                          ),
                         ],
+                      ),
+                      child: IntrinsicWidth(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            if (message.replyTo != null)
+                              _buildQuote(context, isMe),
+
+                            if (isImage)
+                              _buildImage(context)
+                            else if (message.contentType == ContentType.pdf)
+                              _buildPdf(context)
+                            else
+                              Text(
+                                message.content,
+                                style: TextStyle(
+                                  color: isMe ? Colors.white : Colors.black87,
+                                  fontSize: 15,
+                                  height: 1.4,
+                                ),
+                              ),
+                            const SizedBox(height: 4),
+                            Align(
+                              alignment: Alignment.bottomRight,
+                              child: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    timeStr,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      color: isMe
+                                          ? Colors.white.withOpacity(0.7)
+                                          : Colors.grey[500],
+                                    ),
+                                  ),
+                                  if (isMe) ...[
+                                    const SizedBox(width: 4),
+                                    _buildStatusTicks(),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
@@ -959,5 +1019,21 @@ class _ChatBubble extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  Widget _buildStatusTicks() {
+    if (message.isRead) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [Icon(Icons.done_all, size: 14, color: Colors.blue)],
+      );
+    } else if (message.isDelivered) {
+      return const Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [Icon(Icons.done_all, size: 14, color: Colors.white70)],
+      );
+    } else {
+      return const Icon(Icons.done, size: 14, color: Colors.white70);
+    }
   }
 }

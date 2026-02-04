@@ -57,6 +57,7 @@ class MessagesListView extends StatelessWidget {
               final room = controller.rooms[index];
               return _MessageCard(
                 room: room,
+                workspace: controller.workspace,
                 primaryColor: primaryColor,
                 onTap: () async {
                   await controller.fetchMessages(roomId: room.id);
@@ -81,11 +82,13 @@ class MessagesListView extends StatelessWidget {
 
 class _MessageCard extends StatelessWidget {
   final LivechatRoom room;
+  final LivechatWorkspace? workspace;
   final Color primaryColor;
   final VoidCallback onTap;
 
   const _MessageCard({
     required this.room,
+    this.workspace,
     required this.primaryColor,
     required this.onTap,
   });
@@ -93,7 +96,7 @@ class _MessageCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final lastMsg = room.lastMessage;
-    final hasUnread = room.unreadCount > 0;
+    final hasUnread = room.visitorUnreadCount > 0;
 
     // Determine sender name and avatar logic
     // If it's the visitor (me), show "YOU".
@@ -113,8 +116,8 @@ class _MessageCard extends StatelessWidget {
     // But I will follow the prototype "100% exactly".
 
     final isMe = lastMsg?.senderType == SenderType.visitor;
-    final senderName = room.assigneeName ?? 'Support Team';
-    final avatarUrl = lastMsg?.senderAvatarUrl;
+    final displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
+    final avatarUrl = room.assigneeAvatarUrl ?? workspace?.logoUrl;
 
     final timeStr = room.lastMessageAt != null
         ? DateFormat('jm').format(room.lastMessageAt!)
@@ -140,26 +143,26 @@ class _MessageCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Avatar
                 Container(
-                  width: 50,
-                  height: 50,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.grey[200],
-                    image: (avatarUrl != null && !isMe)
+                    image: avatarUrl != null
                         ? DecorationImage(
                             image: NetworkImage(avatarUrl),
                             fit: BoxFit.cover,
                           )
                         : null,
                   ),
-                  child: (isMe || avatarUrl == null)
-                      ? Icon(Icons.person, color: Colors.grey[400], size: 30)
+                  child: avatarUrl == null
+                      ? Icon(Icons.person, color: Colors.grey[400], size: 24)
                       : null,
                 ),
                 const SizedBox(width: 16),
@@ -170,52 +173,60 @@ class _MessageCard extends StatelessWidget {
                     children: [
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            senderName,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: Colors.black87,
-                            ),
-                          ),
-                          Text(
-                            timeStr,
-                            style: TextStyle(
-                              fontSize: 12,
-                              color: Colors.grey[500],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
                           Expanded(
-                            child: Text(
-                              lastMsg?.content ?? '',
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: TextStyle(
-                                color: Colors.grey[600],
-                                fontSize: 14,
-                                height: 1.4,
-                              ),
+                            child: Row(
+                              children: [
+                                if (isMe && lastMsg != null) ...[
+                                  _buildTicks(lastMsg),
+                                  const SizedBox(width: 4),
+                                ],
+                                Expanded(
+                                  child: Text(
+                                    lastMsg?.content ?? '',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
+                                      fontSize: 16,
+                                      color: hasUnread
+                                          ? Colors.black87
+                                          : Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ),
                           ),
                           if (hasUnread) ...[
                             const SizedBox(width: 8),
                             Container(
-                              width: 10,
-                              height: 10,
+                              padding: const EdgeInsets.all(5),
                               decoration: const BoxDecoration(
-                                color:
-                                    Colors.black, // Prototype shows black dot
+                                color: Colors.black,
                                 shape: BoxShape.circle,
+                              ),
+                              child: Text(
+                                room.visitorUnreadCount > 9
+                                    ? '9+'
+                                    : '${room.visitorUnreadCount}',
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
                               ),
                             ),
                           ],
                         ],
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${isMe ? 'You' : displayName} • $timeStr',
+                        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
                       ),
                     ],
                   ),
@@ -226,5 +237,21 @@ class _MessageCard extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildTicks(LivechatMessage message) {
+    if (message.isRead) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [Icon(Icons.done_all, size: 16, color: Colors.blue)],
+      );
+    } else if (message.isDelivered) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: const [Icon(Icons.done_all, size: 16, color: Colors.grey)],
+      );
+    } else {
+      return const Icon(Icons.done, size: 16, color: Colors.grey);
+    }
   }
 }

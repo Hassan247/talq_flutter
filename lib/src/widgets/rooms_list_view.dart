@@ -241,8 +241,10 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (_) =>
-                        LivechatView(primaryColor: widget.primaryColor),
+                    builder: (_) => LivechatView(
+                      primaryColor: widget.primaryColor,
+                      isNewConversation: true,
+                    ),
                   ),
                 );
               },
@@ -343,7 +345,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   builder: (context, controller, _) {
                     final unreadTotal = controller.rooms.fold<int>(
                       0,
-                      (sum, room) => sum + room.unreadCount,
+                      (sum, room) => sum + room.visitorUnreadCount,
                     );
 
                     if (unreadTotal == 0) return const SizedBox.shrink();
