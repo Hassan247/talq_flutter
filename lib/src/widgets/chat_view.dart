@@ -870,17 +870,37 @@ class _ChatBubble extends StatelessWidget {
     final avatarUrl = message.senderAvatarUrl;
     final isAgent = message.senderType == SenderType.agent;
 
-    return CircleAvatar(
-      radius: 16,
-      backgroundColor: Colors.grey[200],
-      backgroundImage: avatarUrl != null ? NetworkImage(avatarUrl) : null,
-      child: avatarUrl == null
-          ? Icon(
+    if (avatarUrl == null) {
+      return CircleAvatar(
+        radius: 16,
+        backgroundColor: Colors.grey[200],
+        child: Icon(
+          isAgent ? Icons.support_agent : Icons.person,
+          size: 14,
+          color: Colors.grey[400],
+        ),
+      );
+    }
+
+    return ClipOval(
+      child: Image.network(
+        avatarUrl,
+        width: 32,
+        height: 32,
+        fit: BoxFit.cover,
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 32,
+            height: 32,
+            color: Colors.grey[200],
+            child: Icon(
               isAgent ? Icons.support_agent : Icons.person,
               size: 14,
               color: Colors.grey[400],
-            )
-          : null,
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -994,6 +1014,28 @@ class _ChatBubble extends StatelessWidget {
             height: 200,
             color: Colors.grey[100],
             child: const Center(child: CircularProgressIndicator()),
+          );
+        },
+        errorBuilder: (context, error, stackTrace) {
+          return Container(
+            width: 200,
+            height: 200,
+            color: Colors.grey[100],
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  Icons.broken_image_rounded,
+                  color: Colors.grey[400],
+                  size: 48,
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Image unavailable',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                ),
+              ],
+            ),
           );
         },
       ),

@@ -709,7 +709,7 @@ class LivechatController extends ChangeNotifier {
 
     // 2. Send message with detected type
     await sendMessage(
-      'Sent a ${contentType == ContentType.image ? 'image' : 'file'}: $fileName',
+      'Sent ${contentType == ContentType.image ? 'an image' : 'a file'}: $fileName',
       contentType: contentType,
       fileUrl: fileUrl,
       fileName: fileName,

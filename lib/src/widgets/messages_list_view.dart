@@ -154,16 +154,29 @@ class _MessageCard extends StatelessWidget {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: Colors.grey[200],
-                    image: avatarUrl != null
-                        ? DecorationImage(
-                            image: NetworkImage(avatarUrl),
-                            fit: BoxFit.cover,
-                          )
-                        : null,
                   ),
-                  child: avatarUrl == null
-                      ? Icon(Icons.person, color: Colors.grey[400], size: 24)
-                      : null,
+                  clipBehavior: Clip.hardEdge,
+                  child: avatarUrl != null
+                      ? Image.network(
+                          avatarUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Center(
+                              child: Icon(
+                                Icons.person,
+                                color: Colors.grey[400],
+                                size: 24,
+                              ),
+                            );
+                          },
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.person,
+                            color: Colors.grey[400],
+                            size: 24,
+                          ),
+                        ),
                 ),
                 const SizedBox(width: 16),
                 // Content
@@ -182,20 +195,7 @@ class _MessageCard extends StatelessWidget {
                                   _buildTicks(lastMsg),
                                   const SizedBox(width: 4),
                                 ],
-                                Expanded(
-                                  child: Text(
-                                    lastMsg?.content ?? '',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontWeight: hasUnread
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
-                                      fontSize: 16,
-                                      color: Colors.black,
-                                    ),
-                                  ),
-                                ),
+                                Expanded(child: _buildMessagePreview(lastMsg)),
                               ],
                             ),
                           ),
@@ -264,6 +264,69 @@ class _MessageCard extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildMessagePreview(LivechatMessage? msg) {
+    if (msg == null) return const Text('No messages');
+
+    final hasUnread = room.visitorUnreadCount > 0;
+    final style = TextStyle(
+      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
+      fontSize: 16,
+      color: Colors.black,
+    );
+
+    IconData? icon;
+    String label = '';
+    String content = msg.content;
+
+    if (msg.contentType == ContentType.image) {
+      icon = Icons.camera_alt;
+      label = 'Photo';
+      if (content.startsWith('Sent an image:')) content = '';
+    } else if (msg.contentType == ContentType.pdf) {
+      icon = Icons.insert_drive_file;
+      label = 'Document';
+      if (content.startsWith('Sent a file:')) content = '';
+    } else if (msg.content.contains('.m4a') ||
+        msg.content.contains('.mp3') ||
+        msg.content.contains('.wav')) {
+      icon = Icons.mic;
+      label = 'Voice note';
+      if (content.startsWith('Sent an audio:')) content = '';
+    }
+
+    if (icon != null) {
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 16, color: Colors.grey[600]),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: style.copyWith(color: Colors.grey[700], fontSize: 15),
+          ),
+          if (content.isNotEmpty) ...[
+            const SizedBox(width: 4),
+            Expanded(
+              child: Text(
+                content,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: style,
+              ),
+            ),
+          ],
+        ],
+      );
+    }
+
+    return Text(
+      content,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: style,
     );
   }
 
