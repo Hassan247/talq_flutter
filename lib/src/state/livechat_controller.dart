@@ -41,6 +41,7 @@ class LivechatController extends ChangeNotifier {
   LivechatMessage? _replyingTo;
   bool _isChatVisible = false;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
+  int _fetchVersion = 0; // used to cancel stale fetchMessages calls
 
   LivechatController(this._api);
 
@@ -57,6 +58,16 @@ class LivechatController extends ChangeNotifier {
   LivechatWorkspace? get workspace => _workspace;
   String? get roomId => _roomId;
   RoomStatus get roomStatus => _roomStatus;
+
+  LivechatRoom? get currentRoom {
+    if (_roomId == null) return null;
+    try {
+      return _rooms.firstWhere((r) => r.id == _roomId);
+    } catch (_) {
+      return null;
+    }
+  }
+
   bool get isRatingSubmitted => _isRatingSubmitted;
   int? get rating => _rating;
   String? get ratingComment => _ratingComment;
@@ -133,6 +144,9 @@ class LivechatController extends ChangeNotifier {
                   senderType
                   senderName
                   senderAvatarUrl
+                  contentType
+                  fileUrl
+                  fileName
                   createdAt
                   delivered
                   read
@@ -246,6 +260,11 @@ class LivechatController extends ChangeNotifier {
   /// Prepares the controller for a new conversation locally without creating a room on the backend.
   /// The room will be created when the first message is sent.
   void prepareNewConversation() {
+    debugPrint('[LivechatController] prepareNewConversation called');
+    debugPrint(
+      '[LivechatController] BEFORE: _roomId=$_roomId, _messages.length=${_messages.length}',
+    );
+    _fetchVersion++; // cancel any pending fetchMessages calls
     _roomId = null;
     _messages = [];
     _roomStatus = RoomStatus.open;
@@ -255,6 +274,10 @@ class LivechatController extends ChangeNotifier {
     _showRatingPrompt = false;
     _isAgentTyping = false;
     _replyingTo = null;
+    _isChatVisible = false;
+    debugPrint(
+      '[LivechatController] AFTER: _roomId=$_roomId, _messages.length=${_messages.length}',
+    );
     notifyListeners();
   }
 
@@ -283,6 +306,9 @@ class LivechatController extends ChangeNotifier {
               senderType
               senderName
               senderAvatarUrl
+              contentType
+              fileUrl
+              fileName
               createdAt
               delivered
               read
@@ -332,6 +358,9 @@ class LivechatController extends ChangeNotifier {
             senderType
             senderName
             senderAvatarUrl
+            contentType
+            fileUrl
+            fileName
             createdAt
             delivered
             read
@@ -378,6 +407,22 @@ class LivechatController extends ChangeNotifier {
     final targetRoomId = roomId ?? _roomId;
     if (targetRoomId == null) return;
 
+    // capture current version to detect if state changed during async operation
+    final capturedVersion = _fetchVersion;
+
+    // immediately update _roomId if switching rooms
+    if (roomId != null && roomId != _roomId) {
+      _roomId = roomId;
+      _messages = []; // clear stale messages
+      _roomStatus = RoomStatus.open;
+      _rating = null;
+      _ratingComment = null;
+      _isRatingSubmitted = false;
+      _showRatingPrompt = false;
+      _replyingTo = null;
+      notifyListeners();
+    }
+
     const String query = r'''
       query GetRoom($roomId: ID!) {
         room(id: $roomId) {
@@ -388,8 +433,8 @@ class LivechatController extends ChangeNotifier {
           messages(first: 50) {
             edges {
               node { 
-                id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read delivered reactions
-                replyTo { id content senderType senderName contentType createdAt }
+                id content senderType senderName senderAvatarUrl contentType fileUrl fileName createdAt read delivered reactions
+                replyTo { id content senderType senderName contentType fileUrl fileName createdAt }
               }
             }
           }
@@ -404,6 +449,15 @@ class LivechatController extends ChangeNotifier {
     markAsDelivered(targetRoomId);
 
     final result = await _api.query(query, variables: {'roomId': targetRoomId});
+
+    // discard stale result if state changed during async call
+    if (capturedVersion != _fetchVersion) {
+      debugPrint(
+        '[LivechatController] fetchMessages result discarded (stale: version $capturedVersion vs current $_fetchVersion)',
+      );
+      return;
+    }
+
     if (result.hasException) {
       // Handle production logging if needed
     }
@@ -447,9 +501,8 @@ class LivechatController extends ChangeNotifier {
 
       _messages.sort((a, b) => a.createdAt.compareTo(b.createdAt));
 
-      // Update room state if we just switched
-      if (roomId != null && roomId != _roomId) {
-        _roomId = roomId;
+      // fetch room status and start typing subscription if we switched rooms
+      if (roomId != null) {
         await _fetchRoomStatus();
         _startTypingSubscription();
       }
@@ -558,8 +611,8 @@ class LivechatController extends ChangeNotifier {
     const String mutation = r'''
       mutation SendVisitorMessage($input: SendMessageInput!) {
         sendVisitorMessage(input: $input) {
-          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read reactions
-          replyTo { id content senderType senderName contentType createdAt }
+          id content senderType senderName senderAvatarUrl contentType fileUrl fileName createdAt read reactions
+          replyTo { id content senderType senderName contentType fileUrl fileName createdAt }
           room { id }
         }
       }
@@ -772,8 +825,8 @@ class LivechatController extends ChangeNotifier {
     const String sub = r'''
       subscription {
         visitorNewMessage {
-          id content senderType senderName senderAvatarUrl contentType fileUrl createdAt read reactions
-          replyTo { id content senderType senderName contentType createdAt }
+          id content senderType senderName senderAvatarUrl contentType fileUrl fileName createdAt read reactions
+          replyTo { id content senderType senderName contentType fileUrl fileName createdAt }
           room { id }
         }
       }
@@ -846,7 +899,7 @@ class LivechatController extends ChangeNotifier {
           id status unreadCount visitorUnreadCount createdAt lastMessageAt rating ratingComment
           assignee { id firstName lastName avatarUrl }
           lastMessage {
-            id content senderType senderName senderAvatarUrl createdAt delivered read
+            id content senderType senderName senderAvatarUrl contentType fileUrl fileName createdAt delivered read
           }
         }
       }

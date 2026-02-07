@@ -238,15 +238,20 @@ class _RoomsListViewState extends State<RoomsListView> {
               onPressed: () {
                 final controller = context.read<LivechatController>();
                 controller.prepareNewConversation();
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => LivechatView(
-                      primaryColor: widget.primaryColor,
-                      isNewConversation: true,
-                    ),
-                  ),
-                );
+                // defer navigation to next frame to ensure state has propagated
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (context.mounted) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => LivechatView(
+                          primaryColor: widget.primaryColor,
+                          isNewConversation: true,
+                        ),
+                      ),
+                    );
+                  }
+                });
               },
               style: ElevatedButton.styleFrom(
                 backgroundColor: const Color(0xFF151515), // Dark button

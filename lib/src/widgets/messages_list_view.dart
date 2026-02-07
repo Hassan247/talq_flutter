@@ -192,9 +192,7 @@ class _MessageCard extends StatelessWidget {
                                           ? FontWeight.w600
                                           : FontWeight.normal,
                                       fontSize: 16,
-                                      color: hasUnread
-                                          ? Colors.black87
-                                          : Colors.grey[600],
+                                      color: Colors.black,
                                     ),
                                   ),
                                 ),
@@ -224,9 +222,39 @@ class _MessageCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      Text(
-                        '${isMe ? 'You' : displayName} • $timeStr',
-                        style: TextStyle(fontSize: 13, color: Colors.grey[500]),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              '${isMe ? 'You' : displayName} • $timeStr',
+                              style: TextStyle(
+                                fontSize: 13,
+                                color: hasUnread
+                                    ? Colors.black87
+                                    : Colors.grey[500],
+                              ),
+                            ),
+                          ),
+                          if (room.status == RoomStatus.resolved)
+                            Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 2,
+                              ),
+                              decoration: BoxDecoration(
+                                color: Colors.green[50],
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Text(
+                                'Resolved',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w500,
+                                  color: Colors.green[700],
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),

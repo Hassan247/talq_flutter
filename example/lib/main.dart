@@ -5,9 +5,9 @@ import 'package:provider/provider.dart';
 void main() {
   // 1. Setup the API client
   final livechatApi = LivechatClient(
-    httpUrl: 'http://172.20.10.4:8081/graphql',
-    wsUrl: 'ws://172.20.10.4:8081/graphql',
-    apiKey: 'lc_e88ea623-c069-49d6-b13c-919f50b6de324e4b42dc',
+    httpUrl: 'http://localhost:8081/graphql',
+    wsUrl: 'ws://localhost:8081/graphql',
+    apiKey: 'lc_8b39111a-f6cd-4c14-8ae1-2c86012baf8594bd32e2',
   );
 
   runApp(

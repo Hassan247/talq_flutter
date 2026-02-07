@@ -85,6 +85,10 @@ class _LivechatViewState extends State<LivechatView>
   Widget build(BuildContext context) {
     return Consumer<LivechatController>(
       builder: (context, controller, child) {
+        debugPrint(
+          '[LivechatView] build called: roomId=${controller.roomId}, messages.length=${controller.messages.length}, isNewConversation=${widget.isNewConversation}',
+        );
+
         if (!controller.isInitialized && controller.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
@@ -117,11 +121,14 @@ class _LivechatViewState extends State<LivechatView>
             appBar: AppBar(
               systemOverlayStyle: SystemUiOverlayStyle.dark,
               elevation: 0,
+              centerTitle: true,
               title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   Text(
-                    controller.workspace?.name ?? widget.title,
+                    controller.currentRoom?.assigneeName ??
+                        controller.workspace?.name ??
+                        widget.title,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
@@ -140,6 +147,15 @@ class _LivechatViewState extends State<LivechatView>
               ),
               backgroundColor: Colors.white, // White background
               foregroundColor: Colors.black, // Black icons/back button
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.close, color: Colors.black, size: 24),
+                  onPressed: () {
+                    context.read<LivechatController>().setChatVisible(false);
+                    Navigator.pop(context);
+                  },
+                ),
+              ],
             ),
             body: Stack(
               children: [
