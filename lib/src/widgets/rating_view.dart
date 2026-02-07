@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../state/livechat_controller.dart';
+import '../theme/livechat_theme.dart';
 
 class RatingView extends StatefulWidget {
-  final Color primaryColor;
+  final LivechatTheme theme;
 
-  const RatingView({super.key, required this.primaryColor});
+  const RatingView({super.key, this.theme = const LivechatTheme()});
 
   @override
   State<RatingView> createState() => _RatingViewState();
@@ -34,7 +35,6 @@ class _RatingViewState extends State<RatingView>
     final controller = Provider.of<LivechatController>(context, listen: false);
     if (controller.rating != null) {
       _rating = controller.rating!;
-      // Text controller needs to be set after build? No, sync is fine here usually.
       _commentController.text = controller.ratingComment ?? '';
     }
   }
@@ -66,7 +66,7 @@ class _RatingViewState extends State<RatingView>
           margin: const EdgeInsets.symmetric(horizontal: 24),
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: Colors.white,
+            color: widget.theme.surfaceColor,
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
@@ -83,28 +83,27 @@ class _RatingViewState extends State<RatingView>
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: widget.primaryColor.withOpacity(0.1),
+                  color: widget.theme.primaryColor.withOpacity(0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(
                   Icons.star_rounded,
-                  color: widget.primaryColor,
+                  color: widget.theme.primaryColor,
                   size: 32,
                 ),
               ),
               const SizedBox(height: 16),
-              const Text(
+              Text(
                 'How did we do?',
-                style: TextStyle(
+                style: widget.theme.titleStyle.copyWith(
                   fontSize: 22,
-                  fontWeight: FontWeight.bold,
                   letterSpacing: -0.5,
                 ),
               ),
               const SizedBox(height: 8),
               Text(
                 'Please rate your conversation',
-                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                style: widget.theme.subtitleStyle.copyWith(fontSize: 14),
               ),
               const SizedBox(height: 24),
               Row(
@@ -137,11 +136,14 @@ class _RatingViewState extends State<RatingView>
                 TextField(
                   controller: _commentController,
                   maxLines: 3,
+                  style: widget.theme.bodyStyle,
                   decoration: InputDecoration(
                     hintText: 'Share your feedback (optional)',
-                    hintStyle: TextStyle(fontSize: 13, color: Colors.grey[400]),
+                    hintStyle: widget.theme.subtitleStyle.copyWith(
+                      fontSize: 13,
+                    ),
                     filled: true,
-                    fillColor: Colors.grey[50],
+                    fillColor: widget.theme.backgroundColor,
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(16),
                       borderSide: BorderSide.none,
@@ -158,7 +160,7 @@ class _RatingViewState extends State<RatingView>
                       child: ElevatedButton(
                         onPressed: () => _submit(controller),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: widget.primaryColor,
+                          backgroundColor: widget.theme.primaryColor,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(

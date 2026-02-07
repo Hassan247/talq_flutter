@@ -8,6 +8,7 @@ import 'package:path/path.dart' as path;
 import '../core/auth_manager.dart';
 import '../core/livechat_client.dart';
 import '../models/models.dart';
+import '../theme/livechat_theme.dart';
 
 class LivechatController extends ChangeNotifier {
   final LivechatClient _api;
@@ -43,6 +44,8 @@ class LivechatController extends ChangeNotifier {
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   int _fetchVersion = 0; // used to cancel stale fetchMessages calls
 
+  LivechatTheme _theme = const LivechatTheme();
+
   LivechatController(this._api);
 
   List<LivechatMessage> get messages => _messages;
@@ -58,6 +61,7 @@ class LivechatController extends ChangeNotifier {
   LivechatWorkspace? get workspace => _workspace;
   String? get roomId => _roomId;
   RoomStatus get roomStatus => _roomStatus;
+  LivechatTheme get theme => _theme;
 
   LivechatRoom? get currentRoom {
     if (_roomId == null) return null;
@@ -165,13 +169,16 @@ class LivechatController extends ChangeNotifier {
               id
               name
               logoUrl
+              livechatLogoUrl
               showResponseTime
               responseTimeType
               customResponseTime
               autoReplyEnabled
               autoReplyMessage
-            }
-            agentAvatars
+              welcomeMessage
+            primaryColor
+          }
+          agentAvatars
             faqs {
               id
               question
@@ -204,6 +211,11 @@ class LivechatController extends ChangeNotifier {
       final ws = LivechatWorkspace.fromJson(authData['workspace']);
       final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
       _workspace = ws.copyWith(agentAvatars: avatars);
+
+      // Apply primary color to theme
+      _theme = _theme.copyWith(
+        primaryColor: LivechatTheme.fromHex(_workspace!.primaryColor),
+      );
 
       // Populate FAQs
       final List faqsList = authData['faqs'] ?? [];

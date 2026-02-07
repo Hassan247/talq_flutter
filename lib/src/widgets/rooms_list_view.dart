@@ -4,14 +4,15 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../state/livechat_controller.dart';
+import '../theme/livechat_theme.dart';
 import 'chat_view.dart';
 import 'faq_views.dart';
 import 'messages_list_view.dart';
 
 class RoomsListView extends StatefulWidget {
-  final Color primaryColor;
+  final LivechatTheme theme;
 
-  const RoomsListView({super.key, this.primaryColor = Colors.blueAccent});
+  const RoomsListView({super.key, this.theme = const LivechatTheme()});
 
   @override
   State<RoomsListView> createState() => _RoomsListViewState();
@@ -30,14 +31,13 @@ class _RoomsListViewState extends State<RoomsListView> {
 
   @override
   Widget build(BuildContext context) {
-    const darkBgColor = Color(
-      0xFF151515,
-    ); // Approximate dark color from prototype
+    final controller = context.watch<LivechatController>();
+    final theme = controller.theme;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
       child: Scaffold(
-        backgroundColor: Colors.grey[100],
+        backgroundColor: theme.backgroundColor,
         body: Stack(
           children: [
             // 1. Dark Header Background
@@ -47,9 +47,9 @@ class _RoomsListViewState extends State<RoomsListView> {
               right: 0,
               height: MediaQuery.of(context).padding.top + 280, // Adjust height
               child: Container(
-                decoration: const BoxDecoration(
-                  color: darkBgColor,
-                  borderRadius: BorderRadius.only(
+                decoration: BoxDecoration(
+                  color: theme.primaryColor,
+                  borderRadius: const BorderRadius.only(
                     bottomLeft: Radius.circular(22),
                     bottomRight: Radius.circular(22),
                   ),
@@ -66,17 +66,34 @@ class _RoomsListViewState extends State<RoomsListView> {
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Logo Placeholder (Since we don't have SVG)
-                        // Logo SVG
-                        SvgPicture.asset(
-                          'assets/images/monosend_logo.svg',
-                          package: 'livechat_sdk',
-                          height: 32,
-                          colorFilter: const ColorFilter.mode(
-                            Colors.white,
-                            BlendMode.srcIn,
-                          ),
-                        ),
+                        // Logo fallback: livechatLogoUrl ?? logoUrl
+                        (controller.workspace?.livechatLogoUrl ??
+                                    controller.workspace?.logoUrl) !=
+                                null
+                            ? Image.network(
+                                controller.workspace?.livechatLogoUrl ??
+                                    controller.workspace!.logoUrl!,
+                                height: 32,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    SvgPicture.asset(
+                                      'assets/images/monosend_logo.svg',
+                                      package: 'livechat_sdk',
+                                      height: 32,
+                                      colorFilter: const ColorFilter.mode(
+                                        Colors.white,
+                                        BlendMode.srcIn,
+                                      ),
+                                    ),
+                              )
+                            : SvgPicture.asset(
+                                'assets/images/monosend_logo.svg',
+                                package: 'livechat_sdk',
+                                height: 32,
+                                colorFilter: const ColorFilter.mode(
+                                  Colors.white,
+                                  BlendMode.srcIn,
+                                ),
+                              ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
                           icon: const Icon(
@@ -89,9 +106,10 @@ class _RoomsListViewState extends State<RoomsListView> {
                     ),
                     const SizedBox(height: 40),
                     // Title
-                    const Text(
-                      'Hello there How can we\nhelp you today?',
-                      style: TextStyle(
+                    Text(
+                      controller.workspace?.welcomeMessage ??
+                          'Hello there How can we\nhelp you today?',
+                      style: const TextStyle(
                         color: Colors.white,
                         fontSize: 28,
                         fontWeight: FontWeight.bold,
@@ -113,12 +131,12 @@ class _RoomsListViewState extends State<RoomsListView> {
                   children: [
                     const SizedBox(height: 20),
                     // Start Conversation Card
-                    _buildStartConversationCard(context),
+                    _buildStartConversationCard(context, theme),
                     const SizedBox(height: 20),
                     // Messages Section
-                    _buildMessagesSection(context),
+                    _buildMessagesSection(context, theme),
                     const SizedBox(height: 24),
-                    _buildHelpResources(context),
+                    _buildHelpResources(context, theme),
                     const SizedBox(height: 40),
                   ],
                 ),
@@ -130,10 +148,13 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildStartConversationCard(BuildContext context) {
+  Widget _buildStartConversationCard(
+    BuildContext context,
+    LivechatTheme theme,
+  ) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.theme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -147,9 +168,9 @@ class _RoomsListViewState extends State<RoomsListView> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
+          Text(
             'Start a conversation',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+            style: widget.theme.titleStyle.copyWith(fontSize: 18),
           ),
           const SizedBox(height: 20),
           Row(
@@ -190,8 +211,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   children: [
                     Text(
                       'Our usual reply time',
-                      style: TextStyle(
-                        color: Colors.grey[500],
+                      style: widget.theme.subtitleStyle.copyWith(
                         fontSize: 12,
                         fontWeight: FontWeight.w500,
                       ),
@@ -199,10 +219,10 @@ class _RoomsListViewState extends State<RoomsListView> {
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        const Icon(
+                        Icon(
                           Icons.access_time_filled,
                           size: 16,
-                          color: Colors.black,
+                          color: widget.theme.titleStyle.color,
                         ),
                         const SizedBox(width: 6),
                         Flexible(
@@ -213,10 +233,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                                     'A few minutes',
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
-                                style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
+                                style: widget.theme.titleStyle.copyWith(
                                   fontSize: 14,
-                                  color: Colors.black,
                                 ),
                               );
                             },
@@ -245,7 +263,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                       context,
                       MaterialPageRoute(
                         builder: (_) => LivechatView(
-                          primaryColor: widget.primaryColor,
+                          theme: widget.theme,
                           isNewConversation: true,
                         ),
                       ),
@@ -254,7 +272,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                 });
               },
               style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF151515), // Dark button
+                backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -284,8 +302,8 @@ class _RoomsListViewState extends State<RoomsListView> {
       left: left,
       child: Container(
         padding: const EdgeInsets.all(2),
-        decoration: const BoxDecoration(
-          color: Colors.white,
+        decoration: BoxDecoration(
+          color: widget.theme.surfaceColor,
           shape: BoxShape.circle,
         ),
         child: CircleAvatar(
@@ -304,10 +322,10 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildMessagesSection(BuildContext context) {
+  Widget _buildMessagesSection(BuildContext context, LivechatTheme theme) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.theme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -324,8 +342,7 @@ class _RoomsListViewState extends State<RoomsListView> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    MessagesListView(primaryColor: widget.primaryColor),
+                builder: (_) => MessagesListView(theme: widget.theme),
               ),
             );
           },
@@ -334,16 +351,20 @@ class _RoomsListViewState extends State<RoomsListView> {
             padding: const EdgeInsets.all(20),
             child: Row(
               children: [
-                const CircleAvatar(
-                  backgroundColor: Colors.black,
+                CircleAvatar(
+                  backgroundColor: theme.primaryColor,
                   radius: 20,
-                  child: Icon(Icons.chat_bubble, color: Colors.white, size: 20),
+                  child: const Icon(
+                    Icons.chat_bubble,
+                    color: Colors.white,
+                    size: 20,
+                  ),
                 ),
                 const SizedBox(width: 16),
-                const Expanded(
+                Expanded(
                   child: Text(
                     'Messages',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                    style: widget.theme.titleStyle.copyWith(fontSize: 16),
                   ),
                 ),
                 Consumer<LivechatController>(
@@ -385,7 +406,7 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildHelpResources(BuildContext context) {
+  Widget _buildHelpResources(BuildContext context, LivechatTheme theme) {
     return Consumer<LivechatController>(
       builder: (context, controller, _) {
         final faqs = controller.faqs;
@@ -397,18 +418,14 @@ class _RoomsListViewState extends State<RoomsListView> {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            const Text(
+            Text(
               'Help & Resources',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
+              style: widget.theme.titleStyle.copyWith(fontSize: 18),
             ),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: widget.theme.surfaceColor,
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
@@ -441,7 +458,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                               MaterialPageRoute(
                                 builder: (_) => FAQDetailView(
                                   faq: faq,
-                                  primaryColor: widget.primaryColor,
+                                  theme: widget.theme,
                                 ),
                               ),
                             );
@@ -462,24 +479,23 @@ class _RoomsListViewState extends State<RoomsListView> {
                         horizontal: 20,
                         vertical: 4,
                       ),
-                      title: const Text(
+                      title: Text(
                         'See more articles',
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
-                          color: Colors.blueAccent,
+                          color: theme.primaryColor,
                         ),
                       ),
-                      trailing: const Icon(
+                      trailing: Icon(
                         Icons.chevron_right,
-                        color: Colors.blueAccent,
+                        color: theme.primaryColor,
                       ),
                       onTap: () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) =>
-                                FAQListView(primaryColor: widget.primaryColor),
+                            builder: (_) => FAQListView(theme: widget.theme),
                           ),
                         );
                       },
@@ -507,11 +523,14 @@ class _RoomsListViewState extends State<RoomsListView> {
           color: const Color(0xFFF1F5F9),
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: const Color(0xFF475569), size: 20),
+        child: Icon(icon, color: widget.theme.subtitleStyle.color, size: 20),
       ),
       title: Text(
         title,
-        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+        style: widget.theme.bodyStyle.copyWith(
+          fontSize: 14,
+          fontWeight: FontWeight.w600,
+        ),
       ),
       trailing: const Icon(Icons.chevron_right, color: Colors.grey),
       onTap: onTap,

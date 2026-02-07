@@ -6,11 +6,12 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
+import '../theme/livechat_theme.dart';
 
 class FAQListView extends StatefulWidget {
-  final Color primaryColor;
+  final LivechatTheme theme;
 
-  const FAQListView({super.key, required this.primaryColor});
+  const FAQListView({super.key, this.theme = const LivechatTheme()});
 
   @override
   State<FAQListView> createState() => _FAQListViewState();
@@ -62,25 +63,21 @@ class _FAQListViewState extends State<FAQListView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: widget.theme.backgroundColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: widget.theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: widget.theme.titleStyle.color,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Help Center',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: widget.theme.titleStyle.copyWith(fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -111,8 +108,7 @@ class _FAQListViewState extends State<FAQListView> {
                           controller.faqSearchQuery.isEmpty
                               ? 'No articles found'
                               : 'No results for "${controller.faqSearchQuery}"',
-                          style: TextStyle(
-                            color: Colors.grey[500],
+                          style: widget.theme.subtitleStyle.copyWith(
                             fontSize: 16,
                           ),
                         ),
@@ -154,15 +150,19 @@ class _FAQListViewState extends State<FAQListView> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 12, 20, 16),
-      color: Colors.white,
+      color: widget.theme.surfaceColor,
       child: TextField(
         controller: _searchController,
         focusNode: _searchFocusNode,
         onChanged: _onSearchChanged,
         decoration: InputDecoration(
           hintText: 'Search for articles...',
-          hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
-          prefixIcon: Icon(Icons.search, color: Colors.grey[400], size: 20),
+          hintStyle: widget.theme.subtitleStyle.copyWith(fontSize: 14),
+          prefixIcon: Icon(
+            Icons.search,
+            color: widget.theme.subtitleStyle.color,
+            size: 20,
+          ),
           suffixIcon: _searchController.text.isNotEmpty
               ? IconButton(
                   icon: const Icon(Icons.clear, size: 18),
@@ -173,7 +173,7 @@ class _FAQListViewState extends State<FAQListView> {
                 )
               : null,
           filled: true,
-          fillColor: const Color(0xFFF1F5F9),
+          fillColor: widget.theme.backgroundColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
             borderSide: BorderSide.none,
@@ -190,7 +190,7 @@ class _FAQListViewState extends State<FAQListView> {
   Widget _buildFAQCard(BuildContext context, LivechatFAQ faq) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: widget.theme.surfaceColor,
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -207,8 +207,7 @@ class _FAQListViewState extends State<FAQListView> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (_) =>
-                    FAQDetailView(faq: faq, primaryColor: widget.primaryColor),
+                builder: (_) => FAQDetailView(faq: faq, theme: widget.theme),
               ),
             );
           },
@@ -220,12 +219,12 @@ class _FAQListViewState extends State<FAQListView> {
                 Container(
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF1F5F9),
+                    color: widget.theme.backgroundColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: const Icon(
+                  child: Icon(
                     Icons.description_outlined,
-                    color: Color(0xFF475569),
+                    color: widget.theme.subtitleStyle.color,
                     size: 20,
                   ),
                 ),
@@ -233,13 +232,14 @@ class _FAQListViewState extends State<FAQListView> {
                 Expanded(
                   child: Text(
                     faq.question,
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w600,
-                      fontSize: 14,
-                    ),
+                    style: widget.theme.titleStyle.copyWith(fontSize: 14),
                   ),
                 ),
-                const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                Icon(
+                  Icons.chevron_right,
+                  color: widget.theme.subtitleStyle.color,
+                  size: 20,
+                ),
               ],
             ),
           ),
@@ -251,12 +251,12 @@ class _FAQListViewState extends State<FAQListView> {
 
 class FAQDetailView extends StatefulWidget {
   final LivechatFAQ faq;
-  final Color primaryColor;
+  final LivechatTheme theme;
 
   const FAQDetailView({
     super.key,
     required this.faq,
-    required this.primaryColor,
+    this.theme = const LivechatTheme(),
   });
 
   @override
@@ -282,25 +282,21 @@ class _FAQDetailViewState extends State<FAQDetailView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: widget.theme.surfaceColor,
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: widget.theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(
+          icon: Icon(
             Icons.arrow_back_ios_new,
-            color: Colors.black,
+            color: widget.theme.titleStyle.color,
             size: 20,
           ),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
+        title: Text(
           'Article',
-          style: TextStyle(
-            color: Colors.black,
-            fontWeight: FontWeight.bold,
-            fontSize: 18,
-          ),
+          style: widget.theme.titleStyle.copyWith(fontSize: 18),
         ),
         centerTitle: true,
       ),
@@ -311,24 +307,16 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           children: [
             Text(
               widget.faq.question,
-              style: const TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-                color: Colors.black,
-              ),
+              style: widget.theme.titleStyle.copyWith(fontSize: 24),
             ),
             const SizedBox(height: 24),
             MarkdownBody(
               data: widget.faq.answer,
               styleSheet: MarkdownStyleSheet(
-                p: const TextStyle(
-                  fontSize: 16,
-                  height: 1.6,
-                  color: Colors.black87,
-                ),
-                h1: const TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
-                h2: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                listBullet: const TextStyle(fontSize: 16),
+                p: widget.theme.bodyStyle.copyWith(height: 1.6),
+                h1: widget.theme.titleStyle.copyWith(fontSize: 22),
+                h2: widget.theme.titleStyle.copyWith(fontSize: 20),
+                listBullet: widget.theme.bodyStyle,
               ),
             ),
             const SizedBox(height: 48),
@@ -356,7 +344,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
               _isHelpful == true
                   ? 'Glad we could help!'
                   : "We'll work on improving this.",
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 16),
+              style: widget.theme.titleStyle.copyWith(fontSize: 16),
             ),
             if (_isHelpful == false) ...[
               const SizedBox(height: 16),
@@ -364,11 +352,10 @@ class _FAQDetailViewState extends State<FAQDetailView> {
                 onPressed: () {
                   // Navigate to chat
                   Navigator.pop(context); // Back to list
-                  // In a real app we might trigger a chat open here
                 },
                 child: Text(
                   'Start a conversation',
-                  style: TextStyle(color: widget.primaryColor),
+                  style: TextStyle(color: widget.theme.primaryColor),
                 ),
               ),
             ],
@@ -379,11 +366,8 @@ class _FAQDetailViewState extends State<FAQDetailView> {
 
     return Column(
       children: [
-        const Center(
-          child: Text(
-            'Was this helpful?',
-            style: TextStyle(color: Colors.grey, fontWeight: FontWeight.w500),
-          ),
+        Center(
+          child: Text('Was this helpful?', style: widget.theme.subtitleStyle),
         ),
         const SizedBox(height: 16),
         Row(
@@ -404,7 +388,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
       icon: Icon(icon, size: 18),
       label: Text(label),
       style: OutlinedButton.styleFrom(
-        foregroundColor: Colors.grey[700],
+        foregroundColor: widget.theme.subtitleStyle.color,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         side: BorderSide(color: Colors.grey[200]!),

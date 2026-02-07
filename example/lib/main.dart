@@ -98,8 +98,13 @@ class _MyHomePageState extends State<MyHomePage> {
           ],
         ),
       ),
-      // 3. Drop in the FAB
-      floatingActionButton: const LivechatFAB(),
+      // 3. Drop in the FAB with a custom theme
+      floatingActionButton: const LivechatFAB(
+        theme: LivechatTheme(
+          primaryColor: Colors.deepPurple,
+          darkHeaderColor: Color(0xFF311B92),
+        ),
+      ),
     );
   }
 }

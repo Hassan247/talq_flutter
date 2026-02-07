@@ -5,34 +5,32 @@ import 'package:provider/provider.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
+import '../theme/livechat_theme.dart';
 import 'chat_view.dart';
 
 class MessagesListView extends StatelessWidget {
-  final Color primaryColor;
+  final LivechatTheme theme;
 
-  const MessagesListView({super.key, required this.primaryColor});
+  const MessagesListView({super.key, this.theme = const LivechatTheme()});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA), // Light grey background
+      backgroundColor: theme.backgroundColor,
       appBar: AppBar(
         systemOverlayStyle: SystemUiOverlayStyle.dark,
-        backgroundColor: Colors.white,
+        backgroundColor: theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_ios, color: Colors.black, size: 20),
+          icon: Icon(
+            Icons.arrow_back_ios,
+            color: theme.titleStyle.color,
+            size: 20,
+          ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: const Text(
-          'Message',
-          style: TextStyle(
-            color: Colors.black,
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        title: Text('Message', style: theme.titleStyle.copyWith(fontSize: 18)),
       ),
       body: Consumer<LivechatController>(
         builder: (context, controller, child) {
@@ -44,7 +42,7 @@ class MessagesListView extends StatelessWidget {
             return Center(
               child: Text(
                 'No messages yet',
-                style: TextStyle(color: Colors.grey[400]),
+                style: theme.subtitleStyle.copyWith(fontSize: 16),
               ),
             );
           }
@@ -58,15 +56,14 @@ class MessagesListView extends StatelessWidget {
               return _MessageCard(
                 room: room,
                 workspace: controller.workspace,
-                primaryColor: primaryColor,
+                theme: theme,
                 onTap: () async {
                   await controller.fetchMessages(roomId: room.id);
                   if (context.mounted) {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (_) =>
-                            LivechatView(primaryColor: primaryColor),
+                        builder: (_) => LivechatView(theme: theme),
                       ),
                     );
                   }
@@ -83,13 +80,13 @@ class MessagesListView extends StatelessWidget {
 class _MessageCard extends StatelessWidget {
   final LivechatRoom room;
   final LivechatWorkspace? workspace;
-  final Color primaryColor;
+  final LivechatTheme theme;
   final VoidCallback onTap;
 
   const _MessageCard({
     required this.room,
     this.workspace,
-    required this.primaryColor,
+    required this.theme,
     required this.onTap,
   });
 
@@ -97,23 +94,6 @@ class _MessageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lastMsg = room.lastMessage;
     final hasUnread = room.visitorUnreadCount > 0;
-
-    // Determine sender name and avatar logic
-    // If it's the visitor (me), show "YOU".
-    // If it's agent, show Agent Name.
-    // BUT the prototype shows "Hassan Abdulganiyu", "Yusuf Gani", "YOU".
-    // This implies we show the name of the last sender? Or the name of the Agent assigned to the room?
-    // Usually a rooms list shows the "other side" (The Agent).
-    // However, the prototype has "YOU" as a sender name for some cards.
-    // This looks like it might be showing the *Last Message* sender?
-    // Wait, standard chat list logic: Show the Room Name (Agent Name) and last message content.
-    // If I look at the prototype closely:
-    // 1. "Hassan Abdulganiyu" (Avatar) - Msg content...
-    // 2. "Yusuf Gani" (Avatar) - Msg content...
-    // 3. "YOU" (No Avatar/Placeholder) - Msg content...
-    // This strongly suggests it displays the *Sender of the last message*.
-    // Which is a bit unusual for a rooms list (usually you want to know who the chat is *with*).
-    // But I will follow the prototype "100% exactly".
 
     final isMe = lastMsg?.senderType == SenderType.visitor;
     final displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
@@ -125,10 +105,8 @@ class _MessageCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(
-          24,
-        ), // Highly rounded corners as per prototype
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -203,8 +181,8 @@ class _MessageCard extends StatelessWidget {
                             const SizedBox(width: 8),
                             Container(
                               padding: const EdgeInsets.all(5),
-                              decoration: const BoxDecoration(
-                                color: Colors.black,
+                              decoration: BoxDecoration(
+                                color: theme.primaryColor,
                                 shape: BoxShape.circle,
                               ),
                               child: Text(
@@ -227,11 +205,11 @@ class _MessageCard extends StatelessWidget {
                           Expanded(
                             child: Text(
                               '${isMe ? 'You' : displayName} • $timeStr',
-                              style: TextStyle(
-                                fontSize: 13,
+                              style: theme.subtitleStyle.copyWith(
                                 color: hasUnread
                                     ? Colors.black87
-                                    : Colors.grey[500],
+                                    : theme.subtitleStyle.color,
+                                fontSize: 13,
                               ),
                             ),
                           ),
@@ -245,12 +223,12 @@ class _MessageCard extends StatelessWidget {
                                 color: Colors.green[50],
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: Text(
+                              child: const Text(
                                 'Resolved',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.green[700],
+                                  color: Colors.green,
                                 ),
                               ),
                             ),
@@ -268,13 +246,12 @@ class _MessageCard extends StatelessWidget {
   }
 
   Widget _buildMessagePreview(LivechatMessage? msg) {
-    if (msg == null) return const Text('No messages');
+    if (msg == null) return Text('No messages', style: theme.subtitleStyle);
 
     final hasUnread = room.visitorUnreadCount > 0;
-    final style = TextStyle(
+    final style = theme.titleStyle.copyWith(
       fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
       fontSize: 16,
-      color: Colors.black,
     );
 
     IconData? icon;
@@ -301,11 +278,14 @@ class _MessageCard extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: Colors.grey[600]),
+          Icon(icon, size: 16, color: theme.subtitleStyle.color),
           const SizedBox(width: 4),
           Text(
             label,
-            style: style.copyWith(color: Colors.grey[700], fontSize: 15),
+            style: theme.subtitleStyle.copyWith(
+              color: theme.subtitleStyle.color,
+              fontSize: 15,
+            ),
           ),
           if (content.isNotEmpty) ...[
             const SizedBox(width: 4),
@@ -334,15 +314,17 @@ class _MessageCard extends StatelessWidget {
     if (message.isRead) {
       return Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [Icon(Icons.done_all, size: 16, color: Colors.blue)],
+        children: [Icon(Icons.done_all, size: 16, color: theme.readTickColor)],
       );
     } else if (message.isDelivered) {
       return Row(
         mainAxisSize: MainAxisSize.min,
-        children: const [Icon(Icons.done_all, size: 16, color: Colors.grey)],
+        children: [
+          Icon(Icons.done_all, size: 16, color: theme.deliveredTickColor),
+        ],
       );
     } else {
-      return const Icon(Icons.done, size: 16, color: Colors.grey);
+      return Icon(Icons.done, size: 16, color: theme.sentTickColor);
     }
   }
 }

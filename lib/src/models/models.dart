@@ -234,6 +234,9 @@ class LivechatWorkspace {
   final bool autoReplyEnabled;
   final List<String> agentAvatars;
   final String? logoUrl;
+  final String? livechatLogoUrl;
+  final String welcomeMessage;
+  final String primaryColor;
 
   LivechatWorkspace({
     required this.id,
@@ -243,6 +246,9 @@ class LivechatWorkspace {
     this.autoReplyEnabled = false,
     this.agentAvatars = const [],
     this.logoUrl,
+    this.livechatLogoUrl,
+    this.welcomeMessage = 'Hello there! How can we help you today?',
+    this.primaryColor = '#151515',
   });
 
   factory LivechatWorkspace.fromJson(Map<String, dynamic> json) {
@@ -266,6 +272,10 @@ class LivechatWorkspace {
       // but if the backend ever adds it to workspace, we can parse it here.
       // For now, default to empty.
       logoUrl: json['logoUrl'],
+      livechatLogoUrl: json['livechatLogoUrl'],
+      welcomeMessage:
+          json['welcomeMessage'] ?? 'Hello there! How can we help you today?',
+      primaryColor: json['primaryColor'] ?? '#151515',
     );
   }
 
@@ -277,6 +287,9 @@ class LivechatWorkspace {
     bool? autoReplyEnabled,
     List<String>? agentAvatars,
     String? logoUrl,
+    String? livechatLogoUrl,
+    String? welcomeMessage,
+    String? primaryColor,
   }) {
     return LivechatWorkspace(
       id: id ?? this.id,
@@ -286,6 +299,9 @@ class LivechatWorkspace {
       autoReplyEnabled: autoReplyEnabled ?? this.autoReplyEnabled,
       agentAvatars: agentAvatars ?? this.agentAvatars,
       logoUrl: logoUrl ?? this.logoUrl,
+      livechatLogoUrl: livechatLogoUrl ?? this.livechatLogoUrl,
+      welcomeMessage: welcomeMessage ?? this.welcomeMessage,
+      primaryColor: primaryColor ?? this.primaryColor,
     );
   }
 }
