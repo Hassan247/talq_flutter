@@ -863,13 +863,18 @@ class _ChatBubble extends StatelessWidget {
   Widget _buildAvatar() {
     final avatarUrl = message.senderAvatarUrl;
     final isAgent = message.senderType == SenderType.agent;
+    final isBot = message.senderType == SenderType.bot;
 
     if (avatarUrl == null) {
       return CircleAvatar(
         radius: 16,
         backgroundColor: Colors.grey[200],
         child: Icon(
-          isAgent ? Icons.support_agent : Icons.person,
+          isBot
+              ? Icons.smart_toy_outlined
+              : isAgent
+              ? Icons.support_agent
+              : Icons.person,
           size: 14,
           color: Colors.grey[400],
         ),
@@ -888,7 +893,11 @@ class _ChatBubble extends StatelessWidget {
             height: 32,
             color: Colors.grey[200],
             child: Icon(
-              isAgent ? Icons.support_agent : Icons.person,
+              isBot
+                  ? Icons.smart_toy_outlined
+                  : isAgent
+                  ? Icons.support_agent
+                  : Icons.person,
               size: 14,
               color: Colors.grey[400],
             ),

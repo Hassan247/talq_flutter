@@ -1,6 +1,6 @@
 import 'dart:convert';
 
-enum SenderType { visitor, agent, system }
+enum SenderType { visitor, agent, system, bot }
 
 enum ContentType { text, image, pdf }
 
@@ -97,6 +97,8 @@ class LivechatMessage {
         return SenderType.agent;
       case 'SYSTEM':
         return SenderType.system;
+      case 'BOT':
+        return SenderType.bot;
       default:
         return SenderType.visitor;
     }
