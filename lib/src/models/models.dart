@@ -232,6 +232,7 @@ class LivechatWorkspace {
   final String id;
   final String name;
   final String? responseTime;
+  final bool showResponseTime;
   final String? autoReplyMessage;
   final bool autoReplyEnabled;
   final List<String> agentAvatars;
@@ -244,6 +245,7 @@ class LivechatWorkspace {
     required this.id,
     required this.name,
     this.responseTime,
+    this.showResponseTime = true,
     this.autoReplyMessage,
     this.autoReplyEnabled = false,
     this.agentAvatars = const [],
@@ -271,6 +273,7 @@ class LivechatWorkspace {
       id: json['id'],
       name: json['name'],
       responseTime: rt,
+      showResponseTime: json['showResponseTime'] ?? true,
       autoReplyMessage: json['autoReplyMessage'],
       autoReplyEnabled: json['autoReplyEnabled'] ?? false,
       // agentAvatars is typically populated from the parent payload, not the workspace object itself
@@ -288,6 +291,7 @@ class LivechatWorkspace {
     String? id,
     String? name,
     String? responseTime,
+    bool? showResponseTime,
     String? autoReplyMessage,
     bool? autoReplyEnabled,
     List<String>? agentAvatars,
@@ -300,6 +304,7 @@ class LivechatWorkspace {
       id: id ?? this.id,
       name: name ?? this.name,
       responseTime: responseTime ?? this.responseTime,
+      showResponseTime: showResponseTime ?? this.showResponseTime,
       autoReplyMessage: autoReplyMessage ?? this.autoReplyMessage,
       autoReplyEnabled: autoReplyEnabled ?? this.autoReplyEnabled,
       agentAvatars: agentAvatars ?? this.agentAvatars,

@@ -132,10 +132,11 @@ class _LivechatViewState extends State<LivechatView>
                         widget.title,
                     style: widget.theme.titleStyle,
                   ),
-                  Text(
-                    _formatResponseTime(controller.workspace?.responseTime),
-                    style: widget.theme.subtitleStyle,
-                  ),
+                  if (controller.workspace?.showResponseTime == true)
+                    Text(
+                      _formatResponseTime(controller.workspace?.responseTime),
+                      style: widget.theme.subtitleStyle,
+                    ),
                 ],
               ),
               backgroundColor: widget.theme.surfaceColor,

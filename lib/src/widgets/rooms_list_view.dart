@@ -206,29 +206,33 @@ class _RoomsListViewState extends State<RoomsListView> {
               ),
               const SizedBox(width: 12),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      'Our usual reply time',
-                      style: widget.theme.subtitleStyle.copyWith(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
+                child: Consumer<LivechatController>(
+                  builder: (context, controller, _) {
+                    // hide response time section if toggle is off
+                    if (controller.workspace?.showResponseTime != true) {
+                      return const SizedBox.shrink();
+                    }
+                    return Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Icon(
-                          Icons.access_time_filled,
-                          size: 16,
-                          color: widget.theme.titleStyle.color,
+                        Text(
+                          'Our usual reply time',
+                          style: widget.theme.subtitleStyle.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                          ),
                         ),
-                        const SizedBox(width: 6),
-                        Flexible(
-                          child: Consumer<LivechatController>(
-                            builder: (context, controller, child) {
-                              return Text(
+                        const SizedBox(height: 4),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.access_time_filled,
+                              size: 16,
+                              color: widget.theme.titleStyle.color,
+                            ),
+                            const SizedBox(width: 6),
+                            Flexible(
+                              child: Text(
                                 controller.workspace?.responseTime ??
                                     'A few minutes',
                                 maxLines: 1,
@@ -236,13 +240,13 @@ class _RoomsListViewState extends State<RoomsListView> {
                                 style: widget.theme.titleStyle.copyWith(
                                   fontSize: 14,
                                 ),
-                              );
-                            },
-                          ),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
-                    ),
-                  ],
+                    );
+                  },
                 ),
               ),
             ],
