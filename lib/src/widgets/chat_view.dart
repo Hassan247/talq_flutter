@@ -86,10 +86,6 @@ class _LivechatViewState extends State<LivechatView>
   Widget build(BuildContext context) {
     return Consumer<LivechatController>(
       builder: (context, controller, child) {
-        debugPrint(
-          '[LivechatView] build called: roomId=${controller.roomId}, messages.length=${controller.messages.length}, isNewConversation=${widget.isNewConversation}',
-        );
-
         if (!controller.isInitialized && controller.isLoading) {
           return const Scaffold(
             body: Center(child: CircularProgressIndicator()),
