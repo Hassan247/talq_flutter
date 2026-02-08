@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -13,6 +14,7 @@ import '../state/livechat_controller.dart';
 import '../theme/livechat_theme.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
+import 'shared_widgets.dart';
 
 class LivechatView extends StatefulWidget {
   final String title;
@@ -119,20 +121,39 @@ class _LivechatViewState extends State<LivechatView>
               systemOverlayStyle: SystemUiOverlayStyle.dark,
               elevation: 0,
               centerTitle: true,
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.center,
+              title: Row(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  Text(
-                    controller.currentRoom?.assigneeName ??
-                        controller.workspace?.name ??
-                        widget.title,
-                    style: widget.theme.titleStyle,
+                  LivechatAvatar(
+                    imageUrl: controller.currentRoom?.assigneeAvatarUrl,
+                    senderType: SenderType.agent,
+                    radius: 14,
                   ),
-                  if (controller.workspace?.showResponseTime == true)
-                    Text(
-                      _formatResponseTime(controller.workspace?.responseTime),
-                      style: widget.theme.subtitleStyle,
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          controller.currentRoom?.assigneeName ??
+                              controller.workspace?.name ??
+                              widget.title,
+                          style: widget.theme.titleStyle.copyWith(fontSize: 16),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (controller.workspace?.showResponseTime == true)
+                          Text(
+                            _formatResponseTime(
+                              controller.workspace?.responseTime,
+                            ),
+                            style: widget.theme.subtitleStyle.copyWith(
+                              fontSize: 11,
+                            ),
+                          ),
+                      ],
                     ),
+                  ),
                 ],
               ),
               backgroundColor: widget.theme.surfaceColor,
@@ -277,38 +298,6 @@ class _LivechatViewState extends State<LivechatView>
                     if (controller.replyingTo != null)
                       _buildReplyOverlay(controller),
                     _buildInputArea(controller),
-                    if (controller.roomStatus == RoomStatus.resolved)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.symmetric(
-                          vertical: 12,
-                          horizontal: 24,
-                        ),
-                        color: Colors.amber[50],
-                        child: SafeArea(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Text(
-                                'This conversation was marked as resolved.',
-                                style: TextStyle(
-                                  color: Colors.amber[900],
-                                  fontSize: 13,
-                                  fontWeight: FontWeight.w500,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                'Sending a new message will reopen it.',
-                                style: TextStyle(
-                                  color: Colors.amber[800],
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                      ),
                   ],
                 ),
                 if (controller.showRatingPrompt)
@@ -325,6 +314,36 @@ class _LivechatViewState extends State<LivechatView>
   }
 
   Widget _buildInputArea(LivechatController controller) {
+    if (controller.roomStatus == RoomStatus.resolved) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+        color: Colors.amber[50],
+        child: SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.lock_outline, color: Colors.amber[900], size: 24),
+              const SizedBox(height: 8),
+              Text(
+                'This conversation is resolved.',
+                style: TextStyle(
+                  color: Colors.amber[900],
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                'You cannot send new messages.',
+                style: TextStyle(color: Colors.amber[800], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       color: widget.theme.surfaceColor,
@@ -848,49 +867,10 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    final avatarUrl = message.senderAvatarUrl;
-    final isAgent = message.senderType == SenderType.agent;
-    final isBot = message.senderType == SenderType.bot;
-
-    if (avatarUrl == null) {
-      return CircleAvatar(
-        radius: 16,
-        backgroundColor: Colors.grey[200],
-        child: Icon(
-          isBot
-              ? Icons.smart_toy_outlined
-              : isAgent
-              ? Icons.support_agent
-              : Icons.person,
-          size: 14,
-          color: Colors.grey[400],
-        ),
-      );
-    }
-
-    return ClipOval(
-      child: Image.network(
-        avatarUrl,
-        width: 32,
-        height: 32,
-        fit: BoxFit.cover,
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 32,
-            height: 32,
-            color: Colors.grey[200],
-            child: Icon(
-              isBot
-                  ? Icons.smart_toy_outlined
-                  : isAgent
-                  ? Icons.support_agent
-                  : Icons.person,
-              size: 14,
-              color: Colors.grey[400],
-            ),
-          );
-        },
-      ),
+    return LivechatAvatar(
+      imageUrl: message.senderAvatarUrl,
+      senderType: message.senderType,
+      radius: 16,
     );
   }
 
@@ -990,40 +970,35 @@ class _ChatBubble extends StatelessWidget {
   Widget _buildImage(BuildContext context) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(16),
-      child: Image.network(
-        message.fileUrl!,
+      child: CachedNetworkImage(
+        imageUrl: message.fileUrl!,
         fit: BoxFit.cover,
-        loadingBuilder: (context, child, loadingProgress) {
-          if (loadingProgress == null) return child;
-          return Container(
-            width: 200,
-            height: 200,
-            color: Colors.grey[100],
-            child: const Center(child: CircularProgressIndicator()),
-          );
-        },
-        errorBuilder: (context, error, stackTrace) {
-          return Container(
-            width: 200,
-            height: 200,
-            color: Colors.grey[100],
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(
-                  Icons.broken_image_rounded,
-                  color: Colors.grey[400],
-                  size: 48,
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'Image unavailable',
-                  style: TextStyle(color: Colors.grey[500], fontSize: 12),
-                ),
-              ],
-            ),
-          );
-        },
+        placeholder: (context, url) => Container(
+          width: 200,
+          height: 200,
+          color: Colors.grey[100],
+          child: const Center(child: CircularProgressIndicator()),
+        ),
+        errorWidget: (context, url, error) => Container(
+          width: 200,
+          height: 200,
+          color: Colors.grey[100],
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.broken_image_rounded,
+                color: Colors.grey[400],
+                size: 48,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Image unavailable',
+                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

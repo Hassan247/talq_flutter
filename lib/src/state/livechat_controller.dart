@@ -805,32 +805,6 @@ class LivechatController extends ChangeNotifier {
     await _api.mutate(mutation, variables: {'roomId': roomID});
   }
 
-  static RoomStatus _parseRoomStatus(String status) {
-    switch (status) {
-      case 'OPEN':
-        return RoomStatus.open;
-      case 'ASSIGNED':
-        return RoomStatus.assigned;
-      case 'RESOLVED':
-        return RoomStatus.resolved;
-      case 'CLOSED':
-        return RoomStatus.closed;
-      default:
-        return RoomStatus.open;
-    }
-  }
-
-  static SenderType _parseSenderType(String type) {
-    switch (type) {
-      case 'AGENT':
-        return SenderType.agent;
-      case 'SYSTEM':
-        return SenderType.system;
-      default:
-        return SenderType.visitor;
-    }
-  }
-
   void _startMessageSubscription() {
     _messageSubscription?.cancel();
 
@@ -844,60 +818,70 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
 
-    _messageSubscription = _api.subscribe(sub).listen((result) {
-      if (result.data != null) {
-        final newMessage = LivechatMessage.fromJson(
-          result.data!['visitorNewMessage'],
+    _messageSubscription = _api
+        .subscribe(sub)
+        .listen(
+          (result) {
+            if (result.data != null) {
+              final newMessage = LivechatMessage.fromJson(
+                result.data!['visitorNewMessage'],
+              );
+
+              // Update the rooms list with last message
+              final roomIndex = _rooms.indexWhere(
+                (r) => r.id == newMessage.roomId,
+              );
+              if (roomIndex != -1) {
+                final room = _rooms[roomIndex];
+                _rooms[roomIndex] = LivechatRoom(
+                  id: room.id,
+                  status: room.status,
+                  unreadCount: room.unreadCount,
+                  visitorUnreadCount:
+                      (newMessage.senderType != SenderType.visitor &&
+                          !_isChatVisible)
+                      ? room.visitorUnreadCount + 1
+                      : room.visitorUnreadCount,
+                  lastMessageAt: newMessage.createdAt,
+                  lastMessage: newMessage,
+                  createdAt: room.createdAt,
+                  rating: room.rating,
+                  ratingComment: room.ratingComment,
+                  assigneeName: room.assigneeName,
+                  assigneeAvatarUrl: room.assigneeAvatarUrl,
+                );
+              } else {
+                fetchRooms();
+              }
+              _sortRooms();
+              notifyListeners();
+
+              // 2. Logic for Active Room message list
+              if (newMessage.roomId == _roomId) {
+                // Avoid duplicates if we sent it ourselves
+                if (!_messages.any((m) => m.id == newMessage.id)) {
+                  _messages.add(newMessage);
+
+                  // Mark as delivered
+                  if (newMessage.senderType != SenderType.visitor) {
+                    markAsDelivered(_roomId!);
+                  }
+
+                  if (newMessage.senderType != SenderType.visitor &&
+                      _isChatVisible) {
+                    markAsRead();
+                  }
+                  notifyListeners();
+                }
+              }
+            }
+          },
+          onError: (error) {
+            debugPrint(
+              '[LivechatController] Message Subscription Error: $error',
+            );
+          },
         );
-
-        // Update the rooms list with last message
-        final roomIndex = _rooms.indexWhere((r) => r.id == newMessage.roomId);
-        if (roomIndex != -1) {
-          final room = _rooms[roomIndex];
-          _rooms[roomIndex] = LivechatRoom(
-            id: room.id,
-            status: room.status,
-            unreadCount: room.unreadCount,
-            visitorUnreadCount:
-                (newMessage.senderType != SenderType.visitor && !_isChatVisible)
-                ? room.visitorUnreadCount + 1
-                : room.visitorUnreadCount,
-            lastMessageAt: newMessage.createdAt,
-            lastMessage: newMessage,
-            createdAt: room.createdAt,
-            rating: room.rating,
-            ratingComment: room.ratingComment,
-            assigneeName: room.assigneeName,
-            assigneeAvatarUrl: room.assigneeAvatarUrl,
-          );
-        } else {
-          // If room doesn't exist, we might want to fetch it or just ignore if it's not ours
-          // But for safety, let's at least not crash.
-          // Actually, we should probably fetch rooms to be sure.
-          fetchRooms();
-        }
-        _sortRooms();
-        notifyListeners();
-
-        // 2. Logic for Active Room message list
-        if (newMessage.roomId == _roomId) {
-          // Avoid duplicates if we sent it ourselves
-          if (!_messages.any((m) => m.id == newMessage.id)) {
-            _messages.add(newMessage);
-
-            // Mark as delivered
-            if (newMessage.senderType != SenderType.visitor) {
-              markAsDelivered(_roomId!);
-            }
-
-            if (newMessage.senderType != SenderType.visitor && _isChatVisible) {
-              markAsRead();
-            }
-            notifyListeners();
-          }
-        }
-      }
-    });
 
     _startRoomSubscription();
   }
@@ -917,75 +901,83 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
 
-    _roomSubscription = _api.subscribe(sub).listen((result) {
-      if (result.data != null) {
-        final roomData = result.data!['visitorRoomUpdated'];
-        final roomId = roomData['id'];
+    _roomSubscription = _api
+        .subscribe(sub)
+        .listen(
+          (result) {
+            if (result.data != null) {
+              final roomData = result.data!['visitorRoomUpdated'];
+              final roomId = roomData['id'];
 
-        // 1. Update the main rooms list
-        final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
-        if (roomIndex != -1) {
-          _rooms[roomIndex] = LivechatRoom.fromJson(roomData);
-        } else {
-          _rooms.add(LivechatRoom.fromJson(roomData));
-        }
-        _sortRooms();
-        notifyListeners();
-
-        // 2. Update active room state if necessary
-        if (roomId == _roomId) {
-          final newStatus = _parseRoomStatus(roomData['status']);
-
-          // If transitioning to RESOLVED, always show prompt (re-rating flow)
-          if (newStatus == RoomStatus.resolved &&
-              _roomStatus != RoomStatus.resolved) {
-            _showRatingPrompt = true;
-          }
-
-          // If assignee changed (reassignment), refetch messages to get new events
-          if (roomData['assignee'] != null) {
-            fetchMessages(roomId: _roomId);
-          }
-
-          // Sync message statuses for user messages
-          final lastMsg = roomData['lastMessage'];
-          if (lastMsg != null &&
-              _parseSenderType(lastMsg['senderType']) == SenderType.visitor) {
-            final isRead = lastMsg['read'] ?? false;
-            final isDelivered = lastMsg['delivered'] ?? false;
-
-            _messages = _messages.map((m) {
-              if (m.senderType == SenderType.visitor &&
-                  (!m.isRead || !m.isDelivered)) {
-                return LivechatMessage(
-                  id: m.id,
-                  roomId: m.roomId,
-                  content: m.content,
-                  senderType: m.senderType,
-                  senderName: m.senderName,
-                  senderAvatarUrl: m.senderAvatarUrl,
-                  contentType: m.contentType,
-                  fileUrl: m.fileUrl,
-                  fileName: m.fileName,
-                  createdAt: m.createdAt,
-                  isRead: m.isRead || isRead,
-                  isDelivered: m.isDelivered || isDelivered,
-                  replyTo: m.replyTo,
-                  reactions: m.reactions,
-                );
+              // 1. Update the main rooms list
+              final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
+              if (roomIndex != -1) {
+                _rooms[roomIndex] = LivechatRoom.fromJson(roomData);
+              } else {
+                _rooms.add(LivechatRoom.fromJson(roomData));
               }
-              return m;
-            }).toList();
-          }
+              _sortRooms();
+              notifyListeners();
 
-          _roomStatus = newStatus;
-          _rating = roomData['rating'];
-          _ratingComment = roomData['ratingComment'];
-          _isRatingSubmitted = roomData['rating'] != null;
-          notifyListeners();
-        }
-      }
-    });
+              // 2. Update active room state if necessary
+              if (roomId == _roomId) {
+                final newStatus = RoomStatus.fromString(roomData['status']);
+
+                // If transitioning to RESOLVED, always show prompt (re-rating flow)
+                if (newStatus == RoomStatus.resolved &&
+                    _roomStatus != RoomStatus.resolved) {
+                  _showRatingPrompt = true;
+                }
+
+                // If assignee changed (reassignment), refetch messages to get new events
+                if (roomData['assignee'] != null) {
+                  fetchMessages(roomId: _roomId);
+                }
+
+                // Sync message statuses for user messages
+                final lastMsg = roomData['lastMessage'];
+                if (lastMsg != null &&
+                    SenderType.fromString(lastMsg['senderType']) ==
+                        SenderType.visitor) {
+                  final isRead = lastMsg['read'] ?? false;
+                  final isDelivered = lastMsg['delivered'] ?? false;
+
+                  _messages = _messages.map((m) {
+                    if (m.senderType == SenderType.visitor &&
+                        (!m.isRead || !m.isDelivered)) {
+                      return LivechatMessage(
+                        id: m.id,
+                        roomId: m.roomId,
+                        content: m.content,
+                        senderType: m.senderType,
+                        senderName: m.senderName,
+                        senderAvatarUrl: m.senderAvatarUrl,
+                        contentType: m.contentType,
+                        fileUrl: m.fileUrl,
+                        fileName: m.fileName,
+                        createdAt: m.createdAt,
+                        isRead: m.isRead || isRead,
+                        isDelivered: m.isDelivered || isDelivered,
+                        replyTo: m.replyTo,
+                        reactions: m.reactions,
+                      );
+                    }
+                    return m;
+                  }).toList();
+                }
+
+                _roomStatus = newStatus;
+                _rating = roomData['rating'];
+                _ratingComment = roomData['ratingComment'];
+                _isRatingSubmitted = roomData['rating'] != null;
+                notifyListeners();
+              }
+            }
+          },
+          onError: (error) {
+            debugPrint('[LivechatController] Room Subscription Error: $error');
+          },
+        );
   }
 
   void _startTypingSubscription() {
@@ -1000,24 +992,31 @@ class LivechatController extends ChangeNotifier {
 
     _typingSubscription = _api
         .subscribe(sub, variables: {'roomId': _roomId})
-        .listen((result) {
-          if (result.data != null) {
-            final typingUserId = result.data!['typing'];
+        .listen(
+          (result) {
+            if (result.data != null) {
+              final typingUserId = result.data!['typing'];
 
-            // If it's not us (the visitor), then it's the agent
-            if (typingUserId != _visitor?.id) {
-              _isAgentTyping = true;
-              notifyListeners();
-
-              // Reset after 3 seconds of no activity
-              _typingTimer?.cancel();
-              _typingTimer = Timer(const Duration(seconds: 3), () {
-                _isAgentTyping = false;
+              // If it's not us (the visitor), then it's the agent
+              if (typingUserId != _visitor?.id) {
+                _isAgentTyping = true;
                 notifyListeners();
-              });
+
+                // Reset after 3 seconds of no activity
+                _typingTimer?.cancel();
+                _typingTimer = Timer(const Duration(seconds: 3), () {
+                  _isAgentTyping = false;
+                  notifyListeners();
+                });
+              }
             }
-          }
-        });
+          },
+          onError: (error) {
+            debugPrint(
+              '[LivechatController] Typing Subscription Error: $error',
+            );
+          },
+        );
   }
 
   /// Submits a rating for the current room
@@ -1080,7 +1079,7 @@ class LivechatController extends ChangeNotifier {
     final result = await _api.query(query, variables: {'id': _roomId});
     if (!result.hasException && result.data != null) {
       final roomData = result.data!['room'];
-      _roomStatus = _parseRoomStatus(roomData['status']);
+      _roomStatus = RoomStatus.fromString(roomData['status']);
       _rating = roomData['rating'];
       _ratingComment = roomData['ratingComment'];
       _isRatingSubmitted = roomData['rating'] != null;

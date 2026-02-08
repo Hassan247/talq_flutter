@@ -1,10 +1,71 @@
 import 'dart:convert';
 
-enum SenderType { visitor, agent, system, bot }
+import 'package:flutter/foundation.dart';
 
-enum ContentType { text, image, pdf }
+enum SenderType {
+  visitor,
+  agent,
+  system,
+  bot;
 
-enum RoomStatus { open, assigned, resolved, closed }
+  static SenderType fromString(String? type) {
+    switch (type) {
+      case 'AGENT':
+        return SenderType.agent;
+      case 'SYSTEM':
+        return SenderType.system;
+      case 'BOT':
+        return SenderType.bot;
+      default:
+        return SenderType.visitor;
+    }
+  }
+
+  String toJson() => name.toUpperCase();
+}
+
+enum ContentType {
+  text,
+  image,
+  pdf;
+
+  static ContentType fromString(String? type) {
+    switch (type) {
+      case 'IMAGE':
+        return ContentType.image;
+      case 'PDF':
+        return ContentType.pdf;
+      default:
+        return ContentType.text;
+    }
+  }
+
+  String toJson() => name.toUpperCase();
+}
+
+enum RoomStatus {
+  open,
+  assigned,
+  resolved,
+  closed;
+
+  static RoomStatus fromString(String? status) {
+    switch (status) {
+      case 'OPEN':
+        return RoomStatus.open;
+      case 'ASSIGNED':
+        return RoomStatus.assigned;
+      case 'RESOLVED':
+        return RoomStatus.resolved;
+      case 'CLOSED':
+        return RoomStatus.closed;
+      default:
+        return RoomStatus.open;
+    }
+  }
+
+  String toJson() => name.toUpperCase();
+}
 
 class LivechatMessage {
   final String id;
@@ -45,10 +106,10 @@ class LivechatMessage {
         id: json['id'] ?? 'unknown',
         roomId: json['room'] != null ? json['room']['id'] : null,
         content: json['content'] ?? '',
-        senderType: _parseSenderType(json['senderType'] ?? 'VISITOR'),
+        senderType: SenderType.fromString(json['senderType']),
         senderName: json['senderName'],
         senderAvatarUrl: json['senderAvatarUrl'],
-        contentType: _parseContentType(json['contentType']),
+        contentType: ContentType.fromString(json['contentType']),
         fileUrl: json['fileUrl'],
         fileName: json['fileName'],
         createdAt: json['createdAt'] != null
@@ -68,14 +129,11 @@ class LivechatMessage {
             : {},
       );
     } catch (e) {
-      // debugPrint is typically from 'package:flutter/foundation.dart'
-      // If this is a pure Dart project, you might use print() or a custom logger.
-      // For this example, assuming debugPrint is available or will be handled.
-      // ignore: avoid_print
-      print('Error parsing LivechatMessage: $e. Data: $json');
-      // Return a shim message instead of throwing to keep the UI alive
+      if (kDebugMode) {
+        print('Error parsing LivechatMessage: $e. Data: $json');
+      }
       return LivechatMessage(
-        id: 'err-${json['id'] ?? DateTime.now().millisecondsSinceEpoch}', // Ensure unique ID for error messages
+        id: 'err-${json['id'] ?? DateTime.now().millisecondsSinceEpoch}',
         content: 'Message parsing error',
         senderType: SenderType.system,
         createdAt: DateTime.now(),
@@ -83,35 +141,42 @@ class LivechatMessage {
     }
   }
 
+  bool get isMe => senderType == SenderType.visitor;
+  bool get isSystem => senderType == SenderType.system;
+  bool get isBot => senderType == SenderType.bot;
+
+  String get displaySenderName {
+    if (isMe) return 'You';
+    return senderName ?? (isBot ? 'Bot' : 'Support');
+  }
+
+  String get previewText {
+    if (contentType == ContentType.image) return 'Photo';
+    if (contentType == ContentType.pdf) return 'Document';
+    return content;
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'content': content,
+      'senderType': senderType.toJson(),
+      'senderName': senderName,
+      'senderAvatarUrl': senderAvatarUrl,
+      'contentType': contentType.toJson(),
+      'fileUrl': fileUrl,
+      'fileName': fileName,
+      'createdAt': createdAt.toIso8601String(),
+      'read': isRead,
+      'delivered': isDelivered,
+    };
+  }
+
   static dynamic _safeJsonDecode(String str) {
     try {
       return json.decode(str);
     } catch (_) {
       return {};
-    }
-  }
-
-  static SenderType _parseSenderType(String type) {
-    switch (type) {
-      case 'AGENT':
-        return SenderType.agent;
-      case 'SYSTEM':
-        return SenderType.system;
-      case 'BOT':
-        return SenderType.bot;
-      default:
-        return SenderType.visitor;
-    }
-  }
-
-  static ContentType _parseContentType(String? type) {
-    switch (type) {
-      case 'IMAGE':
-        return ContentType.image;
-      case 'PDF':
-        return ContentType.pdf;
-      default:
-        return ContentType.text;
     }
   }
 }
@@ -140,6 +205,14 @@ class LivechatVisitor {
       currentPage: json['currentPage'],
     );
   }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'firstName': firstName,
+    'lastName': lastName,
+    'email': email,
+    'currentPage': currentPage,
+  };
 
   LivechatVisitor copyWith({
     String? id,
@@ -188,7 +261,7 @@ class LivechatRoom {
   factory LivechatRoom.fromJson(Map<String, dynamic> json) {
     return LivechatRoom(
       id: json['id'] ?? '',
-      status: _parseRoomStatus(json['status']?.toString()),
+      status: RoomStatus.fromString(json['status']?.toString()),
       unreadCount: json['unreadCount'] ?? 0,
       visitorUnreadCount: json['visitorUnreadCount'] ?? 0,
       lastMessageAt: json['lastMessageAt'] != null
@@ -211,21 +284,14 @@ class LivechatRoom {
     );
   }
 
-  static RoomStatus _parseRoomStatus(String? status) {
-    if (status == null) return RoomStatus.open;
-    switch (status) {
-      case 'OPEN':
-        return RoomStatus.open;
-      case 'ASSIGNED':
-        return RoomStatus.assigned;
-      case 'RESOLVED':
-        return RoomStatus.resolved;
-      case 'CLOSED':
-        return RoomStatus.closed;
-      default:
-        return RoomStatus.open;
-    }
-  }
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'status': status.toJson(),
+    'unreadCount': unreadCount,
+    'visitorUnreadCount': visitorUnreadCount,
+    'lastMessageAt': lastMessageAt?.toIso8601String(),
+    'createdAt': createdAt.toIso8601String(),
+  };
 }
 
 class LivechatWorkspace {

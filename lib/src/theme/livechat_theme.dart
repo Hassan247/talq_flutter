@@ -16,6 +16,8 @@ class LivechatTheme {
   final Color sentTickColor;
   final Color deliveredTickColor;
   final Color readTickColor;
+  final Color unreadBadgeColor;
+  final Color unreadTextColor;
 
   // Typography
   final TextStyle titleStyle;
@@ -38,6 +40,8 @@ class LivechatTheme {
     this.sentTickColor = Colors.grey,
     this.deliveredTickColor = Colors.grey,
     this.readTickColor = Colors.blue,
+    this.unreadBadgeColor = const Color(0xFFFBECEB),
+    this.unreadTextColor = const Color(0xFFD3453D),
     this.titleStyle = const TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
@@ -89,6 +93,8 @@ class LivechatTheme {
     Color? sentTickColor,
     Color? deliveredTickColor,
     Color? readTickColor,
+    Color? unreadBadgeColor,
+    Color? unreadTextColor,
     TextStyle? titleStyle,
     TextStyle? subtitleStyle,
     TextStyle? bodyStyle,
@@ -107,6 +113,8 @@ class LivechatTheme {
       sentTickColor: sentTickColor ?? this.sentTickColor,
       deliveredTickColor: deliveredTickColor ?? this.deliveredTickColor,
       readTickColor: readTickColor ?? this.readTickColor,
+      unreadBadgeColor: unreadBadgeColor ?? this.unreadBadgeColor,
+      unreadTextColor: unreadTextColor ?? this.unreadTextColor,
       titleStyle: titleStyle ?? this.titleStyle,
       subtitleStyle: subtitleStyle ?? this.subtitleStyle,
       bodyStyle: bodyStyle ?? this.bodyStyle,

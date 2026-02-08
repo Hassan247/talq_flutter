@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
@@ -26,11 +27,15 @@ class AuthManager {
 
   /// Completely resets the visitor identity (clears token and generates new device ID)
   static Future<void> resetSession() async {
-    print('[AuthManager] Resetting session...');
+    if (kDebugMode) {
+      debugPrint('[AuthManager] Resetting session...');
+    }
     await _storage.delete(key: _tokenKey);
     // generate a new random device id to create a fresh visitor identity
     final newDeviceId = const Uuid().v4();
-    print('[AuthManager] Generated NEW device ID: $newDeviceId');
+    if (kDebugMode) {
+      debugPrint('[AuthManager] Generated NEW device ID: $newDeviceId');
+    }
     await _storage.write(key: _deviceIdKey, value: newDeviceId);
   }
 
@@ -38,12 +43,18 @@ class AuthManager {
   static Future<String> getDeviceId() async {
     String? deviceId = await _storage.read(key: _deviceIdKey);
     if (deviceId != null) {
-      print('[AuthManager] Using EXISTING device ID: $deviceId');
+      if (kDebugMode) {
+        debugPrint('[AuthManager] Using EXISTING device ID: $deviceId');
+      }
       return deviceId;
     }
 
     deviceId = await _calculateDeviceId();
-    print('[AuthManager] Generated FALLBACK/INITIAL device ID: $deviceId');
+    if (kDebugMode) {
+      debugPrint(
+        '[AuthManager] Generated FALLBACK/INITIAL device ID: $deviceId',
+      );
+    }
     await _storage.write(key: _deviceIdKey, value: deviceId);
     return deviceId;
   }
