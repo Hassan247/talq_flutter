@@ -256,11 +256,14 @@ class LivechatWorkspace {
   factory LivechatWorkspace.fromJson(Map<String, dynamic> json) {
     String? rt;
     if (json['showResponseTime'] == true) {
+      // use customResponseTime if available (for both AGENT and CUSTOM types)
+      // the backend populates this field dynamically for AGENT type
       if (json['customResponseTime'] != null &&
           json['customResponseTime'].toString().isNotEmpty) {
         rt = json['customResponseTime'];
       } else {
-        rt = 'A few minutes'; // Default fallback
+        // fallback to a reasonable default
+        rt = 'A few minutes';
       }
     }
 
