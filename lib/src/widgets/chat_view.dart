@@ -185,15 +185,15 @@ class _LivechatViewState extends State<LivechatView>
                                             Text(
                                               controller
                                                               .workspace
-                                                              ?.autoReplyEnabled ==
-                                                          true &&
+                                                              ?.welcomeMessage !=
+                                                          null &&
                                                       controller
-                                                              .workspace
-                                                              ?.autoReplyMessage !=
-                                                          null
+                                                          .workspace!
+                                                          .welcomeMessage!
+                                                          .isNotEmpty
                                                   ? controller
                                                         .workspace!
-                                                        .autoReplyMessage!
+                                                        .welcomeMessage!
                                                   : 'Start a conversation!',
                                               textAlign: TextAlign.center,
                                               style: widget.theme.bodyStyle
@@ -203,21 +203,11 @@ class _LivechatViewState extends State<LivechatView>
                                                   ),
                                             ),
                                             const SizedBox(height: 8),
-                                            if (controller
-                                                        .workspace
-                                                        ?.autoReplyEnabled !=
-                                                    true ||
-                                                controller
-                                                        .workspace
-                                                        ?.autoReplyMessage ==
-                                                    null)
-                                              Text(
-                                                'Type a message below to begin.',
-                                                style: widget
-                                                    .theme
-                                                    .subtitleStyle
-                                                    .copyWith(fontSize: 14),
-                                              ),
+                                            Text(
+                                              'Type a message below to begin.',
+                                              style: widget.theme.subtitleStyle
+                                                  .copyWith(fontSize: 14),
+                                            ),
                                           ],
                                         ),
                                       ),
