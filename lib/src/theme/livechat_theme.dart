@@ -5,6 +5,14 @@ class LivechatTheme {
   final Color backgroundColor;
   final Color surfaceColor;
   final Color darkHeaderColor;
+  final Color inputBackgroundColor;
+  final Color cardShadowColor;
+  final Color avatarBackgroundColor;
+  final Color avatarIconColor;
+  final Color resolvedBackgroundColor;
+  final Color resolvedTextColor;
+  final Color inputHintColor;
+  final Color unavailabilityOverlayColor;
 
   // Bubbles
   final Color userBubbleColor;
@@ -29,23 +37,35 @@ class LivechatTheme {
   final double borderRadius;
 
   const LivechatTheme({
-    this.primaryColor = Colors.blueAccent,
+    this.inputBackgroundColor = const Color(0xFFF1F3F5),
+    this.cardShadowColor = const Color(
+      0x0D000000,
+    ), // Colors.black.withOpacity(0.05)
+    this.avatarBackgroundColor = const Color(0xFFEBEFF3), // Slate 100
+    this.avatarIconColor = const Color(0xFF83888F), // Colors.grey
+    this.resolvedBackgroundColor = const Color(0xFFE8F5E9), // Colors.green[50]
+    this.resolvedTextColor = const Color(0xFF4CAF50), // Colors.green
+    this.inputHintColor = const Color(0xFFBDBDBD), // Colors.grey[400]
+    this.unavailabilityOverlayColor = const Color(
+      0x80000000,
+    ), // Colors.black.withOpacity(0.5)
+    this.primaryColor = const Color(0xFF0057FF),
     this.backgroundColor = const Color(0xFFF5F7FA),
-    this.surfaceColor = Colors.white,
+    this.surfaceColor = const Color(0xFFFFFFFF),
     this.darkHeaderColor = const Color(0xFF151515),
     this.userBubbleColor = const Color(0xFF151515),
-    this.agentBubbleColor = Colors.white,
-    this.userTextColor = Colors.white,
-    this.agentTextColor = Colors.black87,
-    this.sentTickColor = Colors.grey,
-    this.deliveredTickColor = Colors.grey,
-    this.readTickColor = Colors.blue,
+    this.agentBubbleColor = const Color(0xFFFFFFFF),
+    this.userTextColor = const Color(0xFFFFFFFF),
+    this.agentTextColor = const Color(0xDD000000), // Colors.black87
+    this.sentTickColor = const Color(0xFF9E9E9E), // Colors.grey
+    this.deliveredTickColor = const Color(0xFF9E9E9E), // Colors.grey
+    this.readTickColor = const Color(0xFF2196F3), // Colors.blue
     this.unreadBadgeColor = const Color(0xFFFBECEB),
     this.unreadTextColor = const Color(0xFFD3453D),
     this.titleStyle = const TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
-      color: Colors.black,
+      color: Color(0xFF000000),
     ),
     this.subtitleStyle = const TextStyle(
       fontSize: 11,
@@ -55,7 +75,7 @@ class LivechatTheme {
     this.bodyStyle = const TextStyle(
       fontSize: 15,
       height: 1.4,
-      color: Colors.black87,
+      color: Color(0xDD000000), // Colors.black87
     ),
     this.timestampStyle = const TextStyle(fontSize: 10),
     this.borderRadius = 20.0,
@@ -64,20 +84,20 @@ class LivechatTheme {
   factory LivechatTheme.light() => const LivechatTheme();
 
   factory LivechatTheme.dark() => const LivechatTheme(
-    backgroundColor: Color(0xFF121212),
-    surfaceColor: Color(0xFF1E1E1E),
-    darkHeaderColor: Color(0xFF000000),
-    agentBubbleColor: Color(0xFF2C2C2C),
-    agentTextColor: Colors.white,
-    titleStyle: TextStyle(
+    backgroundColor: const Color(0xFF121212),
+    surfaceColor: const Color(0xFF1E1E1E),
+    darkHeaderColor: const Color(0xFF000000),
+    agentBubbleColor: const Color(0xFF2C2C2C),
+    agentTextColor: const Color(0xFFFFFFFF),
+    titleStyle: const TextStyle(
       fontSize: 16,
       fontWeight: FontWeight.bold,
-      color: Colors.white,
+      color: const Color(0xFFFFFFFF),
     ),
-    subtitleStyle: TextStyle(
+    subtitleStyle: const TextStyle(
       fontSize: 11,
       fontWeight: FontWeight.normal,
-      color: Color(0xFFAAAAAA),
+      color: const Color(0xFFAAAAAA),
     ),
   );
 
@@ -86,6 +106,14 @@ class LivechatTheme {
     Color? backgroundColor,
     Color? surfaceColor,
     Color? darkHeaderColor,
+    Color? inputBackgroundColor,
+    Color? cardShadowColor,
+    Color? avatarBackgroundColor,
+    Color? avatarIconColor,
+    Color? resolvedBackgroundColor,
+    Color? resolvedTextColor,
+    Color? inputHintColor,
+    Color? unavailabilityOverlayColor,
     Color? userBubbleColor,
     Color? agentBubbleColor,
     Color? userTextColor,
@@ -106,6 +134,14 @@ class LivechatTheme {
       backgroundColor: backgroundColor ?? this.backgroundColor,
       surfaceColor: surfaceColor ?? this.surfaceColor,
       darkHeaderColor: darkHeaderColor ?? this.darkHeaderColor,
+      inputBackgroundColor: inputBackgroundColor ?? this.inputBackgroundColor,
+      cardShadowColor: cardShadowColor ?? this.cardShadowColor,
+      avatarBackgroundColor:
+          avatarBackgroundColor ?? this.avatarBackgroundColor,
+      avatarIconColor: avatarIconColor ?? this.avatarIconColor,
+      resolvedBackgroundColor:
+          resolvedBackgroundColor ?? this.resolvedBackgroundColor,
+      resolvedTextColor: resolvedTextColor ?? this.resolvedTextColor,
       userBubbleColor: userBubbleColor ?? this.userBubbleColor,
       agentBubbleColor: agentBubbleColor ?? this.agentBubbleColor,
       userTextColor: userTextColor ?? this.userTextColor,

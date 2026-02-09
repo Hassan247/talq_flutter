@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
+
 import '../state/livechat_controller.dart';
 import '../theme/livechat_theme.dart';
 import 'faq_views.dart';
@@ -33,7 +35,7 @@ class FAQListSection extends StatelessWidget {
                 borderRadius: BorderRadius.circular(24),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.05),
+                    color: theme.cardShadowColor,
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -90,9 +92,15 @@ class FAQListSection extends StatelessWidget {
                           color: theme.primaryColor,
                         ),
                       ),
-                      trailing: Icon(
-                        Icons.chevron_right,
-                        color: theme.primaryColor,
+                      trailing: SvgPicture.asset(
+                        'assets/icons/arrow-right.svg',
+                        package: 'livechat_sdk',
+                        colorFilter: const ColorFilter.mode(
+                          Colors.grey,
+                          BlendMode.srcIn,
+                        ),
+                        width: 14,
+                        height: 14,
                       ),
                       onTap: () {
                         Navigator.push(
@@ -124,10 +132,19 @@ class FAQListSection extends StatelessWidget {
       leading: Container(
         padding: const EdgeInsets.all(10),
         decoration: BoxDecoration(
-          color: const Color(0xFFF1F5F9),
+          color: theme.avatarBackgroundColor,
           borderRadius: BorderRadius.circular(12),
         ),
-        child: Icon(icon, color: theme.subtitleStyle.color, size: 20),
+        child: SvgPicture.asset(
+          'assets/icons/article.svg',
+          package: 'livechat_sdk',
+          colorFilter: ColorFilter.mode(
+            theme.subtitleStyle.color!,
+            BlendMode.srcIn,
+          ),
+          width: 20,
+          height: 20,
+        ),
       ),
       title: Text(
         title,
@@ -136,7 +153,13 @@ class FAQListSection extends StatelessWidget {
           fontWeight: FontWeight.w600,
         ),
       ),
-      trailing: const Icon(Icons.chevron_right, color: Colors.grey),
+      trailing: SvgPicture.asset(
+        'assets/icons/arrow-right.svg',
+        package: 'livechat_sdk',
+        colorFilter: ColorFilter.mode(theme.avatarIconColor, BlendMode.srcIn),
+        width: 14,
+        height: 14,
+      ),
       onTap: onTap,
     );
   }

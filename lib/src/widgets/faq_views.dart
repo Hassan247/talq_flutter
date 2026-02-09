@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
@@ -68,10 +69,15 @@ class _FAQListViewState extends State<FAQListView> {
         backgroundColor: widget.theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: widget.theme.titleStyle.color,
-            size: 20,
+          icon: SvgPicture.asset(
+            'assets/icons/arrow-left.svg',
+            package: 'livechat_sdk',
+            colorFilter: ColorFilter.mode(
+              widget.theme.titleStyle.color!,
+              BlendMode.srcIn,
+            ),
+            width: 16,
+            height: 16,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -101,7 +107,7 @@ class _FAQListViewState extends State<FAQListView> {
                         Icon(
                           Icons.help_outline,
                           size: 64,
-                          color: Colors.grey[300],
+                          color: widget.theme.avatarIconColor,
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -118,6 +124,7 @@ class _FAQListViewState extends State<FAQListView> {
                 }
 
                 return ListView.separated(
+                  key: const PageStorageKey('faq_list'),
                   controller: _scrollController,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
@@ -194,7 +201,7 @@ class _FAQListViewState extends State<FAQListView> {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: widget.theme.cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -222,23 +229,34 @@ class _FAQListViewState extends State<FAQListView> {
                     color: widget.theme.backgroundColor,
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(
-                    Icons.description_outlined,
-                    color: widget.theme.subtitleStyle.color,
-                    size: 20,
+                  child: SvgPicture.asset(
+                    'assets/icons/article.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: ColorFilter.mode(
+                      widget.theme.subtitleStyle.color!,
+                      BlendMode.srcIn,
+                    ),
+                    width: 20,
+                    height: 20,
                   ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
                   child: Text(
                     faq.question,
-                    style: widget.theme.titleStyle.copyWith(fontSize: 14),
+                    style: widget.theme.titleStyle.copyWith(fontSize: 16),
                   ),
                 ),
-                Icon(
-                  Icons.chevron_right,
-                  color: widget.theme.subtitleStyle.color,
-                  size: 20,
+                const SizedBox(width: 10),
+                SvgPicture.asset(
+                  'assets/icons/arrow-right.svg',
+                  package: 'livechat_sdk',
+                  colorFilter: ColorFilter.mode(
+                    widget.theme.subtitleStyle.color!,
+                    BlendMode.srcIn,
+                  ),
+                  width: 14,
+                  height: 14,
                 ),
               ],
             ),
@@ -287,10 +305,15 @@ class _FAQDetailViewState extends State<FAQDetailView> {
         backgroundColor: widget.theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios_new,
-            color: widget.theme.titleStyle.color,
-            size: 20,
+          icon: SvgPicture.asset(
+            'assets/icons/arrow-left.svg',
+            package: 'livechat_sdk',
+            colorFilter: ColorFilter.mode(
+              widget.theme.titleStyle.color!,
+              BlendMode.srcIn,
+            ),
+            width: 16,
+            height: 16,
           ),
           onPressed: () => Navigator.pop(context),
         ),
@@ -334,9 +357,9 @@ class _FAQDetailViewState extends State<FAQDetailView> {
       return Center(
         child: Column(
           children: [
-            const Icon(
+            Icon(
               Icons.check_circle_outline,
-              color: Colors.green,
+              color: widget.theme.resolvedTextColor,
               size: 32,
             ),
             const SizedBox(height: 12),
@@ -391,7 +414,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
         foregroundColor: widget.theme.subtitleStyle.color,
         padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        side: BorderSide(color: Colors.grey[200]!),
+        side: BorderSide(color: widget.theme.avatarBackgroundColor),
       ),
     );
   }

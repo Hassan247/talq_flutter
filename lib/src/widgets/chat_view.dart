@@ -4,6 +4,8 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -38,22 +40,47 @@ class _LivechatViewState extends State<LivechatView>
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   Timer? _typingThrottle;
+  LivechatController? _controller;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addObserver(this);
+    _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToBottom();
       // notify controller that chat is now visible
-      context.read<LivechatController>().setChatVisible(true);
+      if (mounted) {
+        context.read<LivechatController>().setChatVisible(true);
+      }
     });
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    // Save reference to controller for use in dispose()
+    _controller = context.read<LivechatController>();
+  }
+
+  void _onScroll() {
+    if (_scrollController.hasClients) {
+      final maxScroll = _scrollController.position.maxScrollExtent;
+      final currentScroll = _scrollController.position.pixels;
+      // Load more when we are 200px from the "top" (which is maxScroll in reverse)
+      if (maxScroll - currentScroll <= 200) {
+        final controller = _controller ?? context.read<LivechatController>();
+        if (!controller.isFetchingMore && controller.hasMoreMessages) {
+          controller.fetchMessages(isLoadMore: true);
+        }
+      }
+    }
   }
 
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    context.read<LivechatController>().setChatVisible(false);
+    // Use cached controller reference safely
+    _controller?.setChatVisible(false);
     _messageController.dispose();
     _scrollController.dispose();
     _typingThrottle?.cancel();
@@ -68,7 +95,7 @@ class _LivechatViewState extends State<LivechatView>
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
+        0.0, // 0 is bottom in reverse mode
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -120,6 +147,19 @@ class _LivechatViewState extends State<LivechatView>
             appBar: AppBar(
               systemOverlayStyle: SystemUiOverlayStyle.dark,
               elevation: 0,
+              leading: IconButton(
+                icon: SvgPicture.asset(
+                  'assets/icons/arrow-left.svg',
+                  package: 'livechat_sdk',
+                  colorFilter: ColorFilter.mode(
+                    widget.theme.titleStyle.color!,
+                    BlendMode.srcIn,
+                  ),
+                  width: 16,
+                  height: 16,
+                ),
+                onPressed: () => Navigator.pop(context),
+              ),
               centerTitle: true,
               title: Row(
                 mainAxisSize: MainAxisSize.min,
@@ -236,17 +276,40 @@ class _LivechatViewState extends State<LivechatView>
                             : ListView.builder(
                                 controller: _scrollController,
                                 padding: const EdgeInsets.all(16),
-                                itemCount: controller.messages.length,
+                                reverse: true,
+                                // Add +1 item count for loading indicator if fetching more
+                                itemCount:
+                                    controller.messages.length +
+                                    (controller.isFetchingMore ? 1 : 0),
                                 itemBuilder: (context, index) {
+                                  // Show loading indicator at the "top" (end of list)
+                                  if (index == controller.messages.length) {
+                                    return const Padding(
+                                      padding: EdgeInsets.all(16.0),
+                                      child: Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    );
+                                  }
+
                                   final message = controller.messages[index];
                                   final messages = controller.messages;
 
-                                  // Determine if this is the first/last message in a group
-                                  final isFirstInGroup =
+                                  // In Reverse Mode (Newest -> Oldest):
+                                  // Index 0 is Bottom (Newest). Index N is Top (Oldest).
+                                  // Visually "First" (Top of Group) -> Check logic against OLDER message (Next Index, index+1)
+                                  // Visually "Last" (Bottom of Group) -> Check logic against NEWER message (Prev Index, index-1)
+
+                                  // Check if this is the "Last" (Bottom/Newest) message in the visual group
+                                  // True if it's the very first item (index 0) OR previous item (index-1) has different sender
+                                  final isLastInGroup =
                                       index == 0 ||
                                       messages[index - 1].senderType !=
                                           message.senderType;
-                                  final isLastInGroup =
+
+                                  // Check if this is the "First" (Top/Oldest) message in the visual group
+                                  // True if it's the last item (index len-1) OR next item (index+1) has different sender
+                                  final isFirstInGroup =
                                       index == messages.length - 1 ||
                                       messages[index + 1].senderType !=
                                           message.senderType;
@@ -318,17 +381,21 @@ class _LivechatViewState extends State<LivechatView>
       return Container(
         width: double.infinity,
         padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        color: Colors.amber[50],
+        color: widget.theme.resolvedBackgroundColor,
         child: SafeArea(
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.lock_outline, color: Colors.amber[900], size: 24),
+              Icon(
+                Icons.lock_outline,
+                color: widget.theme.resolvedTextColor,
+                size: 24,
+              ),
               const SizedBox(height: 8),
               Text(
                 'This conversation is resolved.',
                 style: TextStyle(
-                  color: Colors.amber[900],
+                  color: widget.theme.resolvedTextColor,
                   fontSize: 14,
                   fontWeight: FontWeight.w600,
                 ),
@@ -354,7 +421,7 @@ class _LivechatViewState extends State<LivechatView>
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: widget.theme.backgroundColor.withOpacity(0.5),
+                  color: widget.theme.inputBackgroundColor,
                   borderRadius: BorderRadius.circular(30),
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
@@ -363,17 +430,20 @@ class _LivechatViewState extends State<LivechatView>
                     // Plus Button
                     GestureDetector(
                       onTap: () => _showAttachmentOptions(context, controller),
-                      child: Container(
+                      child: SizedBox(
                         width: 36,
                         height: 36,
-                        decoration: BoxDecoration(
-                          color: widget.theme.primaryColor,
-                          shape: BoxShape.circle,
-                        ),
-                        child: const Icon(
-                          Icons.add,
-                          color: Colors.white,
-                          size: 24,
+                        child: Center(
+                          child: SvgPicture.asset(
+                            'assets/icons/plus.svg',
+                            package: 'livechat_sdk',
+                            colorFilter: ColorFilter.mode(
+                              widget.theme.primaryColor,
+                              BlendMode.srcIn,
+                            ),
+                            width: 34,
+                            height: 34,
+                          ),
                         ),
                       ),
                     ),
@@ -385,7 +455,7 @@ class _LivechatViewState extends State<LivechatView>
                           hintText: 'Type something',
                           hintStyle: widget.theme.subtitleStyle.copyWith(
                             fontSize: 14,
-                            color: Colors.grey[400],
+                            color: widget.theme.inputHintColor,
                           ),
                           border: InputBorder.none,
                           contentPadding: const EdgeInsets.symmetric(
@@ -410,10 +480,17 @@ class _LivechatViewState extends State<LivechatView>
               child: SizedBox(
                 width: 44,
                 height: 44,
-                child: Icon(
-                  Icons.send_rounded,
-                  color: widget.theme.primaryColor,
-                  size: 24,
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/icons/send-message.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: ColorFilter.mode(
+                      widget.theme.primaryColor,
+                      BlendMode.srcIn,
+                    ),
+                    width: 24,
+                    height: 24,
+                  ),
                 ),
               ),
             ),
@@ -439,7 +516,7 @@ class _LivechatViewState extends State<LivechatView>
             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
             children: [
               _buildOption(
-                icon: Icons.image,
+                iconPath: 'assets/icons/image.svg',
                 label: 'Image',
                 onTap: () async {
                   Navigator.pop(context);
@@ -453,7 +530,7 @@ class _LivechatViewState extends State<LivechatView>
                 },
               ),
               _buildOption(
-                icon: Icons.camera_alt,
+                iconPath: 'assets/icons/camera.svg',
                 label: 'Camera',
                 onTap: () async {
                   Navigator.pop(context);
@@ -467,7 +544,7 @@ class _LivechatViewState extends State<LivechatView>
                 },
               ),
               _buildOption(
-                icon: Icons.insert_drive_file,
+                iconPath: 'assets/icons/document.svg',
                 label: 'Document',
                 onTap: () async {
                   Navigator.pop(context);
@@ -490,7 +567,7 @@ class _LivechatViewState extends State<LivechatView>
   }
 
   Widget _buildOption({
-    required IconData icon,
+    required String iconPath,
     required String label,
     required VoidCallback onTap,
   }) {
@@ -499,10 +576,22 @@ class _LivechatViewState extends State<LivechatView>
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          CircleAvatar(
-            radius: 28,
-            backgroundColor: widget.theme.primaryColor.withOpacity(0.1),
-            child: Icon(icon, color: widget.theme.primaryColor, size: 28),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF1F5F9), // Light grey background
+              shape: BoxShape.circle,
+            ),
+            child: SvgPicture.asset(
+              iconPath,
+              package: 'livechat_sdk',
+              width: 24,
+              height: 24,
+              colorFilter: ColorFilter.mode(
+                widget.theme.primaryColor,
+                BlendMode.srcIn,
+              ),
+            ),
           ),
           const SizedBox(height: 8),
           Text(

@@ -9,7 +9,8 @@ enum SenderType {
   bot;
 
   static SenderType fromString(String? type) {
-    switch (type) {
+    final t = type?.toUpperCase();
+    switch (t) {
       case 'AGENT':
         return SenderType.agent;
       case 'SYSTEM':

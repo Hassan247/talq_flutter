@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/models.dart';
 import '../state/livechat_controller.dart';
@@ -24,7 +25,7 @@ class StartConversationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.cardShadowColor,
             blurRadius: 15,
             offset: const Offset(0, 5),
           ),
@@ -43,8 +44,8 @@ class StartConversationCard extends StatelessWidget {
             children: [
               // Avatar Stack
               SizedBox(
-                width: 90,
-                height: 40,
+                width: 98,
+                height: 48,
                 child: Stack(
                   children: [
                     _buildAvatarItem(
@@ -87,20 +88,24 @@ class StartConversationCard extends StatelessWidget {
             width: double.infinity,
             height: 54,
             child: ElevatedButton(
-              onPressed: () {
-                controller.prepareNewConversation();
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            LivechatView(theme: theme, isNewConversation: true),
-                      ),
-                    );
-                  }
-                });
-              },
+              onPressed: controller.workspace == null
+                  ? null
+                  : () {
+                      controller.prepareNewConversation();
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (context.mounted) {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => LivechatView(
+                                theme: theme,
+                                isNewConversation: true,
+                              ),
+                            ),
+                          );
+                        }
+                      });
+                    },
               style: ElevatedButton.styleFrom(
                 backgroundColor: theme.primaryColor,
                 foregroundColor: Colors.white,
@@ -109,12 +114,21 @@ class StartConversationCard extends StatelessWidget {
                 ),
                 elevation: 0,
               ),
-              child: const Row(
+              child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.send_rounded, size: 18),
-                  SizedBox(width: 12),
-                  Text(
+                  SvgPicture.asset(
+                    'assets/icons/send-icon.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                    width: 18,
+                    height: 18,
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
                     'Start new conversation',
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
                   ),
@@ -134,18 +148,14 @@ class StartConversationCard extends StatelessWidget {
   }) {
     return Positioned(
       left: left,
-      child: Container(
-        padding: const EdgeInsets.all(2),
-        decoration: BoxDecoration(
-          color: theme.surfaceColor,
-          shape: BoxShape.circle,
-        ),
-        child: LivechatAvatar(
-          imageUrl: imageUrl,
-          senderType: SenderType.agent,
-          radius: 18,
-          isFaded: isFaded,
-        ),
+      child: LivechatAvatar(
+        imageUrl: imageUrl,
+        senderType: SenderType.agent,
+        radius: 20,
+        isFaded: isFaded,
+        theme: theme,
+        borderColor: Colors.white,
+        borderWidth: 4,
       ),
     );
   }

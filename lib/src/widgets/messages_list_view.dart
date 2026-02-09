@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -7,6 +8,7 @@ import '../models/models.dart';
 import '../state/livechat_controller.dart';
 import '../theme/livechat_theme.dart';
 import 'chat_view.dart';
+import 'shared_widgets.dart';
 
 class MessagesListView extends StatelessWidget {
   final LivechatTheme theme;
@@ -22,15 +24,20 @@ class MessagesListView extends StatelessWidget {
         backgroundColor: theme.surfaceColor,
         elevation: 0,
         leading: IconButton(
-          icon: Icon(
-            Icons.arrow_back_ios,
-            color: theme.titleStyle.color,
-            size: 20,
+          icon: SvgPicture.asset(
+            'assets/icons/arrow-left.svg',
+            package: 'livechat_sdk',
+            colorFilter: ColorFilter.mode(
+              theme.titleStyle.color!,
+              BlendMode.srcIn,
+            ),
+            width: 16,
+            height: 16,
           ),
           onPressed: () => Navigator.pop(context),
         ),
         centerTitle: true,
-        title: Text('Message', style: theme.titleStyle.copyWith(fontSize: 18)),
+        title: Text('Messages', style: theme.titleStyle.copyWith(fontSize: 18)),
       ),
       body: Consumer<LivechatController>(
         builder: (context, controller, child) {
@@ -96,8 +103,13 @@ class _MessageCard extends StatelessWidget {
     final hasUnread = room.visitorUnreadCount > 0;
 
     final isMe = lastMsg?.senderType == SenderType.visitor;
-    final displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
-    final avatarUrl = room.assigneeAvatarUrl ?? workspace?.logoUrl;
+    final isBot = lastMsg?.senderType == SenderType.bot;
+    final displayName = isBot
+        ? 'Assistant'
+        : (room.assigneeName ?? workspace?.name ?? 'Support Team');
+    final avatarUrl = isBot
+        ? null
+        : (room.assigneeAvatarUrl ?? workspace?.logoUrl);
 
     final timeStr = room.lastMessageAt != null
         ? DateFormat('jm').format(room.lastMessageAt!)
@@ -109,7 +121,7 @@ class _MessageCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: theme.cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -123,38 +135,46 @@ class _MessageCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 // Avatar
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: Colors.grey[200],
-                  ),
-                  clipBehavior: Clip.hardEdge,
-                  child: avatarUrl != null
-                      ? Image.network(
-                          avatarUrl,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) {
-                            return Center(
-                              child: Icon(
-                                Icons.person,
-                                color: Colors.grey[400],
-                                size: 24,
+                // Avatar with Unread Badge
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    LivechatAvatar(
+                      imageUrl: avatarUrl,
+                      senderType: isBot ? SenderType.bot : SenderType.agent,
+                      radius: 20,
+                      theme: theme,
+                    ),
+                    if (hasUnread)
+                      Positioned(
+                        top: -4,
+                        right: -4,
+                        child: Container(
+                          width: 20,
+                          height: 20,
+                          decoration: BoxDecoration(
+                            color: theme.primaryColor,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: Colors.white, width: 2),
+                          ),
+                          child: Center(
+                            child: Text(
+                              room.visitorUnreadCount > 9
+                                  ? '9+'
+                                  : '${room.visitorUnreadCount}',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
                               ),
-                            );
-                          },
-                        )
-                      : Center(
-                          child: Icon(
-                            Icons.person,
-                            color: Colors.grey[400],
-                            size: 24,
+                            ),
                           ),
                         ),
+                      ),
+                  ],
                 ),
                 const SizedBox(width: 16),
                 // Content
@@ -166,33 +186,7 @@ class _MessageCard extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(
-                            child: Row(
-                              children: [
-                                Expanded(child: _buildMessagePreview(lastMsg)),
-                              ],
-                            ),
-                          ),
-                          if (hasUnread) ...[
-                            const SizedBox(width: 8),
-                            Container(
-                              padding: const EdgeInsets.all(5),
-                              decoration: BoxDecoration(
-                                color: theme.primaryColor,
-                                shape: BoxShape.circle,
-                              ),
-                              child: Text(
-                                room.visitorUnreadCount > 9
-                                    ? '9+'
-                                    : '${room.visitorUnreadCount}',
-                                style: const TextStyle(
-                                  color: Colors.white,
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                          ],
+                          Expanded(child: _buildMessagePreview(lastMsg)),
                         ],
                       ),
                       const SizedBox(height: 4),
@@ -241,15 +235,15 @@ class _MessageCard extends StatelessWidget {
                                 vertical: 2,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.green[50],
+                                color: theme.resolvedBackgroundColor,
                                 borderRadius: BorderRadius.circular(12),
                               ),
-                              child: const Text(
+                              child: Text(
                                 'Resolved',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.w500,
-                                  color: Colors.green,
+                                  color: theme.resolvedTextColor,
                                 ),
                               ),
                             ),
@@ -257,6 +251,17 @@ class _MessageCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                ),
+                const SizedBox(width: 8),
+                SvgPicture.asset(
+                  'assets/icons/arrow-right.svg',
+                  package: 'livechat_sdk',
+                  colorFilter: const ColorFilter.mode(
+                    Colors.grey,
+                    BlendMode.srcIn,
+                  ),
+                  width: 12,
+                  height: 12,
                 ),
               ],
             ),
@@ -272,7 +277,7 @@ class _MessageCard extends StatelessWidget {
     final hasUnread = room.visitorUnreadCount > 0;
     final style = theme.titleStyle.copyWith(
       fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-      fontSize: 16,
+      fontSize: 14,
     );
 
     IconData? icon;

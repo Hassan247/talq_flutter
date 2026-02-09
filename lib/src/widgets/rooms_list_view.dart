@@ -88,14 +88,25 @@ class _RoomsListViewState extends State<RoomsListView> {
                                       ),
                                     ),
                               )
-                            : SvgPicture.asset(
-                                'assets/images/monosend_logo.svg',
-                                package: 'livechat_sdk',
-                                height: 32,
-                                colorFilter: const ColorFilter.mode(
-                                  Colors.white,
-                                  BlendMode.srcIn,
-                                ),
+                            : Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.forum_rounded,
+                                    color: Colors.white,
+                                    size: 24,
+                                  ),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Glint',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.bold,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ],
                               ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
@@ -109,15 +120,24 @@ class _RoomsListViewState extends State<RoomsListView> {
                     ),
                     const SizedBox(height: 40),
                     // Title
-                    Text(
-                      controller.workspace?.welcomeMessage ??
-                          'Hello there How can we\nhelp you today?',
-                      style: const TextStyle(
-                        color: Colors.white,
-                        fontSize: 28,
-                        fontWeight: FontWeight.bold,
-                        height: 1.2,
-                      ),
+                    // Title
+                    Builder(
+                      builder: (context) {
+                        final welcome = controller.workspace?.welcomeMessage;
+                        final hasWelcome =
+                            welcome != null && welcome.isNotEmpty;
+                        return Text(
+                          hasWelcome
+                              ? welcome
+                              : 'Welcome!\nHow can we help today?',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            height: 1.2,
+                          ),
+                        );
+                      },
                     ),
                   ],
                 ),
@@ -158,7 +178,7 @@ class _RoomsListViewState extends State<RoomsListView> {
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.05),
+            color: theme.cardShadowColor,
             blurRadius: 10,
             offset: const Offset(0, 4),
           ),
@@ -179,14 +199,20 @@ class _RoomsListViewState extends State<RoomsListView> {
           child: Padding(
             padding: const EdgeInsets.all(20),
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
                 CircleAvatar(
                   backgroundColor: theme.primaryColor,
                   radius: 20,
-                  child: const Icon(
-                    Icons.chat_bubble,
-                    color: Colors.white,
-                    size: 20,
+                  child: SvgPicture.asset(
+                    'assets/icons/messages.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: const ColorFilter.mode(
+                      Colors.white,
+                      BlendMode.srcIn,
+                    ),
+                    width: 20,
+                    height: 20,
                   ),
                 ),
                 const SizedBox(width: 16),
@@ -213,7 +239,16 @@ class _RoomsListViewState extends State<RoomsListView> {
                   },
                 ),
                 const SizedBox(width: 8),
-                const Icon(Icons.chevron_right, color: Colors.grey, size: 20),
+                SvgPicture.asset(
+                  'assets/icons/arrow-right.svg',
+                  package: 'livechat_sdk',
+                  colorFilter: ColorFilter.mode(
+                    theme.avatarIconColor,
+                    BlendMode.srcIn,
+                  ),
+                  width: 14,
+                  height: 16,
+                ),
               ],
             ),
           ),
