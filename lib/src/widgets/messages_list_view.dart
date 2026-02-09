@@ -169,10 +169,6 @@ class _MessageCard extends StatelessWidget {
                           Expanded(
                             child: Row(
                               children: [
-                                if (isMe && lastMsg != null) ...[
-                                  _buildTicks(lastMsg),
-                                  const SizedBox(width: 4),
-                                ],
                                 Expanded(child: _buildMessagePreview(lastMsg)),
                               ],
                             ),
@@ -202,12 +198,16 @@ class _MessageCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
+                          if (isMe && lastMsg != null) ...[
+                            _buildTicks(lastMsg),
+                            const SizedBox(width: 4),
+                          ],
                           Expanded(
                             child: Text.rich(
                               TextSpan(
                                 children: [
                                   TextSpan(
-                                    text: isMe ? 'You' : displayName,
+                                    text: '${isMe ? 'You' : displayName} • ',
                                     style: TextStyle(
                                       fontWeight: FontWeight.w600,
                                       color: hasUnread
@@ -216,7 +216,7 @@ class _MessageCard extends StatelessWidget {
                                     ),
                                   ),
                                   TextSpan(
-                                    text: ' • $timeStr',
+                                    text: timeStr,
                                     style: theme.subtitleStyle.copyWith(
                                       color: hasUnread
                                           ? Colors.black87
