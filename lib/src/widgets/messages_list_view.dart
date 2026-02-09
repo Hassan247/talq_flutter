@@ -198,10 +198,6 @@ class _MessageCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          if (isMe && lastMsg != null) ...[
-                            _buildTicks(lastMsg),
-                            const SizedBox(width: 4),
-                          ],
                           Expanded(
                             child: Text.rich(
                               TextSpan(
@@ -230,6 +226,10 @@ class _MessageCard extends StatelessWidget {
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
+                          if (isMe && lastMsg != null) ...[
+                            const SizedBox(width: 4),
+                            _buildTicks(lastMsg),
+                          ],
                           if (room.status == RoomStatus.resolved)
                             Container(
                               padding: const EdgeInsets.symmetric(
