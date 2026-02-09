@@ -115,8 +115,10 @@ class LivechatController extends ChangeNotifier {
     String? currentPage,
   }) async {
     if (_isInitialized) return;
+    if (_isLoading) return;
 
     _isLoading = true;
+    final capturedVersion = _fetchVersion;
     notifyListeners();
 
     try {
@@ -223,7 +225,18 @@ class LivechatController extends ChangeNotifier {
 
       // Populate rooms list
       final List roomsList = authData['visitor']['rooms'] ?? [];
-      _rooms = roomsList.map((r) => LivechatRoom.fromJson(r)).toList();
+      final newRooms = roomsList.map((r) => LivechatRoom.fromJson(r)).toList();
+
+      // Check for race condition: if _fetchVersion changed, another process (like prepareNewConversation)
+      // has taken control of the state. We should not overwrite it.
+      if (capturedVersion != _fetchVersion) {
+        debugPrint(
+          '[LivechatController] initialize: fetchVersion mismatch, aborting state update',
+        );
+        return;
+      }
+
+      _rooms = newRooms;
       _sortRooms();
 
       // Try to find an active room or default to the most recent one
@@ -423,6 +436,8 @@ class LivechatController extends ChangeNotifier {
     final capturedVersion = _fetchVersion;
 
     // immediately update _roomId if switching rooms
+    if (capturedVersion != _fetchVersion) return; // safety check
+
     if (roomId != null && roomId != _roomId) {
       _roomId = roomId;
       _messages = []; // clear stale messages
@@ -462,10 +477,10 @@ class LivechatController extends ChangeNotifier {
 
     final result = await _api.query(query, variables: {'roomId': targetRoomId});
 
-    // discard stale result if state changed during async call
+    // Safety check: if version changed while fetching, abort
     if (capturedVersion != _fetchVersion) {
       debugPrint(
-        '[LivechatController] fetchMessages result discarded (stale: version $capturedVersion vs current $_fetchVersion)',
+        '[LivechatController] fetchMessages: version mismatch, aborting',
       );
       return;
     }
@@ -1064,6 +1079,7 @@ class LivechatController extends ChangeNotifier {
 
   Future<void> _fetchRoomStatus() async {
     if (_roomId == null) return;
+    final capturedVersion = _fetchVersion;
 
     const String query = r'''
       query GetRoom($id: ID!) {
@@ -1077,6 +1093,15 @@ class LivechatController extends ChangeNotifier {
     ''';
 
     final result = await _api.query(query, variables: {'id': _roomId});
+
+    // Safety check: if version changed while fetching, abort
+    if (capturedVersion != _fetchVersion) {
+      debugPrint(
+        '[LivechatController] _fetchRoomStatus: version mismatch, aborting',
+      );
+      return;
+    }
+
     if (!result.hasException && result.data != null) {
       final roomData = result.data!['room'];
       _roomStatus = RoomStatus.fromString(roomData['status']);
