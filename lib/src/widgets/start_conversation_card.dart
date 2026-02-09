@@ -177,11 +177,7 @@ class StartConversationCard extends StatelessWidget {
         const SizedBox(height: 4),
         Row(
           children: [
-            Icon(
-              Icons.access_time_filled,
-              size: 16,
-              color: theme.titleStyle.color,
-            ),
+            Icon(Icons.access_time_filled, size: 16, color: theme.primaryColor),
             const SizedBox(width: 6),
             Flexible(
               child: Text(

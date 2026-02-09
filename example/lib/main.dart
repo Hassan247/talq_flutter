@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 
 void main() {
   // 1. Setup the API client
+  // use 127.0.0.1 for simulator, or your Mac's IP (e.g., 192.168.1.5) for physical device
   final livechatApi = LivechatClient(
     httpUrl: 'http://127.0.0.1:8082/graphql',
     wsUrl: 'ws://127.0.0.1:8082/graphql',
@@ -59,7 +60,7 @@ class _MyHomePageState extends State<MyHomePage> {
       await controller.initialize(
         firstName: 'Visitor',
         lastName: id,
-        email: 'visitor_$id@payasap.com',
+        email: 'visitor_$id@example.com',
       );
     });
   }

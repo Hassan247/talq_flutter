@@ -43,6 +43,7 @@ class LivechatController extends ChangeNotifier {
   StreamSubscription? _messageSubscription;
   StreamSubscription? _typingSubscription;
   StreamSubscription? _roomSubscription;
+  StreamSubscription? _workspaceSubscription;
   Timer? _typingTimer;
   LivechatMessage? _replyingTo;
   bool _isChatVisible = false;
@@ -287,6 +288,7 @@ class LivechatController extends ChangeNotifier {
 
       // 5. Start subscriptions
       _startMessageSubscription();
+      _startWorkspaceSubscription();
       if (_roomId != null) {
         _startTypingSubscription();
       }
@@ -445,6 +447,7 @@ class LivechatController extends ChangeNotifier {
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
     _roomSubscription?.cancel();
+    _workspaceSubscription?.cancel();
     notifyListeners();
   }
 
@@ -1109,6 +1112,66 @@ class LivechatController extends ChangeNotifier {
         );
   }
 
+  void _startWorkspaceSubscription() {
+    _workspaceSubscription?.cancel();
+
+    const String sub = r'''
+      subscription {
+        visitorWorkspaceUpdated {
+          id
+          name
+          logoUrl
+          livechatLogoUrl
+          showResponseTime
+          responseTimeType
+          customResponseTime
+          autoReplyEnabled
+          autoReplyMessage
+          welcomeMessage
+          primaryColor
+        }
+      }
+    ''';
+
+    _workspaceSubscription = _api
+        .subscribe(sub)
+        .listen(
+          (result) {
+            if (result.data != null) {
+              final wsData = result.data!['visitorWorkspaceUpdated'];
+              final newWorkspace = LivechatWorkspace.fromJson(wsData);
+
+              // preserve agent avatars from existing workspace
+              final avatars = _workspace?.agentAvatars ?? [];
+              _workspace = newWorkspace.copyWith(agentAvatars: avatars);
+
+              // apply primary color to theme if valid
+              if (_workspace!.primaryColor.isNotEmpty) {
+                try {
+                  _theme = _theme.copyWith(
+                    primaryColor: LivechatTheme.fromHex(
+                      _workspace!.primaryColor,
+                    ),
+                  );
+                  debugPrint(
+                    '[LivechatController] Theme updated: primaryColor=${_workspace!.primaryColor}',
+                  );
+                } catch (_) {
+                  // invalid hex, keep current theme
+                }
+              }
+
+              notifyListeners();
+            }
+          },
+          onError: (error) {
+            debugPrint(
+              '[LivechatController] Workspace Subscription Error: $error',
+            );
+          },
+        );
+  }
+
   void _startTypingSubscription() {
     if (_roomId == null) return;
     _typingSubscription?.cancel();
@@ -1232,6 +1295,7 @@ class LivechatController extends ChangeNotifier {
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
     _roomSubscription?.cancel();
+    _workspaceSubscription?.cancel();
     _typingTimer?.cancel();
     super.dispose();
   }
