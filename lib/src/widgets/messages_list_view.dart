@@ -219,17 +219,21 @@ class _MessageCard extends StatelessWidget {
                                           : theme.subtitleStyle.color,
                                     ),
                                   ),
+                                  if (isMe && lastMsg != null)
+                                    WidgetSpan(
+                                      alignment: PlaceholderAlignment.middle,
+                                      child: Padding(
+                                        padding: const EdgeInsets.only(left: 4),
+                                        child: _buildTicks(lastMsg),
+                                      ),
+                                    ),
                                 ],
                               ),
-                              style: TextStyle(fontSize: 13),
+                              style: const TextStyle(fontSize: 13),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
-                          if (isMe && lastMsg != null) ...[
-                            const SizedBox(width: 4),
-                            _buildTicks(lastMsg),
-                          ],
                           if (room.status == RoomStatus.resolved)
                             Container(
                               padding: const EdgeInsets.symmetric(
