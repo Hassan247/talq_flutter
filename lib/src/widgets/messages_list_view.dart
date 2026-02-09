@@ -203,14 +203,31 @@ class _MessageCard extends StatelessWidget {
                       Row(
                         children: [
                           Expanded(
-                            child: Text(
-                              '${isMe ? 'You' : displayName} • $timeStr',
-                              style: theme.subtitleStyle.copyWith(
-                                color: hasUnread
-                                    ? Colors.black87
-                                    : theme.subtitleStyle.color,
-                                fontSize: 13,
+                            child: Text.rich(
+                              TextSpan(
+                                children: [
+                                  TextSpan(
+                                    text: isMe ? 'You' : displayName,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      color: hasUnread
+                                          ? Colors.black
+                                          : theme.subtitleStyle.color,
+                                    ),
+                                  ),
+                                  TextSpan(
+                                    text: ' • $timeStr',
+                                    style: theme.subtitleStyle.copyWith(
+                                      color: hasUnread
+                                          ? Colors.black87
+                                          : theme.subtitleStyle.color,
+                                    ),
+                                  ),
+                                ],
                               ),
+                              style: TextStyle(fontSize: 13),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (room.status == RoomStatus.resolved)
