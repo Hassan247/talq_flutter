@@ -150,6 +150,8 @@ class _LivechatViewState extends State<LivechatView>
               appBar: AppBar(
                 systemOverlayStyle: SystemUiOverlayStyle.dark,
                 elevation: 0,
+                scrolledUnderElevation: 0,
+                backgroundColor: theme.backgroundColor,
                 leading: IconButton(
                   icon: SvgPicture.asset(
                     'assets/icons/arrow-left.svg',
@@ -158,31 +160,35 @@ class _LivechatViewState extends State<LivechatView>
                       theme.titleStyle.color!,
                       BlendMode.srcIn,
                     ),
-                    width: 16,
-                    height: 16,
+                    width: 20,
+                    height: 20,
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
-                centerTitle: true,
+                centerTitle: false,
+                titleSpacing: 0,
                 title: Row(
-                  mainAxisSize: MainAxisSize.min,
                   children: [
                     LivechatAvatar(
                       imageUrl: controller.currentRoom?.assigneeAvatarUrl,
                       senderType: SenderType.agent,
-                      radius: 14,
+                      radius: 18,
                     ),
-                    const SizedBox(width: 10),
-                    Flexible(
+                    const SizedBox(width: 12),
+                    Expanded(
                       child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.center,
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
                           Text(
                             controller.currentRoom?.assigneeName ??
                                 controller.workspace?.name ??
                                 widget.title,
-                            style: theme.titleStyle.copyWith(fontSize: 16),
+                            style: theme.titleStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w700,
+                              letterSpacing: -0.3,
+                            ),
                             overflow: TextOverflow.ellipsis,
                           ),
                           if (controller.workspace?.showResponseTime == true)
@@ -190,27 +196,31 @@ class _LivechatViewState extends State<LivechatView>
                               _formatResponseTime(
                                 controller.workspace?.responseTime,
                               ),
-                              style: theme.subtitleStyle.copyWith(fontSize: 11),
+                              style: theme.subtitleStyle.copyWith(
+                                fontSize: 12,
+                                color: theme.subtitleStyle.color?.withOpacity(
+                                  0.6,
+                                ),
+                              ),
                             ),
                         ],
                       ),
                     ),
                   ],
                 ),
-                backgroundColor: theme.surfaceColor,
-                foregroundColor: theme.titleStyle.color,
                 actions: [
                   IconButton(
                     icon: Icon(
-                      Icons.close,
-                      color: theme.titleStyle.color,
-                      size: 24,
+                      Icons.close_rounded,
+                      color: theme.titleStyle.color?.withOpacity(0.8),
+                      size: 26,
                     ),
                     onPressed: () {
                       context.read<LivechatController>().setChatVisible(false);
                       Navigator.pop(context);
                     },
                   ),
+                  const SizedBox(width: 8),
                 ],
               ),
               body: Stack(
@@ -236,12 +246,28 @@ class _LivechatViewState extends State<LivechatView>
                                             mainAxisAlignment:
                                                 MainAxisAlignment.center,
                                             children: [
-                                              Icon(
-                                                Icons.chat_bubble_outline,
-                                                size: 64,
-                                                color: Colors.grey[300],
+                                              Container(
+                                                padding: const EdgeInsets.all(
+                                                  24,
+                                                ),
+                                                decoration: BoxDecoration(
+                                                  color: theme.primaryColor
+                                                      .withOpacity(0.04),
+                                                  shape: BoxShape.circle,
+                                                ),
+                                                child: SvgPicture.asset(
+                                                  'assets/icons/messages.svg',
+                                                  package: 'livechat_sdk',
+                                                  colorFilter: ColorFilter.mode(
+                                                    theme.primaryColor
+                                                        .withOpacity(0.15),
+                                                    BlendMode.srcIn,
+                                                  ),
+                                                  width: 56,
+                                                  height: 56,
+                                                ),
                                               ),
-                                              const SizedBox(height: 16),
+                                              const SizedBox(height: 32),
                                               Text(
                                                 controller
                                                                 .workspace
@@ -254,18 +280,33 @@ class _LivechatViewState extends State<LivechatView>
                                                     ? controller
                                                           .workspace!
                                                           .welcomeMessage!
-                                                    : 'Start a conversation!',
+                                                    : 'Hello there!\nHow can we help today?',
                                                 textAlign: TextAlign.center,
-                                                style: theme.bodyStyle.copyWith(
-                                                  color: Colors.grey[600],
-                                                  fontWeight: FontWeight.w500,
-                                                ),
+                                                style: theme.titleStyle
+                                                    .copyWith(
+                                                      fontSize: 22,
+                                                      fontWeight:
+                                                          FontWeight.w800,
+                                                      color: theme
+                                                          .titleStyle
+                                                          .color
+                                                          ?.withOpacity(0.8),
+                                                      letterSpacing: -0.5,
+                                                      height: 1.2,
+                                                    ),
                                               ),
-                                              const SizedBox(height: 8),
+                                              const SizedBox(height: 12),
                                               Text(
                                                 'Type a message below to begin.',
                                                 style: theme.subtitleStyle
-                                                    .copyWith(fontSize: 14),
+                                                    .copyWith(
+                                                      fontSize: 15,
+                                                      color: theme
+                                                          .subtitleStyle
+                                                          .color
+                                                          ?.withOpacity(0.5),
+                                                      letterSpacing: -0.2,
+                                                    ),
                                               ),
                                             ],
                                           ),
@@ -390,82 +431,94 @@ class _LivechatViewState extends State<LivechatView>
     if (controller.roomStatus == RoomStatus.resolved) {
       return Container(
         width: double.infinity,
-        padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
-        color: theme.resolvedBackgroundColor,
-        child: SafeArea(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Icon(
-                Icons.lock_outline,
-                color: theme.resolvedTextColor,
-                size: 24,
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'This conversation is resolved.',
-                style: TextStyle(
-                  color: theme.resolvedTextColor,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                'You cannot send new messages.',
-                style: TextStyle(color: Colors.amber[800], fontSize: 12),
-              ),
-            ],
+        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
+        decoration: BoxDecoration(
+          color: theme.resolvedBackgroundColor,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(
+            color: theme.resolvedTextColor.withOpacity(0.1),
+            width: 1,
           ),
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.lock_rounded, color: theme.resolvedTextColor, size: 24),
+            const SizedBox(height: 10),
+            Text(
+              'This conversation is resolved',
+              style: TextStyle(
+                color: theme.resolvedTextColor,
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              'You cannot send new messages',
+              style: TextStyle(
+                color: theme.resolvedTextColor.withOpacity(0.7),
+                fontSize: 13,
+              ),
+            ),
+          ],
         ),
       );
     }
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      color: theme.surfaceColor,
+      decoration: BoxDecoration(color: theme.backgroundColor),
       child: SafeArea(
         child: Row(
           children: [
-            // Floating pill input
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.inputBackgroundColor,
-                  borderRadius: BorderRadius.circular(30),
+                  color: theme.surfaceColor,
+                  borderRadius: BorderRadius.circular(28),
+                  border: Border.all(
+                    color: theme.cardShadowColor.withOpacity(0.08),
+                    width: 1,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.cardShadowColor.withOpacity(0.04),
+                      blurRadius: 10,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Row(
                   children: [
-                    // Plus Button
-                    GestureDetector(
-                      onTap: () =>
+                    IconButton(
+                      onPressed: () =>
                           _showAttachmentOptions(context, controller, theme),
-                      child: SizedBox(
-                        width: 36,
-                        height: 36,
-                        child: Center(
-                          child: SvgPicture.asset(
-                            'assets/icons/plus.svg',
-                            package: 'livechat_sdk',
-                            colorFilter: ColorFilter.mode(
-                              theme.primaryColor,
-                              BlendMode.srcIn,
-                            ),
-                            width: 34,
-                            height: 34,
-                          ),
+                      icon: SvgPicture.asset(
+                        'assets/icons/plus.svg',
+                        package: 'livechat_sdk',
+                        colorFilter: ColorFilter.mode(
+                          theme.primaryColor,
+                          BlendMode.srcIn,
                         ),
+                        width: 24,
+                        height: 24,
+                      ),
+                      style: IconButton.styleFrom(
+                        backgroundColor: theme.primaryColor.withOpacity(0.05),
+                        padding: const EdgeInsets.all(8),
                       ),
                     ),
-                    const SizedBox(width: 8),
+                    const SizedBox(width: 4),
                     Expanded(
                       child: TextField(
                         controller: _messageController,
                         decoration: InputDecoration(
                           hintText: 'Type something',
                           hintStyle: theme.subtitleStyle.copyWith(
-                            fontSize: 14,
+                            fontSize: 15,
                             color: theme.inputHintColor,
                           ),
                           border: InputBorder.none,
@@ -475,7 +528,7 @@ class _LivechatViewState extends State<LivechatView>
                           isDense: true,
                         ),
                         minLines: 1,
-                        maxLines: 4,
+                        maxLines: 5,
                         style: theme.bodyStyle.copyWith(fontSize: 16),
                         onChanged: (text) => _onTextChanged(text, controller),
                       ),
@@ -485,24 +538,31 @@ class _LivechatViewState extends State<LivechatView>
               ),
             ),
             const SizedBox(width: 8),
-            // Send Button
-            GestureDetector(
-              onTap: () => _handleSend(controller),
-              child: SizedBox(
-                width: 44,
-                height: 44,
-                child: Center(
-                  child: SvgPicture.asset(
-                    'assets/icons/send-message.svg',
-                    package: 'livechat_sdk',
-                    colorFilter: ColorFilter.mode(
-                      theme.primaryColor,
-                      BlendMode.srcIn,
-                    ),
-                    width: 24,
-                    height: 24,
+            Container(
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: theme.primaryColor.withOpacity(0.3),
+                    blurRadius: 10,
+                    offset: const Offset(0, 4),
                   ),
+                ],
+              ),
+              child: IconButton(
+                onPressed: () => _handleSend(controller),
+                icon: SvgPicture.asset(
+                  'assets/icons/send-message.svg',
+                  package: 'livechat_sdk',
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                  width: 22,
+                  height: 22,
                 ),
+                padding: const EdgeInsets.all(12),
               ),
             ),
           ],
@@ -650,16 +710,18 @@ class _LivechatViewState extends State<LivechatView>
         (reply.senderType == SenderType.visitor ? 'YOU' : 'AGENT');
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
       decoration: BoxDecoration(
         color: theme.surfaceColor,
-        border: Border(top: BorderSide(color: Colors.grey[200]!)),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: theme.cardShadowColor.withOpacity(0.08)),
       ),
       child: IntrinsicHeight(
         child: Row(
           children: [
             Container(
-              width: 4,
+              width: 3.5,
               decoration: BoxDecoration(
                 color: theme.primaryColor,
                 borderRadius: BorderRadius.circular(2),
@@ -675,6 +737,7 @@ class _LivechatViewState extends State<LivechatView>
                     senderName,
                     style: theme.titleStyle.copyWith(
                       fontSize: 12,
+                      fontWeight: FontWeight.w800,
                       color: theme.primaryColor,
                     ),
                   ),
@@ -685,13 +748,20 @@ class _LivechatViewState extends State<LivechatView>
                         : reply.content,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: theme.subtitleStyle.copyWith(fontSize: 13),
+                    style: theme.subtitleStyle.copyWith(
+                      fontSize: 14,
+                      color: theme.subtitleStyle.color?.withOpacity(0.8),
+                    ),
                   ),
                 ],
               ),
             ),
             IconButton(
-              icon: const Icon(Icons.close, size: 20, color: Colors.grey),
+              icon: const Icon(
+                Icons.close_rounded,
+                size: 20,
+                color: Colors.grey,
+              ),
               onPressed: () => controller.setReplyingTo(null),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints(),
@@ -823,21 +893,31 @@ class _ChatBubble extends StatelessWidget {
                             ? theme.userBubbleColor
                             : theme.agentBubbleColor,
                         borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(theme.borderRadius),
-                          topRight: Radius.circular(theme.borderRadius),
+                          topLeft: Radius.circular(
+                            !isMe && !isFirstInGroup ? 4 : theme.borderRadius,
+                          ),
+                          topRight: Radius.circular(
+                            isMe && !isFirstInGroup ? 4 : theme.borderRadius,
+                          ),
                           bottomLeft: Radius.circular(
-                            isMe ? theme.borderRadius : 4,
+                            !isMe && !isLastInGroup ? 4 : theme.borderRadius,
                           ),
                           bottomRight: Radius.circular(
-                            isMe ? 4 : theme.borderRadius,
+                            isMe && !isLastInGroup ? 4 : theme.borderRadius,
                           ),
                         ),
                         boxShadow: [
                           if (!isMe)
                             BoxShadow(
-                              color: Colors.black.withOpacity(0.05),
-                              blurRadius: 4,
-                              offset: const Offset(0, 2),
+                              color: theme.cardShadowColor.withOpacity(0.06),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
+                            ),
+                          if (isMe)
+                            BoxShadow(
+                              color: theme.userBubbleColor.withOpacity(0.12),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
                             ),
                         ],
                       ),
@@ -934,17 +1014,17 @@ class _ChatBubble extends StatelessWidget {
         (quote.senderType == SenderType.visitor ? 'VISITOR' : 'AGENT');
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isMe
-            ? Colors.white.withOpacity(0.15)
-            : Colors.black.withOpacity(0.05),
-        borderRadius: BorderRadius.circular(8),
+            ? Colors.black.withOpacity(0.1)
+            : theme.backgroundColor.withOpacity(0.6),
+        borderRadius: BorderRadius.circular(12),
         border: Border(
           left: BorderSide(
-            color: isMe ? Colors.white70 : theme.primaryColor,
-            width: 3,
+            color: isMe ? Colors.white.withOpacity(0.4) : theme.primaryColor,
+            width: 3.5,
           ),
         ),
       ),
@@ -952,22 +1032,27 @@ class _ChatBubble extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            senderName.toUpperCase(),
+            senderName,
             style: theme.titleStyle.copyWith(
-              fontSize: 10,
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
               color: isMe ? Colors.white : theme.primaryColor,
+              letterSpacing: 0.1,
             ),
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             quote.contentType == ContentType.image
-                ? 'Sent a image: ${quote.content}'
+                ? 'Sent an image'
                 : quote.content,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: theme.subtitleStyle.copyWith(
-              fontSize: 12,
-              color: isMe ? Colors.white.withOpacity(0.9) : Colors.black54,
+              fontSize: 13,
+              height: 1.3,
+              color: isMe
+                  ? Colors.white.withOpacity(0.85)
+                  : theme.subtitleStyle.color?.withOpacity(0.8),
             ),
           ),
         ],

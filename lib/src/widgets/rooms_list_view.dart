@@ -8,7 +8,6 @@ import '../state/livechat_controller.dart';
 import '../theme/livechat_theme.dart';
 import 'faq_list_section.dart';
 import 'messages_list_view.dart';
-import 'shared_widgets.dart';
 import 'start_conversation_card.dart';
 
 class RoomsListView extends StatefulWidget {
@@ -47,28 +46,33 @@ class _RoomsListViewState extends State<RoomsListView> {
               top: 0,
               left: 0,
               right: 0,
-              height: MediaQuery.of(context).padding.top + 280, // Adjust height
+              height: MediaQuery.of(context).padding.top + 320,
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.primaryColor,
+                  gradient: LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      theme.primaryColor,
+                      Color.lerp(theme.primaryColor, Colors.black, 0.15)!,
+                    ],
+                  ),
                   borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(22),
-                    bottomRight: Radius.circular(22),
+                    bottomLeft: Radius.circular(32),
+                    bottomRight: Radius.circular(32),
                   ),
                 ),
                 padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 10,
+                  top: MediaQuery.of(context).padding.top + 4,
                   left: 24,
-                  right: 24,
+                  right: 16,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo + Close Icon Row
                     Row(
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        // Logo fallback: livechatLogoUrl ?? logoUrl
                         (controller.workspace?.livechatLogoUrl ??
                                     controller.workspace?.logoUrl) !=
                                 null
@@ -76,12 +80,12 @@ class _RoomsListViewState extends State<RoomsListView> {
                                 imageUrl:
                                     controller.workspace?.livechatLogoUrl ??
                                     controller.workspace!.logoUrl!,
-                                height: 32,
+                                height: 36,
                                 errorWidget: (context, url, error) =>
                                     SvgPicture.asset(
                                       'assets/images/monosend_logo.svg',
                                       package: 'livechat_sdk',
-                                      height: 32,
+                                      height: 36,
                                       colorFilter: const ColorFilter.mode(
                                         Colors.white,
                                         BlendMode.srcIn,
@@ -94,48 +98,76 @@ class _RoomsListViewState extends State<RoomsListView> {
                                   Icon(
                                     Icons.forum_rounded,
                                     color: Colors.white,
-                                    size: 24,
+                                    size: 28,
                                   ),
-                                  const SizedBox(width: 8),
+                                  const SizedBox(width: 10),
                                   Text(
                                     'Glint',
                                     style: TextStyle(
                                       color: Colors.white,
-                                      fontSize: 22,
-                                      fontWeight: FontWeight.bold,
-                                      letterSpacing: 0.5,
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.w900,
+                                      letterSpacing: -0.5,
                                     ),
                                   ),
                                 ],
                               ),
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(
-                            Icons.close,
-                            color: Colors.white,
-                            size: 28,
+                          icon: Container(
+                            padding: const EdgeInsets.all(6),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.1),
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(
+                              Icons.close_rounded,
+                              color: Colors.white,
+                              size: 24,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 40),
-                    // Title
-                    // Title
+                    const SizedBox(height: 36),
                     Builder(
                       builder: (context) {
                         final welcome = controller.workspace?.welcomeMessage;
                         final hasWelcome =
                             welcome != null && welcome.isNotEmpty;
-                        return Text(
-                          hasWelcome
-                              ? welcome
-                              : 'Welcome!\nHow can we help today?',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 28,
-                            fontWeight: FontWeight.bold,
-                            height: 1.2,
-                          ),
+                        final text = hasWelcome
+                            ? welcome
+                            : 'Hello there!\nHow can we help today?';
+
+                        final parts = text.split('\n');
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              parts[0],
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 32,
+                                fontWeight: FontWeight.w800,
+                                height: 1.1,
+                                letterSpacing: -0.8,
+                              ),
+                            ),
+                            if (parts.length > 1)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 4),
+                                child: Text(
+                                  parts.sublist(1).join('\n'),
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.9),
+                                    fontSize: 26,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.2,
+                                    letterSpacing: -0.5,
+                                  ),
+                                ),
+                              ),
+                          ],
                         );
                       },
                     ),
@@ -146,7 +178,7 @@ class _RoomsListViewState extends State<RoomsListView> {
 
             // 2. Scrollable Content overlapping the header
             Positioned.fill(
-              top: MediaQuery.of(context).padding.top + 180,
+              top: MediaQuery.of(context).padding.top + 220,
               child: SingleChildScrollView(
                 padding: const EdgeInsets.symmetric(horizontal: 20),
                 child: Column(
@@ -176,10 +208,14 @@ class _RoomsListViewState extends State<RoomsListView> {
       decoration: BoxDecoration(
         color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.cardShadowColor.withOpacity(0.08),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor,
-            blurRadius: 10,
+            color: theme.cardShadowColor.withOpacity(0.04),
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -195,13 +231,22 @@ class _RoomsListViewState extends State<RoomsListView> {
           },
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.all(20),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
             child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                CircleAvatar(
-                  backgroundColor: theme.primaryColor,
-                  radius: 20,
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: theme.primaryColor,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.primaryColor.withOpacity(0.2),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
                   child: SvgPicture.asset(
                     'assets/icons/messages.svg',
                     package: 'livechat_sdk',
@@ -217,7 +262,11 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Expanded(
                   child: Text(
                     'Messages',
-                    style: theme.titleStyle.copyWith(fontSize: 16),
+                    style: theme.titleStyle.copyWith(
+                      fontSize: 17,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
                   ),
                 ),
                 Consumer<LivechatController>(
@@ -229,23 +278,32 @@ class _RoomsListViewState extends State<RoomsListView> {
 
                     if (unreadTotal == 0) return const SizedBox.shrink();
 
-                    return StatusBadge(
-                      text: '$unreadTotal unread',
-                      backgroundColor: theme.unreadBadgeColor,
-                      textColor: theme.unreadTextColor,
+                    return Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: theme.unreadBadgeColor,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        '$unreadTotal unread',
+                        style: TextStyle(
+                          color: theme.unreadTextColor,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.2,
+                        ),
+                      ),
                     );
                   },
                 ),
                 const SizedBox(width: 8),
-                SvgPicture.asset(
-                  'assets/icons/arrow-right.svg',
-                  package: 'livechat_sdk',
-                  colorFilter: ColorFilter.mode(
-                    theme.avatarIconColor,
-                    BlendMode.srcIn,
-                  ),
-                  width: 14,
-                  height: 16,
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: theme.subtitleStyle.color?.withOpacity(0.3),
+                  size: 24,
                 ),
               ],
             ),

@@ -23,11 +23,15 @@ class StartConversationCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
+        border: Border.all(
+          color: theme.cardShadowColor.withOpacity(0.08),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor,
-            blurRadius: 15,
-            offset: const Offset(0, 5),
+            color: theme.cardShadowColor.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -37,15 +41,18 @@ class StartConversationCard extends StatelessWidget {
         children: [
           Text(
             'Start a conversation',
-            style: theme.titleStyle.copyWith(fontSize: 18),
+            style: theme.titleStyle.copyWith(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              letterSpacing: -0.4,
+            ),
           ),
           const SizedBox(height: 20),
           Row(
             children: [
-              // Avatar Stack
               SizedBox(
-                width: 98,
-                height: 48,
+                width: 90,
+                height: 40,
                 child: Stack(
                   children: [
                     _buildAvatarItem(
@@ -58,7 +65,7 @@ class StartConversationCard extends StatelessWidget {
                           controller.workspace?.agentAvatars.isEmpty == true,
                     ),
                     _buildAvatarItem(
-                      25,
+                      22,
                       imageUrl:
                           (controller.workspace?.agentAvatars.length ?? 0) > 1
                           ? controller.workspace?.agentAvatars[1]
@@ -67,7 +74,7 @@ class StartConversationCard extends StatelessWidget {
                           (controller.workspace?.agentAvatars.length ?? 0) < 2,
                     ),
                     _buildAvatarItem(
-                      50,
+                      44,
                       imageUrl:
                           (controller.workspace?.agentAvatars.length ?? 0) > 2
                           ? controller.workspace?.agentAvatars[2]
@@ -78,15 +85,14 @@ class StartConversationCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const SizedBox(width: 12),
+              const SizedBox(width: 4),
               Expanded(child: _buildResponseTimeSection()),
             ],
           ),
           const SizedBox(height: 24),
-          // CTA Button
           SizedBox(
             width: double.infinity,
-            height: 54,
+            height: 56,
             child: ElevatedButton(
               onPressed: controller.workspace == null
                   ? null
@@ -106,31 +112,42 @@ class StartConversationCard extends StatelessWidget {
                         }
                       });
                     },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: theme.primaryColor,
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(30),
-                ),
-                elevation: 0,
-              ),
+              style:
+                  ElevatedButton.styleFrom(
+                    backgroundColor: theme.primaryColor,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                    shadowColor: theme.primaryColor.withOpacity(0.3),
+                  ).copyWith(
+                    elevation: WidgetStateProperty.resolveWith((states) {
+                      if (states.contains(WidgetState.pressed)) return 2;
+                      return 0;
+                    }),
+                  ),
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   SvgPicture.asset(
-                    'assets/icons/send-icon.svg',
+                    'assets/icons/send-message.svg',
                     package: 'livechat_sdk',
                     colorFilter: const ColorFilter.mode(
                       Colors.white,
                       BlendMode.srcIn,
                     ),
-                    width: 18,
-                    height: 18,
+                    width: 20,
+                    height: 20,
                   ),
                   const SizedBox(width: 12),
                   const Text(
                     'Start new conversation',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+                    style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.2,
+                    ),
                   ),
                 ],
               ),
@@ -148,14 +165,25 @@ class StartConversationCard extends StatelessWidget {
   }) {
     return Positioned(
       left: left,
-      child: LivechatAvatar(
-        imageUrl: imageUrl,
-        senderType: SenderType.agent,
-        radius: 20,
-        isFaded: isFaded,
-        theme: theme,
-        borderColor: Colors.white,
-        borderWidth: 4,
+      child: Container(
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          border: Border.all(color: Colors.white, width: 3),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.05),
+              blurRadius: 4,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: LivechatAvatar(
+          imageUrl: imageUrl,
+          senderType: SenderType.agent,
+          radius: 17,
+          isFaded: isFaded,
+          theme: theme,
+        ),
       ),
     );
   }

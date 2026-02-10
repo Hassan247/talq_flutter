@@ -26,17 +26,25 @@ class FAQListSection extends StatelessWidget {
           children: [
             Text(
               'Help & Resources',
-              style: theme.titleStyle.copyWith(fontSize: 18),
+              style: theme.titleStyle.copyWith(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.4,
+              ),
             ),
             const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
                 color: theme.surfaceColor,
                 borderRadius: BorderRadius.circular(24),
+                border: Border.all(
+                  color: theme.cardShadowColor.withOpacity(0.08),
+                  width: 1,
+                ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.cardShadowColor,
-                    blurRadius: 10,
+                    color: theme.cardShadowColor.withOpacity(0.04),
+                    blurRadius: 12,
                     offset: const Offset(0, 4),
                   ),
                 ],
@@ -82,25 +90,21 @@ class FAQListSection extends StatelessWidget {
                     ListTile(
                       contentPadding: const EdgeInsets.symmetric(
                         horizontal: 20,
-                        vertical: 4,
+                        vertical: 10,
                       ),
                       title: Text(
                         'See more articles',
                         style: TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
+                          fontWeight: FontWeight.w800,
+                          fontSize: 15,
                           color: theme.primaryColor,
+                          letterSpacing: -0.2,
                         ),
                       ),
-                      trailing: SvgPicture.asset(
-                        'assets/icons/arrow-right.svg',
-                        package: 'livechat_sdk',
-                        colorFilter: const ColorFilter.mode(
-                          Colors.grey,
-                          BlendMode.srcIn,
-                        ),
-                        width: 14,
-                        height: 14,
+                      trailing: Icon(
+                        Icons.chevron_right_rounded,
+                        color: theme.primaryColor.withOpacity(0.6),
+                        size: 22,
                       ),
                       onTap: () {
                         Navigator.push(
@@ -128,18 +132,18 @@ class FAQListSection extends StatelessWidget {
     VoidCallback? onTap,
   }) {
     return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       leading: Container(
-        padding: const EdgeInsets.all(10),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          color: theme.avatarBackgroundColor,
+          color: theme.backgroundColor,
           borderRadius: BorderRadius.circular(12),
         ),
         child: SvgPicture.asset(
           'assets/icons/article.svg',
           package: 'livechat_sdk',
           colorFilter: ColorFilter.mode(
-            theme.subtitleStyle.color!,
+            theme.titleStyle.color!.withOpacity(0.7),
             BlendMode.srcIn,
           ),
           width: 20,
@@ -149,16 +153,16 @@ class FAQListSection extends StatelessWidget {
       title: Text(
         title,
         style: theme.bodyStyle.copyWith(
-          fontSize: 14,
+          fontSize: 15,
           fontWeight: FontWeight.w600,
+          color: theme.titleStyle.color?.withOpacity(0.9),
+          letterSpacing: -0.2,
         ),
       ),
-      trailing: SvgPicture.asset(
-        'assets/icons/arrow-right.svg',
-        package: 'livechat_sdk',
-        colorFilter: ColorFilter.mode(theme.avatarIconColor, BlendMode.srcIn),
-        width: 14,
-        height: 14,
+      trailing: Icon(
+        Icons.chevron_right_rounded,
+        color: theme.subtitleStyle.color?.withOpacity(0.3),
+        size: 20,
       ),
       onTap: onTap,
     );

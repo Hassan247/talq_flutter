@@ -26,8 +26,9 @@ class MessagesListView extends StatelessWidget {
           backgroundColor: activeTheme.backgroundColor,
           appBar: AppBar(
             systemOverlayStyle: SystemUiOverlayStyle.dark,
-            backgroundColor: activeTheme.surfaceColor,
+            backgroundColor: activeTheme.backgroundColor,
             elevation: 0,
+            scrolledUnderElevation: 0,
             leading: IconButton(
               icon: SvgPicture.asset(
                 'assets/icons/arrow-left.svg',
@@ -36,15 +37,18 @@ class MessagesListView extends StatelessWidget {
                   activeTheme.titleStyle.color!,
                   BlendMode.srcIn,
                 ),
-                width: 16,
-                height: 16,
+                width: 20, // Slightly larger for better touch target
+                height: 20,
               ),
               onPressed: () => Navigator.pop(context),
             ),
             centerTitle: true,
             title: Text(
               'Messages',
-              style: activeTheme.titleStyle.copyWith(fontSize: 18),
+              style: activeTheme.titleStyle.copyWith(
+                fontSize: 17, // Standard iOS-like header size
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ),
           body: Builder(
@@ -55,18 +59,36 @@ class MessagesListView extends StatelessWidget {
 
               if (controller.rooms.isEmpty) {
                 return Center(
-                  child: Text(
-                    'No messages yet',
-                    style: activeTheme.subtitleStyle.copyWith(fontSize: 16),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        size: 48,
+                        color: activeTheme.subtitleStyle.color?.withOpacity(
+                          0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No messages yet',
+                        style: activeTheme.subtitleStyle.copyWith(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                    ],
                   ),
                 );
               }
 
               return ListView.separated(
-                padding: const EdgeInsets.all(16),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
                 itemCount: controller.rooms.length,
-                separatorBuilder: (context, index) =>
-                    const SizedBox(height: 12),
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
                 itemBuilder: (context, index) {
                   final room = controller.rooms[index];
                   return _MessageCard(
@@ -129,11 +151,17 @@ class _MessageCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(24),
+        borderRadius: BorderRadius.circular(20), // Slightly clearer radius
+        border: Border.all(
+          color: theme.cardShadowColor.withOpacity(0.08), // Subtle border
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor,
-            blurRadius: 10,
+            color: theme.cardShadowColor.withOpacity(
+              0.04,
+            ), // Very subtle shadow
+            blurRadius: 12,
             offset: const Offset(0, 4),
           ),
         ],
@@ -144,117 +172,95 @@ class _MessageCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar
-                // Avatar with Unread Badge
-                Stack(
-                  clipBehavior: Clip.none,
-                  children: [
-                    LivechatAvatar(
-                      imageUrl: avatarUrl,
-                      senderType: isBot ? SenderType.bot : SenderType.agent,
-                      radius: 20,
-                      theme: theme,
-                    ),
-                    if (hasUnread)
-                      Positioned(
-                        top: -4,
-                        right: -4,
-                        child: Container(
-                          width: 20,
-                          height: 20,
-                          decoration: BoxDecoration(
-                            color: theme.primaryColor,
-                            shape: BoxShape.circle,
-                            border: Border.all(color: Colors.white, width: 2),
-                          ),
-                          child: Center(
-                            child: Text(
-                              room.visitorUnreadCount > 9
-                                  ? '9+'
-                                  : '${room.visitorUnreadCount}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
+                // Avatar Area
+                _buildAvatar(displayName, avatarUrl, hasUnread),
                 const SizedBox(width: 16),
-                // Content
+
+                // Content Area
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
+                      // Header Row: Message Content (Primary)
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Expanded(child: _buildMessagePreview(lastMsg)),
+                          Expanded(
+                            child: _buildMessageTitle(lastMsg, hasUnread),
+                          ),
                         ],
                       ),
                       const SizedBox(height: 4),
+
+                      // Subtitle Row: Name • Time
                       Row(
                         children: [
+                          if (isMe && lastMsg != null) ...[
+                            _buildTicks(lastMsg),
+                            const SizedBox(width: 4),
+                          ],
                           Expanded(
                             child: Text.rich(
                               TextSpan(
                                 children: [
                                   TextSpan(
                                     text: '${isMe ? 'You' : displayName} • ',
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      color: hasUnread
-                                          ? Colors.black
-                                          : theme.subtitleStyle.color,
+                                    style: theme.subtitleStyle.copyWith(
+                                      fontWeight: FontWeight.w500,
+                                      color: theme.subtitleStyle.color,
                                     ),
                                   ),
                                   TextSpan(
                                     text: timeStr,
                                     style: theme.subtitleStyle.copyWith(
                                       color: hasUnread
-                                          ? Colors.black87
+                                          ? theme.primaryColor
                                           : theme.subtitleStyle.color,
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w600
+                                          : FontWeight.normal,
                                     ),
                                   ),
-                                  if (isMe && lastMsg != null)
-                                    WidgetSpan(
-                                      alignment: PlaceholderAlignment.middle,
-                                      child: Padding(
-                                        padding: const EdgeInsets.only(left: 4),
-                                        child: _buildTicks(lastMsg),
-                                      ),
-                                    ),
                                 ],
                               ),
-                              style: const TextStyle(fontSize: 13),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                             ),
                           ),
                           if (room.status == RoomStatus.resolved)
-                            Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 8,
-                                vertical: 2,
-                              ),
-                              decoration: BoxDecoration(
-                                color: theme.resolvedBackgroundColor,
-                                borderRadius: BorderRadius.circular(12),
-                              ),
-                              child: Text(
-                                'Resolved',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w500,
-                                  color: theme.resolvedTextColor,
+                            Padding(
+                              padding: const EdgeInsets.only(left: 8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: theme.resolvedBackgroundColor
+                                      .withOpacity(0.5),
+                                  borderRadius: BorderRadius.circular(6),
+                                  border: Border.all(
+                                    color: theme.resolvedTextColor.withOpacity(
+                                      0.1,
+                                    ),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Resolved',
+                                  style: TextStyle(
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.resolvedTextColor.withOpacity(
+                                      0.8,
+                                    ),
+                                    letterSpacing: 0.2,
+                                  ),
                                 ),
                               ),
                             ),
@@ -262,17 +268,6 @@ class _MessageCard extends StatelessWidget {
                       ),
                     ],
                   ),
-                ),
-                const SizedBox(width: 8),
-                SvgPicture.asset(
-                  'assets/icons/arrow-right.svg',
-                  package: 'livechat_sdk',
-                  colorFilter: const ColorFilter.mode(
-                    Colors.grey,
-                    BlendMode.srcIn,
-                  ),
-                  width: 12,
-                  height: 12,
                 ),
               ],
             ),
@@ -282,13 +277,84 @@ class _MessageCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMessagePreview(LivechatMessage? msg) {
-    if (msg == null) return Text('No messages', style: theme.subtitleStyle);
+  Widget _buildAvatar(String name, String? url, bool hasUnread) {
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(
+              color: theme.surfaceColor, // seamless blend
+              width: 0,
+            ),
+          ),
+          child: LivechatAvatar(
+            imageUrl: url,
+            senderType: SenderType.agent, // Default to agent style for the list
+            radius: 24, // Slightly larger avatar
+            theme: theme,
+          ),
+        ),
+        if (hasUnread)
+          Positioned(
+            top: -2,
+            right: -2,
+            child: Container(
+              height: 22,
+              padding: const EdgeInsets.symmetric(horizontal: 6),
+              constraints: const BoxConstraints(minWidth: 22),
+              decoration: BoxDecoration(
+                color: theme.primaryColor,
+                borderRadius: BorderRadius.circular(11),
+                border: Border.all(color: theme.surfaceColor, width: 3),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.1),
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Center(
+                child: Text(
+                  room.visitorUnreadCount > 9
+                      ? '9+'
+                      : '${room.visitorUnreadCount}',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.2,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 
-    final hasUnread = room.visitorUnreadCount > 0;
+  Widget _buildMessageTitle(LivechatMessage? msg, bool hasUnread) {
+    if (msg == null) {
+      return Text(
+        'New Conversation',
+        style: theme.titleStyle.copyWith(
+          fontSize: 16,
+          fontWeight: FontWeight.w600,
+          color: theme.titleStyle.color,
+        ),
+      );
+    }
+
     final style = theme.titleStyle.copyWith(
-      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.normal,
-      fontSize: 14,
+      fontSize: 16,
+      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
+      color: hasUnread
+          ? theme.titleStyle.color
+          : theme.titleStyle.color?.withOpacity(0.85),
+      letterSpacing: -0.4,
+      height: 1.2,
     );
 
     IconData? icon;
@@ -296,17 +362,17 @@ class _MessageCard extends StatelessWidget {
     String content = msg.content;
 
     if (msg.contentType == ContentType.image) {
-      icon = Icons.camera_alt;
+      icon = Icons.photo_camera_outlined;
       label = 'Photo';
       if (content.startsWith('Sent an image:')) content = '';
     } else if (msg.contentType == ContentType.pdf) {
-      icon = Icons.insert_drive_file;
+      icon = Icons.description_outlined;
       label = 'Document';
       if (content.startsWith('Sent a file:')) content = '';
     } else if (msg.content.contains('.m4a') ||
         msg.content.contains('.mp3') ||
         msg.content.contains('.wav')) {
-      icon = Icons.mic;
+      icon = Icons.mic_none_outlined;
       label = 'Voice note';
       if (content.startsWith('Sent an audio:')) content = '';
     }
@@ -315,13 +381,17 @@ class _MessageCard extends StatelessWidget {
       return Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 16, color: theme.subtitleStyle.color),
+          Icon(
+            icon,
+            size: 16,
+            color: hasUnread ? theme.primaryColor : theme.titleStyle.color,
+          ),
           const SizedBox(width: 4),
           Text(
             label,
-            style: theme.subtitleStyle.copyWith(
-              color: theme.subtitleStyle.color,
-              fontSize: 15,
+            style: style.copyWith(
+              fontStyle: FontStyle.italic,
+              color: hasUnread ? theme.primaryColor : null,
             ),
           ),
           if (content.isNotEmpty) ...[
@@ -348,20 +418,18 @@ class _MessageCard extends StatelessWidget {
   }
 
   Widget _buildTicks(LivechatMessage message) {
+    // ticks are small, keep them subtle
+    Color iconColor = theme.sentTickColor;
+    IconData icon = Icons.check;
+
     if (message.isRead) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [Icon(Icons.done_all, size: 16, color: theme.readTickColor)],
-      );
+      icon = Icons.done_all;
+      iconColor = theme.readTickColor;
     } else if (message.isDelivered) {
-      return Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(Icons.done_all, size: 16, color: theme.deliveredTickColor),
-        ],
-      );
-    } else {
-      return Icon(Icons.done, size: 16, color: theme.sentTickColor);
+      icon = Icons.done_all;
+      iconColor = theme.deliveredTickColor;
     }
+
+    return Icon(icon, size: 16, color: iconColor);
   }
 }
