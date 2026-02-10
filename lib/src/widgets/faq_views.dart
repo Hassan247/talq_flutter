@@ -63,93 +63,97 @@ class _FAQListViewState extends State<FAQListView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: widget.theme.backgroundColor,
-      appBar: AppBar(
-        backgroundColor: widget.theme.surfaceColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/icons/arrow-left.svg',
-            package: 'livechat_sdk',
-            colorFilter: ColorFilter.mode(
-              widget.theme.titleStyle.color!,
-              BlendMode.srcIn,
+    return GestureDetector(
+      onTap: () => FocusScope.of(context).unfocus(),
+      child: Scaffold(
+        backgroundColor: widget.theme.backgroundColor,
+        appBar: AppBar(
+          backgroundColor: widget.theme.surfaceColor,
+          elevation: 0,
+          leading: IconButton(
+            icon: SvgPicture.asset(
+              'assets/icons/arrow-left.svg',
+              package: 'livechat_sdk',
+              colorFilter: ColorFilter.mode(
+                widget.theme.titleStyle.color!,
+                BlendMode.srcIn,
+              ),
+              width: 16,
+              height: 16,
             ),
-            width: 16,
-            height: 16,
+            onPressed: () => Navigator.pop(context),
           ),
-          onPressed: () => Navigator.pop(context),
+          title: Text(
+            'Help Center',
+            style: widget.theme.titleStyle.copyWith(fontSize: 18),
+          ),
+          centerTitle: true,
         ),
-        title: Text(
-          'Help Center',
-          style: widget.theme.titleStyle.copyWith(fontSize: 18),
-        ),
-        centerTitle: true,
-      ),
-      body: Column(
-        children: [
-          _buildSearchBar(),
-          Expanded(
-            child: Consumer<LivechatController>(
-              builder: (context, controller, _) {
-                final faqs = controller.paginatedFaqs;
+        body: Column(
+          children: [
+            _buildSearchBar(),
+            Expanded(
+              child: Consumer<LivechatController>(
+                builder: (context, controller, _) {
+                  final faqs = controller.paginatedFaqs;
 
-                if (faqs.isEmpty && controller.isFaqLoading) {
-                  return const Center(child: CircularProgressIndicator());
-                }
+                  if (faqs.isEmpty && controller.isFaqLoading) {
+                    return const Center(child: CircularProgressIndicator());
+                  }
 
-                if (faqs.isEmpty) {
-                  return Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(
-                          Icons.help_outline,
-                          size: 64,
-                          color: widget.theme.avatarIconColor,
-                        ),
-                        const SizedBox(height: 16),
-                        Text(
-                          controller.faqSearchQuery.isEmpty
-                              ? 'No articles found'
-                              : 'No results for "${controller.faqSearchQuery}"',
-                          style: widget.theme.subtitleStyle.copyWith(
-                            fontSize: 16,
+                  if (faqs.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(
+                            Icons.help_outline,
+                            size: 64,
+                            color: widget.theme.avatarIconColor,
                           ),
-                        ),
-                      ],
-                    ),
-                  );
-                }
+                          const SizedBox(height: 16),
+                          Text(
+                            controller.faqSearchQuery.isEmpty
+                                ? 'No articles found'
+                                : 'No results for "${controller.faqSearchQuery}"',
+                            style: widget.theme.subtitleStyle.copyWith(
+                              fontSize: 16,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
+                  }
 
-                return ListView.separated(
-                  key: const PageStorageKey('faq_list'),
-                  controller: _scrollController,
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 24,
-                  ),
-                  itemCount: faqs.length + (controller.faqHasNextPage ? 1 : 0),
-                  separatorBuilder: (context, index) =>
-                      const SizedBox(height: 12),
-                  itemBuilder: (context, index) {
-                    if (index == faqs.length) {
-                      return const Center(
-                        child: Padding(
-                          padding: EdgeInsets.symmetric(vertical: 24),
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        ),
-                      );
-                    }
-                    final faq = faqs[index];
-                    return _buildFAQCard(context, faq);
-                  },
-                );
-              },
+                  return ListView.separated(
+                    key: const PageStorageKey('faq_list'),
+                    controller: _scrollController,
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 24,
+                    ),
+                    itemCount:
+                        faqs.length + (controller.faqHasNextPage ? 1 : 0),
+                    separatorBuilder: (context, index) =>
+                        const SizedBox(height: 12),
+                    itemBuilder: (context, index) {
+                      if (index == faqs.length) {
+                        return const Center(
+                          child: Padding(
+                            padding: EdgeInsets.symmetric(vertical: 24),
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          ),
+                        );
+                      }
+                      final faq = faqs[index];
+                      return _buildFAQCard(context, faq);
+                    },
+                  );
+                },
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

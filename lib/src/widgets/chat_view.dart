@@ -143,236 +143,242 @@ class _LivechatViewState extends State<LivechatView>
               );
             }
           },
-          child: Scaffold(
-            backgroundColor: theme.backgroundColor,
-            appBar: AppBar(
-              systemOverlayStyle: SystemUiOverlayStyle.dark,
-              elevation: 0,
-              leading: IconButton(
-                icon: SvgPicture.asset(
-                  'assets/icons/arrow-left.svg',
-                  package: 'livechat_sdk',
-                  colorFilter: ColorFilter.mode(
-                    theme.titleStyle.color!,
-                    BlendMode.srcIn,
-                  ),
-                  width: 16,
-                  height: 16,
-                ),
-                onPressed: () => Navigator.pop(context),
-              ),
-              centerTitle: true,
-              title: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  LivechatAvatar(
-                    imageUrl: controller.currentRoom?.assigneeAvatarUrl,
-                    senderType: SenderType.agent,
-                    radius: 14,
-                  ),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          controller.currentRoom?.assigneeName ??
-                              controller.workspace?.name ??
-                              widget.title,
-                          style: theme.titleStyle.copyWith(fontSize: 16),
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (controller.workspace?.showResponseTime == true)
-                          Text(
-                            _formatResponseTime(
-                              controller.workspace?.responseTime,
-                            ),
-                            style: theme.subtitleStyle.copyWith(fontSize: 11),
-                          ),
-                      ],
+          child: GestureDetector(
+            onTap: () => FocusScope.of(context).unfocus(),
+            child: Scaffold(
+              backgroundColor: theme.backgroundColor,
+              appBar: AppBar(
+                systemOverlayStyle: SystemUiOverlayStyle.dark,
+                elevation: 0,
+                leading: IconButton(
+                  icon: SvgPicture.asset(
+                    'assets/icons/arrow-left.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: ColorFilter.mode(
+                      theme.titleStyle.color!,
+                      BlendMode.srcIn,
                     ),
+                    width: 16,
+                    height: 16,
+                  ),
+                  onPressed: () => Navigator.pop(context),
+                ),
+                centerTitle: true,
+                title: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    LivechatAvatar(
+                      imageUrl: controller.currentRoom?.assigneeAvatarUrl,
+                      senderType: SenderType.agent,
+                      radius: 14,
+                    ),
+                    const SizedBox(width: 10),
+                    Flexible(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.center,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            controller.currentRoom?.assigneeName ??
+                                controller.workspace?.name ??
+                                widget.title,
+                            style: theme.titleStyle.copyWith(fontSize: 16),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          if (controller.workspace?.showResponseTime == true)
+                            Text(
+                              _formatResponseTime(
+                                controller.workspace?.responseTime,
+                              ),
+                              style: theme.subtitleStyle.copyWith(fontSize: 11),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+                backgroundColor: theme.surfaceColor,
+                foregroundColor: theme.titleStyle.color,
+                actions: [
+                  IconButton(
+                    icon: Icon(
+                      Icons.close,
+                      color: theme.titleStyle.color,
+                      size: 24,
+                    ),
+                    onPressed: () {
+                      context.read<LivechatController>().setChatVisible(false);
+                      Navigator.pop(context);
+                    },
                   ),
                 ],
               ),
-              backgroundColor: theme.surfaceColor,
-              foregroundColor: theme.titleStyle.color,
-              actions: [
-                IconButton(
-                  icon: Icon(
-                    Icons.close,
-                    color: theme.titleStyle.color,
-                    size: 24,
-                  ),
-                  onPressed: () {
-                    context.read<LivechatController>().setChatVisible(false);
-                    Navigator.pop(context);
-                  },
-                ),
-              ],
-            ),
-            body: Stack(
-              children: [
-                Column(
-                  children: [
-                    Expanded(
-                      child: RefreshIndicator(
-                        onRefresh: () =>
-                            controller.fetchMessages(roomId: controller.roomId),
-                        child: controller.messages.isEmpty
-                            ? ListView(
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        0.6,
-                                    child: Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(32.0),
-                                        child: Column(
-                                          mainAxisAlignment:
-                                              MainAxisAlignment.center,
-                                          children: [
-                                            Icon(
-                                              Icons.chat_bubble_outline,
-                                              size: 64,
-                                              color: Colors.grey[300],
-                                            ),
-                                            const SizedBox(height: 16),
-                                            Text(
-                                              controller
-                                                              .workspace
-                                                              ?.welcomeMessage !=
-                                                          null &&
-                                                      controller
+              body: Stack(
+                children: [
+                  Column(
+                    children: [
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: () => controller.fetchMessages(
+                            roomId: controller.roomId,
+                          ),
+                          child: controller.messages.isEmpty
+                              ? ListView(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                          0.6,
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(32.0),
+                                          child: Column(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.center,
+                                            children: [
+                                              Icon(
+                                                Icons.chat_bubble_outline,
+                                                size: 64,
+                                                color: Colors.grey[300],
+                                              ),
+                                              const SizedBox(height: 16),
+                                              Text(
+                                                controller
+                                                                .workspace
+                                                                ?.welcomeMessage !=
+                                                            null &&
+                                                        controller
+                                                            .workspace!
+                                                            .welcomeMessage!
+                                                            .isNotEmpty
+                                                    ? controller
                                                           .workspace!
                                                           .welcomeMessage!
-                                                          .isNotEmpty
-                                                  ? controller
-                                                        .workspace!
-                                                        .welcomeMessage!
-                                                  : 'Start a conversation!',
-                                              textAlign: TextAlign.center,
-                                              style: theme.bodyStyle.copyWith(
-                                                color: Colors.grey[600],
-                                                fontWeight: FontWeight.w500,
+                                                    : 'Start a conversation!',
+                                                textAlign: TextAlign.center,
+                                                style: theme.bodyStyle.copyWith(
+                                                  color: Colors.grey[600],
+                                                  fontWeight: FontWeight.w500,
+                                                ),
                                               ),
-                                            ),
-                                            const SizedBox(height: 8),
-                                            Text(
-                                              'Type a message below to begin.',
-                                              style: theme.subtitleStyle
-                                                  .copyWith(fontSize: 14),
-                                            ),
-                                          ],
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Type a message below to begin.',
+                                                style: theme.subtitleStyle
+                                                    .copyWith(fontSize: 14),
+                                              ),
+                                            ],
+                                          ),
                                         ),
                                       ),
                                     ),
+                                  ],
+                                )
+                              : ListView.builder(
+                                  controller: _scrollController,
+                                  padding: const EdgeInsets.only(
+                                    left: 16,
+                                    right: 0,
+                                    top: 16,
+                                    bottom: 16,
                                   ),
-                                ],
-                              )
-                            : ListView.builder(
-                                controller: _scrollController,
-                                padding: const EdgeInsets.only(
-                                  left: 16,
-                                  right: 8,
-                                  top: 16,
-                                  bottom: 16,
-                                ),
-                                reverse: true,
-                                // Add +1 item count for loading indicator if fetching more
-                                itemCount:
-                                    controller.messages.length +
-                                    (controller.isFetchingMore ? 1 : 0),
-                                itemBuilder: (context, index) {
-                                  // Show loading indicator at the "top" (end of list)
-                                  if (index == controller.messages.length) {
-                                    return const Padding(
-                                      padding: EdgeInsets.all(16.0),
-                                      child: Center(
-                                        child: CircularProgressIndicator(),
+                                  reverse: true,
+                                  // Add +1 item count for loading indicator if fetching more
+                                  itemCount:
+                                      controller.messages.length +
+                                      (controller.isFetchingMore ? 1 : 0),
+                                  itemBuilder: (context, index) {
+                                    // Show loading indicator at the "top" (end of list)
+                                    if (index == controller.messages.length) {
+                                      return const Padding(
+                                        padding: EdgeInsets.all(16.0),
+                                        child: Center(
+                                          child: CircularProgressIndicator(),
+                                        ),
+                                      );
+                                    }
+
+                                    final message = controller.messages[index];
+                                    final messages = controller.messages;
+
+                                    // In Reverse Mode (Newest -> Oldest):
+                                    // Index 0 is Bottom (Newest). Index N is Top (Oldest).
+                                    // Visually "First" (Top of Group) -> Check logic against OLDER message (Next Index, index+1)
+                                    // Visually "Last" (Bottom of Group) -> Check logic against NEWER message (Prev Index, index-1)
+
+                                    // Check if this is the "Last" (Bottom/Newest) message in the visual group
+                                    // True if it's the very first item (index 0) OR previous item (index-1) has different sender
+                                    final isLastInGroup =
+                                        index == 0 ||
+                                        messages[index - 1].senderType !=
+                                            message.senderType;
+
+                                    // Check if this is the "First" (Top/Oldest) message in the visual group
+                                    // True if it's the last item (index len-1) OR next item (index+1) has different sender
+                                    final isFirstInGroup =
+                                        index == messages.length - 1 ||
+                                        messages[index + 1].senderType !=
+                                            message.senderType;
+
+                                    return _ChatBubble(
+                                      message: message,
+                                      theme: theme,
+                                      isFirstInGroup: isFirstInGroup,
+                                      isLastInGroup: isLastInGroup,
+                                      onSwipe: () =>
+                                          controller.setReplyingTo(message),
+                                      onLongPress: () => _showReactions(
+                                        context,
+                                        controller,
+                                        message,
+                                        theme,
                                       ),
                                     );
-                                  }
-
-                                  final message = controller.messages[index];
-                                  final messages = controller.messages;
-
-                                  // In Reverse Mode (Newest -> Oldest):
-                                  // Index 0 is Bottom (Newest). Index N is Top (Oldest).
-                                  // Visually "First" (Top of Group) -> Check logic against OLDER message (Next Index, index+1)
-                                  // Visually "Last" (Bottom of Group) -> Check logic against NEWER message (Prev Index, index-1)
-
-                                  // Check if this is the "Last" (Bottom/Newest) message in the visual group
-                                  // True if it's the very first item (index 0) OR previous item (index-1) has different sender
-                                  final isLastInGroup =
-                                      index == 0 ||
-                                      messages[index - 1].senderType !=
-                                          message.senderType;
-
-                                  // Check if this is the "First" (Top/Oldest) message in the visual group
-                                  // True if it's the last item (index len-1) OR next item (index+1) has different sender
-                                  final isFirstInGroup =
-                                      index == messages.length - 1 ||
-                                      messages[index + 1].senderType !=
-                                          message.senderType;
-
-                                  return _ChatBubble(
-                                    message: message,
-                                    theme: theme,
-                                    isFirstInGroup: isFirstInGroup,
-                                    isLastInGroup: isLastInGroup,
-                                    onSwipe: () =>
-                                        controller.setReplyingTo(message),
-                                    onLongPress: () => _showReactions(
-                                      context,
-                                      controller,
-                                      message,
-                                      theme,
-                                    ),
-                                  );
-                                },
-                              ),
-                      ),
-                    ),
-                    if (controller.isAgentTyping)
-                      Padding(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: Row(
-                          children: [
-                            const SizedBox(
-                              width: 14,
-                              height: 14,
-                              child: CircularProgressIndicator(
-                                strokeWidth: 2,
-                                valueColor: AlwaysStoppedAnimation(Colors.grey),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              'Support is typing...',
-                              style: theme.subtitleStyle.copyWith(
-                                fontSize: 12,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
+                                  },
+                                ),
                         ),
                       ),
-                    if (controller.replyingTo != null)
-                      _buildReplyOverlay(controller, theme),
-                    _buildInputArea(controller, theme),
-                  ],
-                ),
-                if (controller.showRatingPrompt)
-                  Container(
-                    color: Colors.black.withOpacity(0.5),
-                    child: RatingView(theme: theme),
+                      if (controller.isAgentTyping)
+                        Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 8,
+                          ),
+                          child: Row(
+                            children: [
+                              const SizedBox(
+                                width: 14,
+                                height: 14,
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  valueColor: AlwaysStoppedAnimation(
+                                    Colors.grey,
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                'Support is typing...',
+                                style: theme.subtitleStyle.copyWith(
+                                  fontSize: 12,
+                                  fontStyle: FontStyle.italic,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      if (controller.replyingTo != null)
+                        _buildReplyOverlay(controller, theme),
+                      _buildInputArea(controller, theme),
+                    ],
                   ),
-              ],
+                  if (controller.showRatingPrompt)
+                    Container(
+                      color: Colors.black.withOpacity(0.5),
+                      child: RatingView(theme: theme),
+                    ),
+                ],
+              ),
             ),
           ),
         );
