@@ -9,6 +9,7 @@ import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import 'package:sticky_headers/sticky_headers.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../models/models.dart';
@@ -109,6 +110,54 @@ class _LivechatViewState extends State<LivechatView>
       return time;
     }
     return 'Reply in $time';
+  }
+
+  List<_MessageGroup> _groupMessages(List<LivechatMessage> messages) {
+    final groups = <_MessageGroup>[];
+    if (messages.isEmpty) return groups;
+
+    DateTime? currentDate;
+    List<LivechatMessage> currentGroupMessages = [];
+
+    for (final message in messages) {
+      final messageDate = DateTime(
+        message.createdAt.year,
+        message.createdAt.month,
+        message.createdAt.day,
+      );
+
+      if (currentDate == null) {
+        currentDate = messageDate;
+        currentGroupMessages.add(message);
+      } else if (messageDate != currentDate) {
+        groups.add(
+          _MessageGroup(date: currentDate, messages: currentGroupMessages),
+        );
+        currentDate = messageDate;
+        currentGroupMessages = [message];
+      } else {
+        currentGroupMessages.add(message);
+      }
+    }
+
+    if (currentDate != null) {
+      groups.add(
+        _MessageGroup(date: currentDate, messages: currentGroupMessages),
+      );
+    }
+
+    return groups;
+  }
+
+  String _getDateLabel(DateTime date) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final yesterday = today.subtract(const Duration(days: 1));
+    final dateToCheck = DateTime(date.year, date.month, date.day);
+
+    if (dateToCheck == today) return 'TODAY';
+    if (dateToCheck == yesterday) return 'YESTERDAY';
+    return DateFormat('MMMM d').format(date).toUpperCase();
   }
 
   @override
@@ -324,13 +373,16 @@ class _LivechatViewState extends State<LivechatView>
                                     bottom: 16,
                                   ),
                                   reverse: true,
-                                  // Add +1 item count for loading indicator if fetching more
                                   itemCount:
-                                      controller.messages.length +
+                                      _groupMessages(
+                                        controller.messages,
+                                      ).length +
                                       (controller.isFetchingMore ? 1 : 0),
                                   itemBuilder: (context, index) {
-                                    // Show loading indicator at the "top" (end of list)
-                                    if (index == controller.messages.length) {
+                                    if (index ==
+                                        _groupMessages(
+                                          controller.messages,
+                                        ).length) {
                                       return const Padding(
                                         padding: EdgeInsets.all(16.0),
                                         child: Center(
@@ -339,40 +391,82 @@ class _LivechatViewState extends State<LivechatView>
                                       );
                                     }
 
-                                    final message = controller.messages[index];
-                                    final messages = controller.messages;
+                                    final group = _groupMessages(
+                                      controller.messages,
+                                    )[index];
+                                    final date = group.date;
+                                    final messages = group.messages;
 
-                                    // In Reverse Mode (Newest -> Oldest):
-                                    // Index 0 is Bottom (Newest). Index N is Top (Oldest).
-                                    // Visually "First" (Top of Group) -> Check logic against OLDER message (Next Index, index+1)
-                                    // Visually "Last" (Bottom of Group) -> Check logic against NEWER message (Prev Index, index-1)
+                                    return StickyHeader(
+                                      header: Container(
+                                        width: double.infinity,
+                                        padding: const EdgeInsets.symmetric(
+                                          vertical: 24,
+                                        ),
+                                        alignment: Alignment.center,
+                                        child: Container(
+                                          padding: const EdgeInsets.symmetric(
+                                            horizontal: 16,
+                                            vertical: 6,
+                                          ),
+                                          decoration: BoxDecoration(
+                                            color: Color.alphaBlend(
+                                              theme.primaryColor.withOpacity(
+                                                0.1,
+                                              ),
+                                              theme.backgroundColor,
+                                            ),
+                                            borderRadius: BorderRadius.circular(
+                                              20,
+                                            ),
+                                          ),
+                                          child: Text(
+                                            _getDateLabel(date),
+                                            style: TextStyle(
+                                              fontSize: 10,
+                                              fontWeight: FontWeight.w800,
+                                              color: theme.primaryColor,
+                                              letterSpacing: 1.0,
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                      content: ListView.builder(
+                                        shrinkWrap: true,
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount: messages.length,
+                                        reverse: true,
+                                        itemBuilder: (context, msgIndex) {
+                                          final message = messages[msgIndex];
 
-                                    // Check if this is the "Last" (Bottom/Newest) message in the visual group
-                                    // True if it's the very first item (index 0) OR previous item (index-1) has different sender
-                                    final isLastInGroup =
-                                        index == 0 ||
-                                        messages[index - 1].senderType !=
-                                            message.senderType;
+                                          final isLastInGroup =
+                                              msgIndex == 0 ||
+                                              messages[msgIndex - 1]
+                                                      .senderType !=
+                                                  message.senderType;
 
-                                    // Check if this is the "First" (Top/Oldest) message in the visual group
-                                    // True if it's the last item (index len-1) OR next item (index+1) has different sender
-                                    final isFirstInGroup =
-                                        index == messages.length - 1 ||
-                                        messages[index + 1].senderType !=
-                                            message.senderType;
+                                          final isFirstInGroup =
+                                              msgIndex == messages.length - 1 ||
+                                              messages[msgIndex + 1]
+                                                      .senderType !=
+                                                  message.senderType;
 
-                                    return _ChatBubble(
-                                      message: message,
-                                      theme: theme,
-                                      isFirstInGroup: isFirstInGroup,
-                                      isLastInGroup: isLastInGroup,
-                                      onSwipe: () =>
-                                          controller.setReplyingTo(message),
-                                      onLongPress: () => _showReactions(
-                                        context,
-                                        controller,
-                                        message,
-                                        theme,
+                                          return _ChatBubble(
+                                            message: message,
+                                            theme: theme,
+                                            isFirstInGroup: isFirstInGroup,
+                                            isLastInGroup: isLastInGroup,
+                                            onSwipe: () => controller
+                                                .setReplyingTo(message),
+                                            onLongPress: () => _showReactions(
+                                              context,
+                                              controller,
+                                              message,
+                                              theme,
+                                            ),
+                                          );
+                                        },
                                       ),
                                     );
                                   },
@@ -1250,4 +1344,11 @@ class _ChatBubble extends StatelessWidget {
       return Icon(Icons.done, size: 14, color: theme.sentTickColor);
     }
   }
+}
+
+class _MessageGroup {
+  final DateTime date;
+  final List<LivechatMessage> messages;
+
+  _MessageGroup({required this.date, required this.messages});
 }
