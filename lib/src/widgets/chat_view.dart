@@ -273,7 +273,12 @@ class _LivechatViewState extends State<LivechatView>
                               )
                             : ListView.builder(
                                 controller: _scrollController,
-                                padding: const EdgeInsets.all(16),
+                                padding: const EdgeInsets.only(
+                                  left: 16,
+                                  right: 8,
+                                  top: 16,
+                                  bottom: 16,
+                                ),
                                 reverse: true,
                                 // Add +1 item count for loading indicator if fetching more
                                 itemCount:
