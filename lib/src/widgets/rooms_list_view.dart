@@ -174,7 +174,7 @@ class _RoomsListViewState extends State<RoomsListView> {
   Widget _buildMessagesSection(BuildContext context, LivechatTheme theme) {
     return Container(
       decoration: BoxDecoration(
-        color: widget.theme.surfaceColor,
+        color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
@@ -190,9 +190,7 @@ class _RoomsListViewState extends State<RoomsListView> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (_) => MessagesListView(theme: widget.theme),
-              ),
+              MaterialPageRoute(builder: (_) => const MessagesListView()),
             );
           },
           borderRadius: BorderRadius.circular(24),
@@ -219,7 +217,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Expanded(
                   child: Text(
                     'Messages',
-                    style: widget.theme.titleStyle.copyWith(fontSize: 16),
+                    style: theme.titleStyle.copyWith(fontSize: 16),
                   ),
                 ),
                 Consumer<LivechatController>(

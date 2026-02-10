@@ -11,75 +11,86 @@ import 'chat_view.dart';
 import 'shared_widgets.dart';
 
 class MessagesListView extends StatelessWidget {
-  final LivechatTheme theme;
+  final LivechatTheme? theme;
 
-  const MessagesListView({super.key, this.theme = const LivechatTheme()});
+  const MessagesListView({super.key, this.theme});
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: theme.backgroundColor,
-      appBar: AppBar(
-        systemOverlayStyle: SystemUiOverlayStyle.dark,
-        backgroundColor: theme.surfaceColor,
-        elevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/icons/arrow-left.svg',
-            package: 'livechat_sdk',
-            colorFilter: ColorFilter.mode(
-              theme.titleStyle.color!,
-              BlendMode.srcIn,
-            ),
-            width: 16,
-            height: 16,
-          ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        centerTitle: true,
-        title: Text('Messages', style: theme.titleStyle.copyWith(fontSize: 18)),
-      ),
-      body: Consumer<LivechatController>(
-        builder: (context, controller, child) {
-          if (controller.isLoading && controller.rooms.isEmpty) {
-            return const Center(child: CircularProgressIndicator());
-          }
+    return Consumer<LivechatController>(
+      builder: (context, controller, child) {
+        // use controller's reactive theme, fall back to provided theme
+        final activeTheme = theme ?? controller.theme;
 
-          if (controller.rooms.isEmpty) {
-            return Center(
-              child: Text(
-                'No messages yet',
-                style: theme.subtitleStyle.copyWith(fontSize: 16),
+        return Scaffold(
+          backgroundColor: activeTheme.backgroundColor,
+          appBar: AppBar(
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
+            backgroundColor: activeTheme.surfaceColor,
+            elevation: 0,
+            leading: IconButton(
+              icon: SvgPicture.asset(
+                'assets/icons/arrow-left.svg',
+                package: 'livechat_sdk',
+                colorFilter: ColorFilter.mode(
+                  activeTheme.titleStyle.color!,
+                  BlendMode.srcIn,
+                ),
+                width: 16,
+                height: 16,
               ),
-            );
-          }
+              onPressed: () => Navigator.pop(context),
+            ),
+            centerTitle: true,
+            title: Text(
+              'Messages',
+              style: activeTheme.titleStyle.copyWith(fontSize: 18),
+            ),
+          ),
+          body: Builder(
+            builder: (context) {
+              if (controller.isLoading && controller.rooms.isEmpty) {
+                return const Center(child: CircularProgressIndicator());
+              }
 
-          return ListView.separated(
-            padding: const EdgeInsets.all(16),
-            itemCount: controller.rooms.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 12),
-            itemBuilder: (context, index) {
-              final room = controller.rooms[index];
-              return _MessageCard(
-                room: room,
-                workspace: controller.workspace,
-                theme: theme,
-                onTap: () async {
-                  await controller.fetchMessages(roomId: room.id);
-                  if (context.mounted) {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder: (_) => LivechatView(theme: theme),
-                      ),
-                    );
-                  }
+              if (controller.rooms.isEmpty) {
+                return Center(
+                  child: Text(
+                    'No messages yet',
+                    style: activeTheme.subtitleStyle.copyWith(fontSize: 16),
+                  ),
+                );
+              }
+
+              return ListView.separated(
+                padding: const EdgeInsets.all(16),
+                itemCount: controller.rooms.length,
+                separatorBuilder: (context, index) =>
+                    const SizedBox(height: 12),
+                itemBuilder: (context, index) {
+                  final room = controller.rooms[index];
+                  return _MessageCard(
+                    room: room,
+                    workspace: controller.workspace,
+                    theme: activeTheme,
+                    onTap: () async {
+                      await controller.fetchMessages(roomId: room.id);
+                      if (context.mounted) {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const LivechatView(),
+                          ),
+                        );
+                      }
+                    },
+                  );
                 },
               );
             },
-          );
-        },
-      ),
+          ),
+        );
+      },
     );
   }
 }

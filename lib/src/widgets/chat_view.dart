@@ -20,13 +20,13 @@ import 'shared_widgets.dart';
 
 class LivechatView extends StatefulWidget {
   final String title;
-  final LivechatTheme theme;
+  final LivechatTheme? theme;
   final bool isNewConversation;
 
   const LivechatView({
     super.key,
     this.title = 'Live Chat',
-    this.theme = const LivechatTheme(),
+    this.theme,
     this.isNewConversation = false,
   });
 
@@ -139,9 +139,7 @@ class _LivechatViewState extends State<LivechatView>
               context.read<LivechatController>().setChatVisible(false);
               Navigator.pushReplacement(
                 context,
-                MaterialPageRoute(
-                  builder: (_) => MessagesListView(theme: theme),
-                ),
+                MaterialPageRoute(builder: (_) => const MessagesListView()),
               );
             }
           },
@@ -765,10 +763,10 @@ class _ChatBubble extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: isLastInGroup ? 16 : 4, // More spacing between groups
+        bottom: isLastInGroup ? 16 : 4, // more spacing between groups
         top: 0,
-        left: isMe ? 0 : 0,
-        right: isMe ? 0 : 0,
+        left: isMe ? 48 : 0, // offset user bubbles to match agent avatar space
+        right: isMe ? 0 : 48, // offset agent bubbles to limit width on right
       ),
       child: Row(
         mainAxisAlignment: isMe
