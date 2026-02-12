@@ -200,6 +200,7 @@ class _LivechatViewState extends State<LivechatView>
                 systemOverlayStyle: SystemUiOverlayStyle.dark,
                 elevation: 0,
                 scrolledUnderElevation: 0,
+                surfaceTintColor: Colors.transparent,
                 backgroundColor: theme.backgroundColor,
                 leading: IconButton(
                   icon: SvgPicture.asset(
@@ -958,112 +959,135 @@ class _ChatBubble extends StatelessWidget {
           ],
 
           Flexible(
-            child: GestureDetector(
-              onHorizontalDragEnd: (details) {
-                if (details.primaryVelocity != null &&
-                    details.primaryVelocity! < -100) {
-                  onSwipe();
-                }
-              },
-              onLongPress: onLongPress,
-              child: Column(
-                crossAxisAlignment: isMe
-                    ? CrossAxisAlignment.end
-                    : CrossAxisAlignment.start,
-                children: [
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.of(context).size.width * 0.70,
-                    ),
-                    child: Container(
-                      padding: isImage
-                          ? const EdgeInsets.all(4)
-                          : const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 12,
-                            ),
-                      decoration: BoxDecoration(
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                if (isLastInGroup && message.senderType != SenderType.system)
+                  Positioned(
+                    bottom: 0,
+                    right: isMe ? -8 : null,
+                    left: !isMe ? -8 : null,
+                    child: CustomPaint(
+                      size: const Size(12, 12),
+                      painter: _WhatsAppTailPainter(
                         color: isMe
                             ? theme.userBubbleColor
                             : theme.agentBubbleColor,
-                        borderRadius: BorderRadius.only(
-                          topLeft: Radius.circular(
-                            !isMe && !isFirstInGroup ? 4 : theme.borderRadius,
-                          ),
-                          topRight: Radius.circular(
-                            isMe && !isFirstInGroup ? 4 : theme.borderRadius,
-                          ),
-                          bottomLeft: Radius.circular(
-                            !isMe && !isLastInGroup ? 4 : theme.borderRadius,
-                          ),
-                          bottomRight: Radius.circular(
-                            isMe && !isLastInGroup ? 4 : theme.borderRadius,
-                          ),
-                        ),
-                        boxShadow: [
-                          if (!isMe)
-                            BoxShadow(
-                              color: theme.cardShadowColor.withOpacity(0.06),
-                              blurRadius: 8,
-                              offset: const Offset(0, 3),
-                            ),
-                          if (isMe)
-                            BoxShadow(
-                              color: theme.userBubbleColor.withOpacity(0.12),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
-                            ),
-                        ],
-                      ),
-                      child: IntrinsicWidth(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            if (message.replyTo != null)
-                              _buildQuote(context, isMe),
-
-                            if (isImage)
-                              _buildImage(context)
-                            else if (message.contentType == ContentType.pdf)
-                              _buildPdf(context)
-                            else
-                              Text(
-                                message.content,
-                                style: theme.bodyStyle.copyWith(
-                                  color: isMe
-                                      ? theme.userTextColor
-                                      : theme.agentTextColor,
-                                ),
-                              ),
-                            const SizedBox(height: 4),
-                            Align(
-                              alignment: Alignment.bottomRight,
-                              child: Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Text(
-                                    timeStr,
-                                    style: theme.timestampStyle.copyWith(
-                                      color: isMe
-                                          ? theme.userTextColor.withOpacity(0.7)
-                                          : theme.subtitleStyle.color,
-                                    ),
-                                  ),
-                                  if (isMe) ...[
-                                    const SizedBox(width: 4),
-                                    _buildStatusTicks(),
-                                  ],
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                        isRight: isMe,
                       ),
                     ),
                   ),
-                  if (message.reactions.isNotEmpty) _buildReactionsDisplay(),
-                ],
-              ),
+                GestureDetector(
+                  onHorizontalDragEnd: (details) {
+                    if (details.primaryVelocity != null &&
+                        details.primaryVelocity! < -100) {
+                      onSwipe();
+                    }
+                  },
+                  onLongPress: onLongPress,
+                  child: Column(
+                    crossAxisAlignment: isMe
+                        ? CrossAxisAlignment.end
+                        : CrossAxisAlignment.start,
+                    children: [
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.70,
+                        ),
+                        child: Container(
+                          padding: isImage
+                              ? const EdgeInsets.all(4)
+                              : const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 12,
+                                ),
+                          decoration: BoxDecoration(
+                            color: isMe
+                                ? theme.userBubbleColor
+                                : theme.agentBubbleColor,
+                            borderRadius: BorderRadius.only(
+                              topLeft: const Radius.circular(20),
+                              topRight: const Radius.circular(20),
+                              bottomLeft: Radius.circular(
+                                !isMe && isLastInGroup ? 4 : 20,
+                              ),
+                              bottomRight: Radius.circular(
+                                isMe && isLastInGroup ? 4 : 20,
+                              ),
+                            ),
+                            boxShadow: [
+                              if (!isMe)
+                                BoxShadow(
+                                  color: theme.cardShadowColor.withOpacity(
+                                    0.06,
+                                  ),
+                                  blurRadius: 8,
+                                  offset: const Offset(0, 3),
+                                ),
+                              if (isMe)
+                                BoxShadow(
+                                  color: theme.userBubbleColor.withOpacity(
+                                    0.12,
+                                  ),
+                                  blurRadius: 10,
+                                  offset: const Offset(0, 4),
+                                ),
+                            ],
+                          ),
+                          child: IntrinsicWidth(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                if (message.replyTo != null)
+                                  _buildQuote(context, isMe),
+
+                                if (isImage)
+                                  _buildImage(context)
+                                else if (message.contentType == ContentType.pdf)
+                                  _buildPdf(context)
+                                else
+                                  Text(
+                                    message.content,
+                                    style: theme.bodyStyle.copyWith(
+                                      color: isMe
+                                          ? theme.userTextColor
+                                          : theme.agentTextColor,
+                                    ),
+                                  ),
+                                const SizedBox(height: 4),
+                                Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        timeStr,
+                                        style: theme.timestampStyle.copyWith(
+                                          color: isMe
+                                              ? theme.userTextColor.withOpacity(
+                                                  0.7,
+                                                )
+                                              : theme.subtitleStyle.color,
+                                        ),
+                                      ),
+                                      if (isMe) ...[
+                                        const SizedBox(width: 4),
+                                        _buildStatusTicks(),
+                                      ],
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                      if (message.reactions.isNotEmpty)
+                        _buildReactionsDisplay(),
+                    ],
+                  ),
+                ),
+              ],
             ),
           ),
 
@@ -1351,4 +1375,34 @@ class _MessageGroup {
   final List<LivechatMessage> messages;
 
   _MessageGroup({required this.date, required this.messages});
+}
+
+class _WhatsAppTailPainter extends CustomPainter {
+  final Color color;
+  final bool isRight;
+
+  _WhatsAppTailPainter({required this.color, required this.isRight});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.fill;
+
+    final path = Path();
+    if (isRight) {
+      path.moveTo(0, 0);
+      path.lineTo(size.width, size.height);
+      path.lineTo(0, size.height);
+    } else {
+      path.moveTo(size.width, 0);
+      path.lineTo(0, size.height);
+      path.lineTo(size.width, size.height);
+    }
+    path.close();
+    canvas.drawPath(path, paint);
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

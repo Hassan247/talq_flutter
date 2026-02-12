@@ -4,10 +4,9 @@ import 'package:provider/provider.dart';
 
 void main() {
   // 1. Setup the API client
-  // use 127.0.0.1 for simulator, or your Mac's IP (e.g., 192.168.1.5) for physical device
   final livechatApi = LivechatClient(
-    httpUrl: 'http://127.0.0.1:8082/graphql',
-    wsUrl: 'ws://127.0.0.1:8082/graphql',
+    httpUrl: 'https://d30f-102-90-126-214.ngrok-free.app/graphql',
+    wsUrl: 'wss://d30f-102-90-126-214.ngrok-free.app/graphql',
     apiKey: 'lc_8b39111a-f6cd-4c14-8ae1-2c86012baf8594bd32e2',
   );
 
