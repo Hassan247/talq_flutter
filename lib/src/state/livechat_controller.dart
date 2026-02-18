@@ -1106,11 +1106,12 @@ class LivechatController extends ChangeNotifier {
                 }
 
                 // Sync message statuses for visitor messages
-                // Use the newRoom object which already has a clean fallback for unreadCount
-                final allRead = newRoom.unreadCount == 0;
+                // Use the unreadCount to identify which messages are read/delivered
+                final unreadN = newRoom.unreadCount;
+                final allRead = unreadN == 0;
                 final lastMsg = roomData['lastMessage'];
 
-                // Also fallback to lastMessage status if unreadCount is not 0 (e.g. for partial updates)
+                // Fallback to lastMessage status if explicitly provided
                 bool lastMsgRead = false;
                 bool lastMsgDelivered = false;
                 if (lastMsg != null &&
@@ -1120,17 +1121,46 @@ class LivechatController extends ChangeNotifier {
                   lastMsgDelivered = lastMsg['delivered'] ?? false;
                 }
 
-                // If unreadCount is 0, or the last message is read/delivered, sync the list.
-                // We always check this whenever a room update arrives for the active room.
+                // Identify IDs of unread confirmed messages
+                // _messages is newest-first (index 0 is newest)
+                final confirmedVisitorMsgs = _messages
+                    .where(
+                      (m) =>
+                          m.senderType == SenderType.visitor &&
+                          !m.id.startsWith('temp-'),
+                    )
+                    .toList();
+
+                final unreadIds = confirmedVisitorMsgs.length >= unreadN
+                    ? confirmedVisitorMsgs
+                          .take(unreadN)
+                          .map((m) => m.id)
+                          .toSet()
+                    : confirmedVisitorMsgs.map((m) => m.id).toSet();
+
                 bool changed = false;
                 final updatedMessages = _messages.map((m) {
                   if (m.senderType == SenderType.visitor) {
-                    final shouldMarkRead =
-                        allRead || (m.id == lastMsg?['id'] && lastMsgRead);
-                    final shouldMarkDelivered =
-                        allRead ||
-                        lastMsgRead ||
-                        (m.id == lastMsg?['id'] && lastMsgDelivered);
+                    bool shouldMarkRead = false;
+                    bool shouldMarkDelivered = false;
+
+                    if (allRead) {
+                      shouldMarkRead = true;
+                      shouldMarkDelivered = true;
+                    } else {
+                      // If it's a confirmed message and NOT in the unread set, it's read
+                      if (!m.id.startsWith('temp-') &&
+                          !unreadIds.contains(m.id)) {
+                        shouldMarkRead = true;
+                        shouldMarkDelivered = true;
+                      }
+
+                      // Also respect lastMsg status (it might be fresher than unreadCount pulse)
+                      if (m.id == lastMsg?['id']) {
+                        if (lastMsgRead) shouldMarkRead = true;
+                        if (lastMsgDelivered) shouldMarkDelivered = true;
+                      }
+                    }
 
                     if ((shouldMarkRead && !m.isRead) ||
                         (shouldMarkDelivered && !m.isDelivered)) {
