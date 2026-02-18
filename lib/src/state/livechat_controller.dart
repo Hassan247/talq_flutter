@@ -757,9 +757,29 @@ class LivechatController extends ChangeNotifier {
     // Replace optimistic message with real one
     final index = _messages.indexWhere((m) => m.id == tempId);
     if (index != -1) {
+      final oldMsg = _messages[index];
       final data = result.data!['sendVisitorMessage'];
       final realMessage = LivechatMessage.fromJson(data);
-      _messages[index] = realMessage;
+
+      // Preserve read/delivered status if already applied by room pulse
+      final persistedMessage = LivechatMessage(
+        id: realMessage.id,
+        roomId: realMessage.roomId,
+        content: realMessage.content,
+        senderType: realMessage.senderType,
+        senderName: realMessage.senderName,
+        senderAvatarUrl: realMessage.senderAvatarUrl,
+        contentType: realMessage.contentType,
+        fileUrl: realMessage.fileUrl,
+        fileName: realMessage.fileName,
+        createdAt: realMessage.createdAt,
+        isRead: realMessage.isRead || oldMsg.isRead,
+        isDelivered: realMessage.isDelivered || oldMsg.isDelivered,
+        replyTo: realMessage.replyTo,
+        reactions: realMessage.reactions,
+      );
+
+      _messages[index] = persistedMessage;
 
       // Update room ID if it was still null (fallback)
       if (_roomId == null) {
@@ -958,21 +978,47 @@ class LivechatController extends ChangeNotifier {
 
               // 2. Logic for Active Room message list
               if (newMessage.roomId == _roomId) {
-                // Avoid duplicates if we sent it ourselves
-                if (!_messages.any((m) => m.id == newMessage.id)) {
+                // Check if we already have this message (either as real or optimistic)
+                final existingIdx = _messages.indexWhere((m) {
+                  return m.id == newMessage.id ||
+                      (m.id.startsWith('temp-') &&
+                          m.content == newMessage.content &&
+                          m.senderType == newMessage.senderType);
+                });
+
+                if (existingIdx != -1) {
+                  // Message exists, preserve status during replacement
+                  final oldMsg = _messages[existingIdx];
+                  final persistedMessage = LivechatMessage(
+                    id: newMessage.id,
+                    roomId: newMessage.roomId,
+                    content: newMessage.content,
+                    senderType: newMessage.senderType,
+                    senderName: newMessage.senderName,
+                    senderAvatarUrl: newMessage.senderAvatarUrl,
+                    contentType: newMessage.contentType,
+                    fileUrl: newMessage.fileUrl,
+                    fileName: newMessage.fileName,
+                    createdAt: newMessage.createdAt,
+                    isRead: newMessage.isRead || oldMsg.isRead,
+                    isDelivered: newMessage.isDelivered || oldMsg.isDelivered,
+                    replyTo: newMessage.replyTo,
+                    reactions: newMessage.reactions,
+                  );
+                  _messages[existingIdx] = persistedMessage;
+                } else {
+                  // Truly new message
                   _messages.insert(0, newMessage);
 
-                  // Mark as delivered
+                  // Mark as delivered for incoming agent/other messages
                   if (newMessage.senderType != SenderType.visitor) {
                     markAsDelivered(_roomId!);
+                    if (_isChatVisible) {
+                      markAsRead();
+                    }
                   }
-
-                  if (newMessage.senderType != SenderType.visitor &&
-                      _isChatVisible) {
-                    markAsRead();
-                  }
-                  notifyListeners();
                 }
+                notifyListeners();
               }
             }
           },
@@ -1059,24 +1105,36 @@ class LivechatController extends ChangeNotifier {
                   _showRatingPrompt = true;
                 }
 
-                // If assignee changed (reassignment), refetch messages to get new events.
-                // CURRENTLY DISABLED due to causing infinite loops on room updates.
-                // Re-enable only if we can reliably detect meaningful changes without spamming fetchMessages.
-                // if (roomData['assignee'] != null) {
-                //   fetchMessages(roomId: _roomId);
-                // }
-
-                // Sync message statuses for user messages
+                // Sync message statuses for visitor messages
+                // Use the newRoom object which already has a clean fallback for unreadCount
+                final allRead = newRoom.unreadCount == 0;
                 final lastMsg = roomData['lastMessage'];
+
+                // Also fallback to lastMessage status if unreadCount is not 0 (e.g. for partial updates)
+                bool lastMsgRead = false;
+                bool lastMsgDelivered = false;
                 if (lastMsg != null &&
                     SenderType.fromString(lastMsg['senderType']) ==
                         SenderType.visitor) {
-                  final isRead = lastMsg['read'] ?? false;
-                  final isDelivered = lastMsg['delivered'] ?? false;
+                  lastMsgRead = lastMsg['read'] ?? false;
+                  lastMsgDelivered = lastMsg['delivered'] ?? false;
+                }
 
-                  _messages = _messages.map((m) {
-                    if (m.senderType == SenderType.visitor &&
-                        (!m.isRead || !m.isDelivered)) {
+                // If unreadCount is 0, or the last message is read/delivered, sync the list.
+                // We always check this whenever a room update arrives for the active room.
+                bool changed = false;
+                final updatedMessages = _messages.map((m) {
+                  if (m.senderType == SenderType.visitor) {
+                    final shouldMarkRead =
+                        allRead || (m.id == lastMsg?['id'] && lastMsgRead);
+                    final shouldMarkDelivered =
+                        allRead ||
+                        lastMsgRead ||
+                        (m.id == lastMsg?['id'] && lastMsgDelivered);
+
+                    if ((shouldMarkRead && !m.isRead) ||
+                        (shouldMarkDelivered && !m.isDelivered)) {
+                      changed = true;
                       return LivechatMessage(
                         id: m.id,
                         roomId: m.roomId,
@@ -1088,14 +1146,18 @@ class LivechatController extends ChangeNotifier {
                         fileUrl: m.fileUrl,
                         fileName: m.fileName,
                         createdAt: m.createdAt,
-                        isRead: m.isRead || isRead,
-                        isDelivered: m.isDelivered || isDelivered,
+                        isRead: m.isRead || shouldMarkRead,
+                        isDelivered: m.isDelivered || shouldMarkDelivered,
                         replyTo: m.replyTo,
                         reactions: m.reactions,
                       );
                     }
-                    return m;
-                  }).toList();
+                  }
+                  return m;
+                }).toList();
+
+                if (changed) {
+                  _messages = updatedMessages;
                 }
 
                 _roomStatus = newStatus;

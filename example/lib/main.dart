@@ -5,8 +5,8 @@ import 'package:provider/provider.dart';
 void main() {
   // 1. Setup the API client
   final livechatApi = LivechatClient(
-    httpUrl: 'https://d30f-102-90-126-214.ngrok-free.app/graphql',
-    wsUrl: 'wss://d30f-102-90-126-214.ngrok-free.app/graphql',
+    httpUrl: 'https://3e6f-102-90-124-153.ngrok-free.app/graphql',
+    wsUrl: 'wss://3e6f-102-90-124-153.ngrok-free.app/graphql',
     apiKey: 'lc_8b39111a-f6cd-4c14-8ae1-2c86012baf8594bd32e2',
   );
 
