@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:file_picker/file_picker.dart';
@@ -10,11 +11,13 @@ import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:sticky_headers/sticky_headers.dart';
-import 'package:url_launcher/url_launcher.dart';
 
-import '../models/models.dart';
+import '../core/utils/pdf_thumbnail_helper.dart';
+import '../models/models.dart' as models;
 import '../state/livechat_controller.dart';
 import '../theme/livechat_theme.dart';
+import 'media_preview_page.dart';
+import 'media_viewer_page.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
 import 'shared_widgets.dart';
@@ -112,12 +115,12 @@ class _LivechatViewState extends State<LivechatView>
     return 'Reply in $time';
   }
 
-  List<_MessageGroup> _groupMessages(List<LivechatMessage> messages) {
+  List<_MessageGroup> _groupMessages(List<models.LivechatMessage> messages) {
     final groups = <_MessageGroup>[];
     if (messages.isEmpty) return groups;
 
     DateTime? currentDate;
-    List<LivechatMessage> currentGroupMessages = [];
+    List<models.LivechatMessage> currentGroupMessages = [];
 
     for (final message in messages) {
       final messageDate = DateTime(
@@ -221,7 +224,7 @@ class _LivechatViewState extends State<LivechatView>
                   children: [
                     LivechatAvatar(
                       imageUrl: controller.currentRoom?.assigneeAvatarUrl,
-                      senderType: SenderType.agent,
+                      senderType: models.SenderType.agent,
                       radius: 18,
                     ),
                     const SizedBox(width: 12),
@@ -320,17 +323,9 @@ class _LivechatViewState extends State<LivechatView>
                                               const SizedBox(height: 32),
                                               Text(
                                                 controller
-                                                                .workspace
-                                                                ?.welcomeMessage !=
-                                                            null &&
-                                                        controller
-                                                            .workspace!
-                                                            .welcomeMessage!
-                                                            .isNotEmpty
-                                                    ? controller
-                                                          .workspace!
-                                                          .welcomeMessage!
-                                                    : 'Hello there!\nHow can we help today?',
+                                                        .workspace
+                                                        ?.welcomeMessage ??
+                                                    'Hello there!\nHow can we help today?',
                                                 textAlign: TextAlign.center,
                                                 style: theme.titleStyle
                                                     .copyWith(
@@ -523,7 +518,7 @@ class _LivechatViewState extends State<LivechatView>
   }
 
   Widget _buildInputArea(LivechatController controller, LivechatTheme theme) {
-    if (controller.roomStatus == RoomStatus.resolved) {
+    if (controller.roomStatus == models.RoomStatus.resolved) {
       return Container(
         width: double.infinity,
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
@@ -687,13 +682,23 @@ class _LivechatViewState extends State<LivechatView>
                 iconPath: 'assets/icons/image.svg',
                 label: 'File',
                 onTap: () async {
-                  Navigator.pop(context);
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
                   final XFile? image = await _picker.pickImage(
                     source: ImageSource.gallery,
                   );
-                  if (image != null) {
-                    await controller.sendFile(image.path);
-                    _scrollToBottom();
+                  if (image != null && mounted) {
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: controller,
+                          child: MediaPreviewPage(
+                            file: File(image.path),
+                            contentType: models.ContentType.image,
+                          ),
+                        ),
+                      ),
+                    );
                   }
                 },
               ),
@@ -702,13 +707,23 @@ class _LivechatViewState extends State<LivechatView>
                 iconPath: 'assets/icons/camera.svg',
                 label: 'Camera',
                 onTap: () async {
-                  Navigator.pop(context);
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
                   final XFile? image = await _picker.pickImage(
                     source: ImageSource.camera,
                   );
-                  if (image != null) {
-                    await controller.sendFile(image.path);
-                    _scrollToBottom();
+                  if (image != null && mounted) {
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: controller,
+                          child: MediaPreviewPage(
+                            file: File(image.path),
+                            contentType: models.ContentType.image,
+                          ),
+                        ),
+                      ),
+                    );
                   }
                 },
               ),
@@ -717,15 +732,25 @@ class _LivechatViewState extends State<LivechatView>
                 iconPath: 'assets/icons/document.svg',
                 label: 'Document',
                 onTap: () async {
-                  Navigator.pop(context);
+                  final navigator = Navigator.of(context);
+                  navigator.pop();
                   FilePickerResult? result = await FilePicker.platform
                       .pickFiles(
                         type: FileType.custom,
                         allowedExtensions: ['pdf'],
                       );
-                  if (result != null) {
-                    await controller.sendFile(result.files.single.path!);
-                    _scrollToBottom();
+                  if (result != null && mounted) {
+                    navigator.push(
+                      MaterialPageRoute(
+                        builder: (context) => ChangeNotifierProvider.value(
+                          value: controller,
+                          child: MediaPreviewPage(
+                            file: File(result.files.single.path!),
+                            contentType: models.ContentType.pdf,
+                          ),
+                        ),
+                      ),
+                    );
                   }
                 },
               ),
@@ -802,7 +827,7 @@ class _LivechatViewState extends State<LivechatView>
     final reply = controller.replyingTo!;
     final senderName =
         reply.senderName ??
-        (reply.senderType == SenderType.visitor ? 'YOU' : 'AGENT');
+        (reply.senderType == models.SenderType.visitor ? 'YOU' : 'AGENT');
 
     return Container(
       padding: const EdgeInsets.all(12),
@@ -838,7 +863,7 @@ class _LivechatViewState extends State<LivechatView>
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    reply.contentType == ContentType.image
+                    reply.contentType == models.ContentType.image
                         ? 'Image'
                         : reply.content,
                     maxLines: 1,
@@ -870,7 +895,7 @@ class _LivechatViewState extends State<LivechatView>
   void _showReactions(
     BuildContext context,
     LivechatController controller,
-    LivechatMessage message,
+    models.LivechatMessage message,
     LivechatTheme theme,
   ) {
     final reactions = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
@@ -912,7 +937,7 @@ class _LivechatViewState extends State<LivechatView>
 }
 
 class _ChatBubble extends StatelessWidget {
-  final LivechatMessage message;
+  final models.LivechatMessage message;
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final VoidCallback onSwipe;
@@ -930,11 +955,15 @@ class _ChatBubble extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (message.senderType == SenderType.system) {
+    if (message.senderType == models.SenderType.system) {
       return _buildSystemMessage();
     }
-    final isMe = message.senderType == SenderType.visitor;
-    final isImage = message.contentType == ContentType.image;
+    final isMe = message.senderType == models.SenderType.visitor;
+    final hasAttachment =
+        message.fileUrl != null || message.localFilePath != null;
+    final isImage = _isImageMessage(message, hasAttachment);
+    final isDocument = _isDocumentMessage(message, hasAttachment, isImage);
+    final attachmentCaption = _attachmentCaption(message);
     final timeStr = DateFormat('jm').format(message.createdAt);
 
     return Padding(
@@ -962,7 +991,8 @@ class _ChatBubble extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (isLastInGroup && message.senderType != SenderType.system)
+                if (isLastInGroup &&
+                    message.senderType != models.SenderType.system)
                   Positioned(
                     bottom: 0,
                     right: isMe ? -8 : null,
@@ -1034,51 +1064,61 @@ class _ChatBubble extends StatelessWidget {
                                 ),
                             ],
                           ),
-                          child: IntrinsicWidth(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.stretch,
-                              children: [
-                                if (message.replyTo != null)
-                                  _buildQuote(context, isMe),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              if (message.replyTo != null)
+                                _buildQuote(context, isMe),
 
-                                if (isImage)
-                                  _buildImage(context)
-                                else if (message.contentType == ContentType.pdf)
-                                  _buildPdf(context)
-                                else
-                                  Text(
-                                    message.content,
-                                    style: theme.bodyStyle.copyWith(
-                                      color: isMe
-                                          ? theme.userTextColor
-                                          : theme.agentTextColor,
-                                    ),
+                              if (isImage)
+                                _buildImage(context)
+                              else if (isDocument)
+                                _buildPdf(context)
+                              else
+                                Text(
+                                  message.content,
+                                  style: theme.bodyStyle.copyWith(
+                                    color: isMe
+                                        ? theme.userTextColor
+                                        : theme.agentTextColor,
                                   ),
-                                const SizedBox(height: 4),
-                                Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        timeStr,
-                                        style: theme.timestampStyle.copyWith(
-                                          color: isMe
-                                              ? theme.userTextColor.withOpacity(
-                                                  0.7,
-                                                )
-                                              : theme.subtitleStyle.color,
-                                        ),
-                                      ),
-                                      if (isMe) ...[
-                                        const SizedBox(width: 4),
-                                        _buildStatusTicks(),
-                                      ],
-                                    ],
+                                ),
+                              if ((isImage || isDocument) &&
+                                  attachmentCaption.isNotEmpty) ...[
+                                const SizedBox(height: 8),
+                                Text(
+                                  attachmentCaption,
+                                  style: theme.bodyStyle.copyWith(
+                                    color: isMe
+                                        ? theme.userTextColor
+                                        : theme.agentTextColor,
                                   ),
                                 ),
                               ],
-                            ),
+                              const SizedBox(height: 4),
+                              Align(
+                                alignment: Alignment.bottomRight,
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      timeStr,
+                                      style: theme.timestampStyle.copyWith(
+                                        color: isMe
+                                            ? theme.userTextColor.withOpacity(
+                                                0.7,
+                                              )
+                                            : theme.subtitleStyle.color,
+                                      ),
+                                    ),
+                                    if (isMe) ...[
+                                      const SizedBox(width: 4),
+                                      _buildStatusTicks(),
+                                    ],
+                                  ],
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -1127,9 +1167,17 @@ class _ChatBubble extends StatelessWidget {
 
   Widget _buildQuote(BuildContext context, bool isMe) {
     final quote = message.replyTo!;
+    final quoteHasAttachment =
+        quote.fileUrl != null || quote.localFilePath != null;
+    final quoteIsImage = _isImageMessage(quote, quoteHasAttachment);
+    final quoteIsDocument = _isDocumentMessage(
+      quote,
+      quoteHasAttachment,
+      quoteIsImage,
+    );
     final senderName =
         quote.senderName ??
-        (quote.senderType == SenderType.visitor ? 'VISITOR' : 'AGENT');
+        (quote.senderType == models.SenderType.visitor ? 'VISITOR' : 'AGENT');
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -1160,8 +1208,10 @@ class _ChatBubble extends StatelessWidget {
           ),
           const SizedBox(height: 3),
           Text(
-            quote.contentType == ContentType.image
+            quoteIsImage
                 ? 'Sent an image'
+                : quoteIsDocument
+                ? 'Sent a document'
                 : quote.content,
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
@@ -1280,19 +1330,29 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(16),
-      child: CachedNetworkImage(
+    Widget imageWidget;
+    if (message.localFilePath != null &&
+        File(message.localFilePath!).existsSync()) {
+      imageWidget = Image.file(
+        File(message.localFilePath!),
+        height: 200,
+        width: double.infinity,
+        fit: BoxFit.cover,
+      );
+    } else if (message.fileUrl != null && message.fileUrl!.isNotEmpty) {
+      imageWidget = CachedNetworkImage(
         imageUrl: message.fileUrl!,
         fit: BoxFit.cover,
+        width: double.infinity,
+        height: 200,
         placeholder: (context, url) => Container(
-          width: 200,
+          width: double.infinity,
           height: 200,
           color: Colors.grey[100],
           child: const Center(child: CircularProgressIndicator()),
         ),
         errorWidget: (context, url, error) => Container(
-          width: 200,
+          width: double.infinity,
           height: 200,
           color: Colors.grey[100],
           child: Column(
@@ -1311,47 +1371,274 @@ class _ChatBubble extends StatelessWidget {
             ],
           ),
         ),
+      );
+    } else {
+      imageWidget = Container(
+        width: double.infinity,
+        height: 200,
+        color: Colors.grey[100],
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.image_not_supported_rounded,
+              color: Colors.grey[500],
+              size: 44,
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'Image unavailable',
+              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(16),
+      child: GestureDetector(
+        onTap: () {
+          if (!message.isUploading &&
+              (message.fileUrl != null || message.localFilePath != null)) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MediaViewerPage(
+                  url: message.fileUrl,
+                  localPath: message.localFilePath,
+                  contentType: message.contentType,
+                  fileName: message.fileName ?? 'Image',
+                ),
+              ),
+            );
+          }
+        },
+        child: SizedBox(
+          width: double.infinity,
+          height: 200,
+          child: Stack(
+            fit: StackFit.expand,
+            alignment: Alignment.center,
+            children: [
+              imageWidget,
+              if (message.isUploading)
+                Container(
+                  color: Colors.black26,
+                  child: const Center(
+                    child: CircularProgressIndicator(
+                      color: Colors.white,
+                      strokeWidth: 2,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }
 
   Widget _buildPdf(BuildContext context) {
-    final isMe = message.senderType == SenderType.visitor;
-    return InkWell(
-      onTap: () async {
-        if (message.fileUrl != null) {
-          final uri = Uri.parse(message.fileUrl!);
-          if (await canLaunchUrl(uri)) {
-            await launchUrl(uri);
-          }
-        }
-      },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(
-            Icons.picture_as_pdf,
-            color: isMe ? theme.userTextColor : theme.primaryColor,
-            size: 28,
-          ),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              message.fileName ?? 'Document.pdf',
-              style: theme.bodyStyle.copyWith(
-                color: isMe ? theme.userTextColor : theme.agentTextColor,
-                fontSize: 13,
-                decoration: TextDecoration.underline,
+    final isMe = message.senderType == models.SenderType.visitor;
+
+    return Container(
+      clipBehavior: Clip.antiAlias,
+      decoration: BoxDecoration(
+        color: isMe
+            ? theme.userBubbleColor.withOpacity(0.1)
+            : theme.primaryColor.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: InkWell(
+        onTap: () {
+          if (!message.isUploading &&
+              (message.fileUrl != null || message.localFilePath != null)) {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => MediaViewerPage(
+                  url: message.fileUrl,
+                  localPath: message.localFilePath,
+                  contentType: message.contentType,
+                  fileName: message.fileName ?? 'Document.pdf',
+                ),
               ),
-              overflow: TextOverflow.ellipsis,
+            );
+          }
+        },
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            FutureBuilder<PdfMetadata?>(
+              future: (message.localFilePath != null || message.fileUrl != null)
+                  ? PdfThumbnailHelper.getMetadata(
+                      message.localFilePath ?? message.fileUrl!,
+                    )
+                  : Future.value(null),
+              builder: (context, snapshot) {
+                final metadata = snapshot.data;
+                final thumbnail = metadata?.thumbnail;
+
+                final sizeStr = metadata != null
+                    ? (metadata.fileSize < 1024 * 1024
+                          ? '${(metadata.fileSize / 1024).toStringAsFixed(1)} KB'
+                          : '${(metadata.fileSize / (1024 * 1024)).toStringAsFixed(1)} MB')
+                    : '';
+                final pagesStr = metadata != null
+                    ? '${metadata.pageCount} ${metadata.pageCount == 1 ? 'page' : 'pages'}'
+                    : '';
+
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    if (thumbnail != null)
+                      ClipRRect(
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(12),
+                        ),
+                        child: Image.file(
+                          thumbnail,
+                          height: 120,
+                          width: double.infinity,
+                          fit: BoxFit.cover,
+                        ),
+                      ),
+                    Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.picture_as_pdf,
+                            color: Colors.redAccent,
+                            size: 32,
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  message.fileName ?? 'Document.pdf',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: theme.bodyStyle.copyWith(
+                                    color: isMe
+                                        ? theme.userTextColor
+                                        : theme.agentTextColor,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                if (metadata != null)
+                                  Text(
+                                    '$pagesStr • $sizeStr',
+                                    style: theme.bodyStyle.copyWith(
+                                      fontSize: 11,
+                                      color:
+                                          (isMe
+                                                  ? theme.userTextColor
+                                                  : theme.agentTextColor)
+                                              .withOpacity(0.6),
+                                    ),
+                                  )
+                                else if (message.isUploading)
+                                  Text(
+                                    'Uploading...',
+                                    style: theme.bodyStyle.copyWith(
+                                      fontSize: 11,
+                                      color:
+                                          (isMe
+                                                  ? theme.userTextColor
+                                                  : theme.agentTextColor)
+                                              .withOpacity(0.6),
+                                    ),
+                                  ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 
+  bool _isImageMessage(models.LivechatMessage target, bool hasAttachment) {
+    if (target.contentType == models.ContentType.image) {
+      return true;
+    }
+    if (!hasAttachment) {
+      return false;
+    }
+
+    final source =
+        (target.fileName ?? target.fileUrl ?? target.localFilePath)
+            ?.toLowerCase() ??
+        '';
+    final normalizedSource = source.split('?').first.split('#').first;
+
+    return normalizedSource.endsWith('.jpg') ||
+        normalizedSource.endsWith('.jpeg') ||
+        normalizedSource.endsWith('.png') ||
+        normalizedSource.endsWith('.gif') ||
+        normalizedSource.endsWith('.webp') ||
+        normalizedSource.contains('/images/');
+  }
+
+  bool _isDocumentMessage(
+    models.LivechatMessage target,
+    bool hasAttachment,
+    bool isImage,
+  ) {
+    if (target.contentType == models.ContentType.pdf) {
+      return true;
+    }
+    return hasAttachment && !isImage;
+  }
+
+  String _attachmentCaption(models.LivechatMessage target) {
+    final cleaned = _stripAttachmentCaption(target.content).trim();
+    if (cleaned.isEmpty) {
+      return '';
+    }
+
+    final fileName = target.fileName?.trim();
+    if (fileName != null && fileName.isNotEmpty && cleaned == fileName) {
+      return '';
+    }
+
+    return cleaned;
+  }
+
+  String _stripAttachmentCaption(String content) {
+    if (content.startsWith('Sent an image:')) {
+      return content.replaceFirst('Sent an image:', '').trim();
+    }
+    if (content.startsWith('Sent a file:')) {
+      return content.replaceFirst('Sent a file:', '').trim();
+    }
+    return content;
+  }
+
   Widget _buildStatusTicks() {
+    if (message.isUploading) {
+      return const SizedBox(
+        width: 12,
+        height: 12,
+        child: CircularProgressIndicator(
+          strokeWidth: 1.5,
+          color: Colors.white70,
+        ),
+      );
+    }
     if (message.isRead) {
       return Row(
         mainAxisSize: MainAxisSize.min,
@@ -1372,7 +1659,7 @@ class _ChatBubble extends StatelessWidget {
 
 class _MessageGroup {
   final DateTime date;
-  final List<LivechatMessage> messages;
+  final List<models.LivechatMessage> messages;
 
   _MessageGroup({required this.date, required this.messages});
 }

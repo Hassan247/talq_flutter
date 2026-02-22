@@ -364,11 +364,9 @@ class _MessageCard extends StatelessWidget {
     if (msg.contentType == ContentType.image) {
       icon = Icons.photo_camera_outlined;
       label = 'Photo';
-      if (content.startsWith('Sent an image:')) content = '';
     } else if (msg.contentType == ContentType.pdf) {
       icon = Icons.description_outlined;
       label = 'Document';
-      if (content.startsWith('Sent a file:')) content = '';
     } else if (msg.content.contains('.m4a') ||
         msg.content.contains('.mp3') ||
         msg.content.contains('.wav')) {

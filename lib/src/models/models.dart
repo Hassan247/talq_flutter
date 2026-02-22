@@ -83,6 +83,8 @@ class LivechatMessage {
   final bool isDelivered;
   final LivechatMessage? replyTo;
   final Map<String, dynamic> reactions;
+  final String? localFilePath;
+  final bool isUploading;
 
   LivechatMessage({
     required this.id,
@@ -99,6 +101,8 @@ class LivechatMessage {
     this.isDelivered = false,
     this.replyTo,
     this.reactions = const {},
+    this.localFilePath,
+    this.isUploading = false,
   });
 
   factory LivechatMessage.fromJson(Map<String, dynamic> json) {
@@ -128,6 +132,8 @@ class LivechatMessage {
                     : json['reactions'],
               )
             : {},
+        localFilePath: json['localFilePath'],
+        isUploading: json['isUploading'] ?? false,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -179,6 +185,37 @@ class LivechatMessage {
     } catch (_) {
       return {};
     }
+  }
+
+  LivechatMessage copyWith({
+    String? id,
+    String? content,
+    String? fileUrl,
+    String? fileName,
+    bool? isRead,
+    bool? isDelivered,
+    String? localFilePath,
+    bool? isUploading,
+    Map<String, dynamic>? reactions,
+  }) {
+    return LivechatMessage(
+      id: id ?? this.id,
+      roomId: roomId,
+      content: content ?? this.content,
+      senderType: senderType,
+      senderName: senderName,
+      senderAvatarUrl: senderAvatarUrl,
+      contentType: contentType,
+      fileUrl: fileUrl ?? this.fileUrl,
+      fileName: fileName ?? this.fileName,
+      createdAt: createdAt,
+      isRead: isRead ?? this.isRead,
+      isDelivered: isDelivered ?? this.isDelivered,
+      replyTo: replyTo,
+      reactions: reactions ?? this.reactions,
+      localFilePath: localFilePath ?? this.localFilePath,
+      isUploading: isUploading ?? this.isUploading,
+    );
   }
 }
 

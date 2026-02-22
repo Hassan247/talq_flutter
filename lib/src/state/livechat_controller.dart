@@ -629,6 +629,7 @@ class LivechatController extends ChangeNotifier {
     ContentType contentType = ContentType.text,
     String? fileUrl,
     String? fileName,
+    String? tempId,
   }) async {
     if (content.trim().isEmpty && fileUrl == null) return;
 
@@ -678,37 +679,54 @@ class LivechatController extends ChangeNotifier {
       }
     }
 
-    final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
+    final effectiveTempId =
+        tempId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}';
     final replyToId = _replyingTo?.id;
 
-    final optMsg = LivechatMessage(
-      id: tempId,
-      content: content,
-      senderType: SenderType.visitor,
-      contentType: contentType,
-      fileUrl: fileUrl,
-      fileName: fileName,
-      createdAt: DateTime.now(),
-      replyTo: _replyingTo,
-    );
+    // IF tempId was NOT provided, we need to add the optimistic message now.
+    // If it WAS provided, it's already in the list (from sendFile).
+    if (tempId == null) {
+      final optMsg = LivechatMessage(
+        id: effectiveTempId,
+        content: content,
+        senderType: SenderType.visitor,
+        contentType: contentType,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        createdAt: DateTime.now(),
+        replyTo: _replyingTo,
+      );
 
-    // REVERSE SCROLL CHANGE: Insert at beginning (Newest)
-    _messages.insert(0, optMsg);
-
-    _replyingTo = null; // Clear after sending
+      // REVERSE SCROLL CHANGE: Insert at beginning (Newest)
+      _messages.insert(0, optMsg);
+      _replyingTo = null; // Clear after sending
+    }
 
     // Update room preview optimistically
     if (_roomId != null) {
       final roomIdx = _rooms.indexWhere((r) => r.id == _roomId);
       if (roomIdx != -1) {
         final room = _rooms[roomIdx];
+        final previewMsg = tempId != null
+            ? _messages.firstWhere((m) => m.id == tempId)
+            : LivechatMessage(
+                id: effectiveTempId,
+                content: content,
+                senderType: SenderType.visitor,
+                contentType: contentType,
+                fileUrl: fileUrl,
+                fileName: fileName,
+                createdAt: DateTime.now(),
+                replyTo: null,
+              );
+
         _rooms[roomIdx] = LivechatRoom(
           id: room.id,
           status: room.status,
           unreadCount: room.unreadCount,
           visitorUnreadCount: room.visitorUnreadCount,
-          lastMessageAt: optMsg.createdAt,
-          lastMessage: optMsg,
+          lastMessageAt: previewMsg.createdAt,
+          lastMessage: previewMsg,
           createdAt: room.createdAt,
           rating: room.rating,
           ratingComment: room.ratingComment,
@@ -749,13 +767,21 @@ class LivechatController extends ChangeNotifier {
     );
 
     if (result.hasException) {
-      _messages.removeWhere((m) => m.id == tempId);
+      debugPrint(
+        '[LivechatController] sendMessage failed: ${result.exception}',
+      );
+
+      if (tempId != null) {
+        _markMessageUploadFailed(effectiveTempId);
+      } else {
+        _messages.removeWhere((m) => m.id == effectiveTempId);
+      }
       notifyListeners();
       return;
     }
 
     // Replace optimistic message with real one
-    final index = _messages.indexWhere((m) => m.id == tempId);
+    final index = _messages.indexWhere((m) => m.id == effectiveTempId);
     if (index != -1) {
       final oldMsg = _messages[index];
       final data = result.data!['sendVisitorMessage'];
@@ -812,23 +838,7 @@ class LivechatController extends ChangeNotifier {
   }
 
   /// Picks and sends a file (image or PDF)
-  Future<void> sendFile(String filePath) async {
-    // 1. Upload file to backend
-    final token = await AuthManager.getToken();
-    final uri = Uri.parse(_api.httpUrl).replace(path: '/upload');
-
-    final request = http.MultipartRequest('POST', uri)
-      ..headers['Authorization'] = 'Bearer $token'
-      ..files.add(await http.MultipartFile.fromPath('file', filePath));
-
-    final response = await request.send();
-    if (response.statusCode != 200) {
-      return;
-    }
-
-    final responseBody = await response.stream.bytesToString();
-    final decoded = json.decode(responseBody);
-    final fileUrl = decoded['url'];
+  Future<void> sendFile(String filePath, {String? caption}) async {
     final fileName = path.basename(filePath);
     final extension = path.extension(filePath).toLowerCase();
 
@@ -839,13 +849,86 @@ class LivechatController extends ChangeNotifier {
       contentType = ContentType.pdf;
     }
 
-    // 2. Send message with detected type
-    await sendMessage(
-      'Sent ${contentType == ContentType.image ? 'an image' : 'a file'}: $fileName',
+    // 1. Create optimistic message
+    final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
+    final trimmedCaption = caption?.trim() ?? '';
+    final messageContent = trimmedCaption.isNotEmpty
+        ? trimmedCaption
+        : (contentType == ContentType.image ? ' ' : fileName);
+    final optMsg = LivechatMessage(
+      id: tempId,
+      content: messageContent,
+      senderType: SenderType.visitor,
       contentType: contentType,
-      fileUrl: fileUrl,
+      localFilePath: filePath,
+      isUploading: true,
       fileName: fileName,
+      createdAt: DateTime.now(),
+      replyTo: _replyingTo,
     );
+
+    // Insert at beginning (Newest)
+    _messages.insert(0, optMsg);
+    _replyingTo = null;
+    notifyListeners();
+
+    try {
+      // 2. Upload file to backend
+      final token = await AuthManager.getToken();
+      final uri = Uri.parse(_api.httpUrl).replace(path: '/upload');
+
+      debugPrint('[LivechatController] Starting upload to: $uri');
+      final request = http.MultipartRequest('POST', uri)
+        ..headers['X-Api-Key'] = _api.apiKey
+        ..files.add(await http.MultipartFile.fromPath('file', filePath));
+
+      if (token != null && token.isNotEmpty) {
+        request.headers['Authorization'] = 'Bearer $token';
+      }
+
+      final response = await request.send();
+      final responseBody = await response.stream.bytesToString();
+      debugPrint(
+        '[LivechatController] Upload response: ${response.statusCode} - $responseBody',
+      );
+
+      if (response.statusCode != 200) {
+        // Handle error: remove optimistic message
+        debugPrint(
+          '[LivechatController] Upload failed with status: ${response.statusCode}',
+        );
+        _markMessageUploadFailed(tempId);
+        notifyListeners();
+        return;
+      }
+
+      final decoded = json.decode(responseBody);
+      final fileUrl = decoded['url'];
+
+      // 3. Send message with detected type
+      await sendMessage(
+        messageContent,
+        contentType: contentType,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        tempId: tempId,
+      );
+
+      // 4. No need to remove temporary optimistic message anymore,
+      // sendMessage will replace it instead of creating a new one.
+    } catch (e) {
+      debugPrint('[LivechatController] sendFile failed: $e');
+      _markMessageUploadFailed(tempId);
+      notifyListeners();
+    }
+  }
+
+  void _markMessageUploadFailed(String tempId) {
+    final index = _messages.indexWhere((m) => m.id == tempId);
+    if (index == -1) return;
+
+    final failedMessage = _messages[index];
+    _messages[index] = failedMessage.copyWith(isUploading: false);
   }
 
   /// Notifies the backend that the visitor is typing
