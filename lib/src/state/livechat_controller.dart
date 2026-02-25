@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
 import '../core/device_info_collector.dart';
+import '../core/livechat_error_mapper.dart';
 import '../core/livechat_client.dart';
 import '../models/models.dart';
 import '../theme/livechat_theme.dart';
@@ -15,6 +16,7 @@ class LivechatController extends ChangeNotifier {
   final LivechatClient _api;
 
   List<LivechatMessage> _messages = [];
+  final Map<String, List<LivechatMessage>> _messageCache = {};
   List<LivechatRoom> _rooms = [];
   List<LivechatFAQ> _faqs = [];
 
@@ -28,9 +30,11 @@ class LivechatController extends ChangeNotifier {
   // Message Pagination
   bool _hasMoreMessages = false;
   bool _isFetchingMore = false;
+  bool _isRoomLoading = false;
 
   bool _isLoading = false;
   bool _isInitialized = false;
+  String? _errorMessage;
   LivechatVisitor? _visitor;
   LivechatWorkspace? _workspace;
   String? _roomId;
@@ -63,9 +67,11 @@ class LivechatController extends ChangeNotifier {
   bool get isFaqLoading => _isFaqLoading;
   bool get hasMoreMessages => _hasMoreMessages;
   bool get isFetchingMore => _isFetchingMore;
+  bool get isRoomLoading => _isRoomLoading;
 
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
+  String? get errorMessage => _errorMessage;
   LivechatVisitor? get visitor => _visitor;
   LivechatWorkspace? get workspace => _workspace;
   String? get roomId => _roomId;
@@ -81,6 +87,15 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
+  void _cacheMessagesForRoom(String roomId, List<LivechatMessage> messages) {
+    _messageCache[roomId] = List<LivechatMessage>.from(messages);
+  }
+
+  void _cacheCurrentRoomMessages() {
+    if (_roomId == null) return;
+    _cacheMessagesForRoom(_roomId!, _messages);
+  }
+
   bool get isRatingSubmitted => _isRatingSubmitted;
   int? get rating => _rating;
   String? get ratingComment => _ratingComment;
@@ -89,6 +104,38 @@ class LivechatController extends ChangeNotifier {
   LivechatMessage? get replyingTo => _replyingTo;
   bool get isChatVisible => _isChatVisible;
   AppLifecycleState get lifecycleState => _lifecycleState;
+
+  void clearError() {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
+  void reportError(
+    Object? error, {
+    String fallbackMessage = 'Something went wrong. Please try again.',
+  }) {
+    _setError(error, fallbackMessage: fallbackMessage);
+  }
+
+  void _clearError({bool notify = false}) {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
+    if (notify) {
+      notifyListeners();
+    }
+  }
+
+  void _setError(Object? error, {required String fallbackMessage}) {
+    final mapped = LivechatErrorMapper.toUserMessage(
+      error,
+      fallbackMessage: fallbackMessage,
+    );
+    if (mapped.isEmpty) return;
+    if (_errorMessage == mapped) return;
+    _errorMessage = mapped;
+    notifyListeners();
+  }
 
   /// Call this when the app lifecycle changes
   void setLifecycleState(AppLifecycleState state) {
@@ -126,6 +173,7 @@ class LivechatController extends ChangeNotifier {
     if (_isInitialized) return;
     if (_isLoading) return;
 
+    _clearError(notify: true);
     _isLoading = true;
     final capturedVersion = _fetchVersion;
     notifyListeners();
@@ -225,7 +273,13 @@ class LivechatController extends ChangeNotifier {
         },
       );
 
-      if (result.hasException) throw result.exception!;
+      if (result.hasException) {
+        _setError(
+          result.exception,
+          fallbackMessage: 'Unable to start chat right now.',
+        );
+        return;
+      }
 
       final authData = result.data!['initVisitor'];
       await AuthManager.saveToken(authData['token']);
@@ -299,6 +353,9 @@ class LivechatController extends ChangeNotifier {
       }
 
       _isInitialized = true;
+      _clearError();
+    } catch (e) {
+      _setError(e, fallbackMessage: 'Unable to start chat right now.');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -312,6 +369,7 @@ class LivechatController extends ChangeNotifier {
     _roomId = null;
     _messages = [];
     _hasMoreMessages = false;
+    _isRoomLoading = false;
     _roomStatus = RoomStatus.open;
     _rating = null;
     _ratingComment = null;
@@ -329,6 +387,7 @@ class LivechatController extends ChangeNotifier {
       await initialize();
     }
 
+    _clearError();
     _isLoading = true;
     notifyListeners();
 
@@ -358,7 +417,13 @@ class LivechatController extends ChangeNotifier {
       ''';
 
       final result = await _api.mutate(mutation);
-      if (result.hasException) throw result.exception!;
+      if (result.hasException) {
+        _setError(
+          result.exception,
+          fallbackMessage: 'Unable to start a new conversation right now.',
+        );
+        return;
+      }
 
       final roomData = result.data!['startNewConversation'];
       final newRoom = LivechatRoom.fromJson(roomData);
@@ -370,6 +435,7 @@ class LivechatController extends ChangeNotifier {
       _roomStatus = newRoom.status;
       _messages = [];
       _hasMoreMessages = false;
+      _isRoomLoading = false;
       _showRatingPrompt = false;
       _isRatingSubmitted = false;
 
@@ -378,12 +444,19 @@ class LivechatController extends ChangeNotifier {
       if (newRoom.lastMessage != null) {
         _messages.add(newRoom.lastMessage!);
       }
+      _cacheCurrentRoomMessages();
 
       // No need to fetchMessages for a brand new empty room
       _startTypingSubscription();
       _startMessageSubscription(); // Ensure we listen to this new room
 
+      _clearError();
       notifyListeners();
+    } catch (e) {
+      _setError(
+        e,
+        fallbackMessage: 'Unable to start a new conversation right now.',
+      );
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -428,11 +501,18 @@ class LivechatController extends ChangeNotifier {
 
     final result = await _api.query(query);
     if (!result.hasException) {
+      _clearError(notify: true);
       final List roomsList = result.data?['visitorRooms'] ?? [];
       _rooms = roomsList.map((r) => LivechatRoom.fromJson(r)).toList();
       _sortRooms();
       notifyListeners();
+      return;
     }
+
+    _setError(
+      result.exception,
+      fallbackMessage: 'Unable to load conversations right now.',
+    );
   }
 
   /// Completely resets the current session and visitor identity
@@ -443,6 +523,8 @@ class LivechatController extends ChangeNotifier {
     _roomId = null;
     _rooms = [];
     _messages = [];
+    _messageCache.clear();
+    _isRoomLoading = false;
     _isLoading = false;
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
@@ -456,6 +538,8 @@ class LivechatController extends ChangeNotifier {
     final targetRoomId = roomId ?? _roomId;
     if (targetRoomId == null) return;
 
+    final isSwitchingRoom = !isLoadMore && roomId != null && roomId != _roomId;
+
     if (isLoadMore) {
       if (_isFetchingMore || !_hasMoreMessages) return;
       _isFetchingMore = true;
@@ -464,22 +548,40 @@ class LivechatController extends ChangeNotifier {
       // capture current version to detect if state changed during async operation
       // Only capture version for initial load, to allow cancellation
       _fetchVersion++;
+      if (isSwitchingRoom) {
+        _roomId = targetRoomId;
+        _hasMoreMessages = false;
+        _roomStatus = RoomStatus.open;
+        _rating = null;
+        _ratingComment = null;
+        _isRatingSubmitted = false;
+        _showRatingPrompt = false;
+        _replyingTo = null;
+
+        final cachedMessages = _messageCache[targetRoomId];
+        if (cachedMessages != null) {
+          _messages = List<LivechatMessage>.from(cachedMessages);
+          _isRoomLoading = false;
+        } else {
+          _messages = [];
+          _isRoomLoading = true;
+        }
+        notifyListeners();
+      } else if (_messages.isEmpty) {
+        final cachedMessages = _messageCache[targetRoomId];
+        if (cachedMessages != null) {
+          _messages = List<LivechatMessage>.from(cachedMessages);
+          _isRoomLoading = false;
+        } else {
+          _isRoomLoading = true;
+        }
+        notifyListeners();
+      } else {
+        _isRoomLoading = false;
+      }
     }
 
     final currentFetchVersion = _fetchVersion;
-
-    if (!isLoadMore && roomId != null && roomId != _roomId) {
-      _roomId = roomId;
-      _messages = []; // clear stale messages
-      _hasMoreMessages = false;
-      _roomStatus = RoomStatus.open;
-      _rating = null;
-      _ratingComment = null;
-      _isRatingSubmitted = false;
-      _showRatingPrompt = false;
-      _replyingTo = null;
-      notifyListeners();
-    }
 
     // Prepare cursor for pagination
     // Since we sort NEWEST -> OLDEST, the 'after' cursor for fetching OLDER messages
@@ -534,92 +636,104 @@ class LivechatController extends ChangeNotifier {
     _isFetchingMore = false;
 
     if (result.hasException) {
-      // Log error
+      _isRoomLoading = false;
+      _setError(
+        result.exception,
+        fallbackMessage: isLoadMore
+            ? 'Unable to load older messages.'
+            : 'Unable to load messages right now.',
+      );
       notifyListeners();
       return;
     }
 
-    if (!result.hasException) {
-      final roomData = result.data?['room'];
-      if (roomData == null) {
-        notifyListeners();
-        return;
-      }
-
-      final messagesData = roomData['messages'];
-      final List edges = messagesData?['edges'] ?? [];
-      final pageInfo = messagesData?['pageInfo'];
-      final List eventList = roomData['events'] ?? [];
-
-      List<LivechatMessage> newMessages = [];
-
-      try {
-        newMessages = edges
-            .map((e) => LivechatMessage.fromJson(e['node']))
-            .toList();
-      } catch (e) {
-        // log error
-      }
-
-      // We don't really use events for strictly ordered logic right now,
-      // but if we did, we'd need to merge them carefully.
-      // For now, let's keep the existing logic for reassignments but only process them on initial load?
-      // Or we can just ignore them for pagination simplicity if they aren't critical.
-      // The current implementation injects "Reassigned to..." messages.
-      // To do this correctly with pagination is tricky because events are separate.
-      // Let's simplified: Only showing reassignment events on initial load or if they are recent?
-      // Actually, if we paginate, we might miss events that happened "between" pages if we don't fetch events with pagination too.
-      // But events are not paginated in the query? `events` returns ALL events?
-      // Checking schema... `events: [RoomEvent!]!` -> returns ALL events.
-      // So we can just process all events and insert them into the list based on timestamp.
-      // But if we are paginating messages, we only want events that fall within the time range of the fetched messages.
-      // This is getting complicated.
-      // Simple approach: Just ignore reassignment events for infinite scroll for now, or just append them all at the end (oldest)?
-      // Better: Process events only on initial load, and filter them to show only those
-      // that are relevant to the messages we have?
-      // Let's stick to basics: Just show messages.
-
-      // Backend returns messages Ordered by CreatedAt DESC (Newest first).
-      // So `newMessages` are already [Newest, ..., Oldest].
-
-      // Pagination status
-      _hasMoreMessages = pageInfo?['hasNextPage'] ?? false;
-
-      if (isLoadMore) {
-        // Append older messages to the end
-        _messages.addAll(newMessages);
-      } else {
-        _messages = newMessages; // Replace list
-
-        // Re-inject events logic (only on initial load for now to keep it simple)
-        final assignedEvents = eventList
-            .where((e) => e['type'] == 'ROOM_ASSIGNED')
-            .toList();
-        for (int i = 1; i < assignedEvents.length; i++) {
-          // ... (same logic as before, create system message)
-          // we need to insert this system message into _messages at correct position
-          // Since _messages is Newest->Oldest, we need to find where it fits.
-          // This is O(N) but N is 20-50, so fine.
-          // Implementing this strictly might be overkill for this task.
-          // Let's skip event injection for infinite scroll task to ensure stability first.
-        }
-
-        // fetch room status and start typing subscription if we switched rooms
-        if (roomId != null) {
-          await _fetchRoomStatus();
-          _startTypingSubscription();
-        }
-
-        // Start subscription if not already
-        _startMessageSubscription();
-      }
-
+    final roomData = result.data?['room'];
+    if (roomData == null) {
+      _isRoomLoading = false;
+      _setError(
+        null,
+        fallbackMessage: 'This conversation is unavailable right now.',
+      );
       notifyListeners();
+      return;
+    }
 
-      // only mark as read if chat is currently visible and it's initial load
-      if (_isChatVisible && !isLoadMore) {
-        markAsRead();
+    _clearError();
+    final messagesData = roomData['messages'];
+    final List edges = messagesData?['edges'] ?? [];
+    final pageInfo = messagesData?['pageInfo'];
+    final List eventList = roomData['events'] ?? [];
+
+    List<LivechatMessage> newMessages = [];
+
+    try {
+      newMessages = edges
+          .map((e) => LivechatMessage.fromJson(e['node']))
+          .toList();
+    } catch (e) {
+      _setError(e, fallbackMessage: 'Unable to parse messages right now.');
+    }
+
+    // We don't really use events for strictly ordered logic right now,
+    // but if we did, we'd need to merge them carefully.
+    // For now, let's keep the existing logic for reassignments but only process them on initial load?
+    // Or we can just ignore them for pagination simplicity if they aren't critical.
+    // The current implementation injects "Reassigned to..." messages.
+    // To do this correctly with pagination is tricky because events are separate.
+    // Let's simplified: Only showing reassignment events on initial load or if they are recent?
+    // Actually, if we paginate, we might miss events that happened "between" pages if we don't fetch events with pagination too.
+    // But events are not paginated in the query? `events` returns ALL events?
+    // Checking schema... `events: [RoomEvent!]!` -> returns ALL events.
+    // So we can just process all events and insert them into the list based on timestamp.
+    // But if we are paginating messages, we only want events that fall within the time range of the fetched messages.
+    // This is getting complicated.
+    // Simple approach: Just ignore reassignment events for infinite scroll for now, or just append them all at the end (oldest)?
+    // Better: Process events only on initial load, and filter them to show only those
+    // that are relevant to the messages we have?
+    // Let's stick to basics: Just show messages.
+
+    // Backend returns messages Ordered by CreatedAt DESC (Newest first).
+    // So `newMessages` are already [Newest, ..., Oldest].
+
+    // Pagination status
+    _hasMoreMessages = pageInfo?['hasNextPage'] ?? false;
+
+    if (isLoadMore) {
+      // Append older messages to the end
+      _messages.addAll(newMessages);
+    } else {
+      _messages = newMessages; // Replace list
+
+      // Re-inject events logic (only on initial load for now to keep it simple)
+      final assignedEvents = eventList
+          .where((e) => e['type'] == 'ROOM_ASSIGNED')
+          .toList();
+      for (int i = 1; i < assignedEvents.length; i++) {
+        // ... (same logic as before, create system message)
+        // we need to insert this system message into _messages at correct position
+        // Since _messages is Newest->Oldest, we need to find where it fits.
+        // This is O(N) but N is 20-50, so fine.
+        // Implementing this strictly might be overkill for this task.
+        // Let's skip event injection for infinite scroll task to ensure stability first.
       }
+
+      // fetch room status and start typing subscription if we switched rooms
+      if (roomId != null) {
+        await _fetchRoomStatus();
+        _startTypingSubscription();
+      }
+
+      // Start subscription if not already
+      _startMessageSubscription();
+    }
+
+    _cacheMessagesForRoom(targetRoomId, _messages);
+    _isRoomLoading = false;
+    notifyListeners();
+
+    // only mark as read if chat is currently visible and it's initial load
+    if (_isChatVisible && !isLoadMore) {
+      markAsRead();
     }
   }
 
@@ -657,7 +771,12 @@ class LivechatController extends ChangeNotifier {
         ''';
 
         final createResult = await _api.mutate(createMutation);
-        if (!createResult.hasException) {
+        if (createResult.hasException) {
+          _setError(
+            createResult.exception,
+            fallbackMessage: 'Unable to start a new conversation right now.',
+          );
+        } else {
           final roomData = createResult.data!['startNewConversation'];
           final newRoom = LivechatRoom.fromJson(roomData);
 
@@ -673,9 +792,10 @@ class LivechatController extends ChangeNotifier {
           _startMessageSubscription();
         }
       } catch (e) {
-        // If creation fails, we will fall through and try to send with null roomId
-        // which might attach to old room or fail.
-        // debugPrint('Failed to force create new conversation: $e');
+        _setError(
+          e,
+          fallbackMessage: 'Unable to start a new conversation right now.',
+        );
       }
     }
 
@@ -736,6 +856,7 @@ class LivechatController extends ChangeNotifier {
         _sortRooms();
       }
     }
+    _cacheCurrentRoomMessages();
     notifyListeners();
 
     const String mutation = r'''
@@ -770,12 +891,17 @@ class LivechatController extends ChangeNotifier {
       debugPrint(
         '[LivechatController] sendMessage failed: ${result.exception}',
       );
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to send message right now.',
+      );
 
       if (tempId != null) {
         _markMessageUploadFailed(effectiveTempId);
       } else {
         _messages.removeWhere((m) => m.id == effectiveTempId);
       }
+      _cacheCurrentRoomMessages();
       notifyListeners();
       return;
     }
@@ -833,8 +959,11 @@ class LivechatController extends ChangeNotifier {
         _sortRooms();
       }
 
+      _cacheCurrentRoomMessages();
       notifyListeners();
     }
+
+    _clearError(notify: true);
   }
 
   /// Picks and sends a file (image or PDF)
@@ -870,6 +999,7 @@ class LivechatController extends ChangeNotifier {
     // Insert at beginning (Newest)
     _messages.insert(0, optMsg);
     _replyingTo = null;
+    _cacheCurrentRoomMessages();
     notifyListeners();
 
     try {
@@ -897,6 +1027,10 @@ class LivechatController extends ChangeNotifier {
         debugPrint(
           '[LivechatController] Upload failed with status: ${response.statusCode}',
         );
+        _setError(
+          'Upload failed (${response.statusCode}): $responseBody',
+          fallbackMessage: 'Unable to upload file right now.',
+        );
         _markMessageUploadFailed(tempId);
         notifyListeners();
         return;
@@ -918,6 +1052,7 @@ class LivechatController extends ChangeNotifier {
       // sendMessage will replace it instead of creating a new one.
     } catch (e) {
       debugPrint('[LivechatController] sendFile failed: $e');
+      _setError(e, fallbackMessage: 'Unable to upload file right now.');
       _markMessageUploadFailed(tempId);
       notifyListeners();
     }
@@ -929,6 +1064,7 @@ class LivechatController extends ChangeNotifier {
 
     final failedMessage = _messages[index];
     _messages[index] = failedMessage.copyWith(isUploading: false);
+    _cacheCurrentRoomMessages();
   }
 
   /// Notifies the backend that the visitor is typing
@@ -954,7 +1090,18 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
 
-    await _api.mutate(mutation, variables: {'roomId': _roomId, 'page': page});
+    final result = await _api.mutate(
+      mutation,
+      variables: {'roomId': _roomId, 'page': page},
+    );
+    if (result.hasException) {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to update page status right now.',
+      );
+      return;
+    }
+    _clearError();
 
     if (_visitor != null) {
       _visitor = _visitor!.copyWith(currentPage: page);
@@ -995,7 +1142,13 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
 
-    await _api.mutate(mutation, variables: {'roomId': _roomId});
+    final result = await _api.mutate(mutation, variables: {'roomId': _roomId});
+    if (result.hasException) {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to mark messages as read right now.',
+      );
+    }
   }
 
   Future<void> markAsDelivered(String roomID) async {
@@ -1005,7 +1158,13 @@ class LivechatController extends ChangeNotifier {
       }
     ''';
 
-    await _api.mutate(mutation, variables: {'roomId': roomID});
+    final result = await _api.mutate(mutation, variables: {'roomId': roomID});
+    if (result.hasException) {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to update delivery status right now.',
+      );
+    }
   }
 
   void _startMessageSubscription() {
@@ -1101,6 +1260,7 @@ class LivechatController extends ChangeNotifier {
                     }
                   }
                 }
+                _cacheCurrentRoomMessages();
                 notifyListeners();
               }
             }
@@ -1277,6 +1437,7 @@ class LivechatController extends ChangeNotifier {
                 _rating = roomData['rating'];
                 _ratingComment = roomData['ratingComment'];
                 _isRatingSubmitted = roomData['rating'] != null;
+                _cacheCurrentRoomMessages();
                 notifyListeners();
               }
             }
@@ -1405,11 +1566,17 @@ class LivechatController extends ChangeNotifier {
     );
 
     if (!result.hasException) {
+      _clearError(notify: true);
       _showRatingPrompt = false; // Hide prompt on success
       _isRatingSubmitted = true;
       _rating = rating;
       _ratingComment = comment;
       notifyListeners();
+    } else {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to submit rating right now.',
+      );
     }
   }
 
@@ -1426,6 +1593,14 @@ class LivechatController extends ChangeNotifier {
       variables: {'id': faqId, 'helpful': helpful},
     );
 
+    if (result.hasException) {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to submit feedback right now.',
+      );
+      return false;
+    }
+    _clearError(notify: true);
     return !result.hasException;
   }
 
@@ -1452,6 +1627,7 @@ class LivechatController extends ChangeNotifier {
     }
 
     if (!result.hasException && result.data != null) {
+      _clearError();
       final roomData = result.data!['room'];
       _roomStatus = RoomStatus.fromString(roomData['status']);
       _rating = roomData['rating'];
@@ -1462,7 +1638,13 @@ class LivechatController extends ChangeNotifier {
         _showRatingPrompt = true;
       }
       notifyListeners();
+      return;
     }
+
+    _setError(
+      result.exception,
+      fallbackMessage: 'Unable to refresh room status right now.',
+    );
   }
 
   @override
@@ -1490,6 +1672,7 @@ class LivechatController extends ChangeNotifier {
     );
 
     if (!result.hasException) {
+      _clearError();
       final updatedData = result.data!['addReaction'];
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
@@ -1513,8 +1696,14 @@ class LivechatController extends ChangeNotifier {
                 : updatedData['reactions'],
           ),
         );
+        _cacheCurrentRoomMessages();
         notifyListeners();
       }
+    } else {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to add reaction right now.',
+      );
     }
   }
 
@@ -1533,6 +1722,7 @@ class LivechatController extends ChangeNotifier {
     );
 
     if (!result.hasException) {
+      _clearError();
       final updatedData = result.data!['removeReaction'];
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
@@ -1557,6 +1747,11 @@ class LivechatController extends ChangeNotifier {
           ),
         );
       }
+    } else {
+      _setError(
+        result.exception,
+        fallbackMessage: 'Unable to remove reaction right now.',
+      );
     }
   }
 
@@ -1606,7 +1801,13 @@ class LivechatController extends ChangeNotifier {
         },
       );
 
-      if (result.hasException) throw result.exception!;
+      if (result.hasException) {
+        _setError(
+          result.exception,
+          fallbackMessage: 'Unable to load help articles right now.',
+        );
+        return;
+      }
 
       final connection = FAQConnection.fromJson(result.data!['visitorFaqs']);
       _paginatedFaqs.addAll(connection.faqs);
@@ -1617,6 +1818,9 @@ class LivechatController extends ChangeNotifier {
       if (_faqSearchQuery.isEmpty && reload) {
         _faqs = List.from(connection.faqs);
       }
+      _clearError();
+    } catch (e) {
+      _setError(e, fallbackMessage: 'Unable to load help articles right now.');
     } finally {
       _isFaqLoading = false;
       notifyListeners();

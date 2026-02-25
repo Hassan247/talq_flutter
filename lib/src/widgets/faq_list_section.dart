@@ -20,53 +20,93 @@ class FAQListSection extends StatelessWidget {
           return const SizedBox.shrink();
         }
         final displayFaqs = faqs.take(4).toList();
+        final hasMore = faqs.length > displayFaqs.length;
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              'Help & Resources',
-              style: theme.titleStyle.copyWith(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.4,
-              ),
-            ),
-            const SizedBox(height: 16),
             Container(
               decoration: BoxDecoration(
                 color: theme.surfaceColor,
-                borderRadius: BorderRadius.circular(24),
+                borderRadius: BorderRadius.circular(28),
                 border: Border.all(
                   color: theme.cardShadowColor.withOpacity(0.08),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.cardShadowColor.withOpacity(0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: theme.cardShadowColor.withOpacity(0.08),
+                    blurRadius: 16,
+                    offset: const Offset(0, 7),
                   ),
                 ],
               ),
               child: Column(
                 children: [
+                  Padding(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 10, 10),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            'Help & Resources',
+                            style: theme.titleStyle.copyWith(
+                              fontSize: 22,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: -0.6,
+                            ),
+                          ),
+                        ),
+                        if (hasMore)
+                          TextButton(
+                            onPressed: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => FAQListView(theme: theme),
+                                ),
+                              );
+                            },
+                            style: TextButton.styleFrom(
+                              foregroundColor: theme.primaryColor,
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 12,
+                                vertical: 6,
+                              ),
+                            ),
+                            child: const Text(
+                              'See all',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.1,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                  Divider(
+                    height: 1,
+                    indent: 18,
+                    endIndent: 18,
+                    color: theme.cardShadowColor.withOpacity(0.08),
+                  ),
                   ...displayFaqs.asMap().entries.map((entry) {
                     final index = entry.key;
                     final faq = entry.value;
                     return Column(
                       children: [
                         if (index > 0)
-                          const Divider(
+                          Divider(
                             height: 1,
-                            indent: 20,
-                            endIndent: 20,
-                            color: Color(0xFFEEEEEE),
+                            indent: 18,
+                            endIndent: 18,
+                            color: theme.cardShadowColor.withOpacity(0.08),
                           ),
                         _buildResourceItem(
                           context,
                           faq.question,
-                          Icons.description_outlined,
                           onTap: () {
                             Navigator.push(
                               context,
@@ -80,40 +120,53 @@ class FAQListSection extends StatelessWidget {
                       ],
                     );
                   }),
-                  if (faqs.length > 4) ...[
-                    const Divider(
+                  if (hasMore) ...[
+                    Divider(
                       height: 1,
-                      indent: 20,
-                      endIndent: 20,
-                      color: Color(0xFFEEEEEE),
+                      indent: 18,
+                      endIndent: 18,
+                      color: theme.cardShadowColor.withOpacity(0.08),
                     ),
-                    ListTile(
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 20,
-                        vertical: 10,
-                      ),
-                      title: Text(
-                        'See more articles',
-                        style: TextStyle(
-                          fontWeight: FontWeight.w800,
-                          fontSize: 15,
-                          color: theme.primaryColor,
-                          letterSpacing: -0.2,
+                    Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => FAQListView(theme: theme),
+                            ),
+                          );
+                        },
+                        borderRadius: const BorderRadius.vertical(
+                          bottom: Radius.circular(28),
+                        ),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 18,
+                            vertical: 14,
+                          ),
+                          child: Row(
+                            children: [
+                              Text(
+                                'Browse all articles',
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 15,
+                                  color: theme.primaryColor,
+                                  letterSpacing: -0.2,
+                                ),
+                              ),
+                              const Spacer(),
+                              Icon(
+                                Icons.arrow_forward_rounded,
+                                color: theme.primaryColor.withOpacity(0.7),
+                                size: 18,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
-                      trailing: Icon(
-                        Icons.chevron_right_rounded,
-                        color: theme.primaryColor.withOpacity(0.6),
-                        size: 22,
-                      ),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => FAQListView(theme: theme),
-                          ),
-                        );
-                      },
                     ),
                   ],
                 ],
@@ -127,44 +180,66 @@ class FAQListSection extends StatelessWidget {
 
   Widget _buildResourceItem(
     BuildContext context,
-    String title,
-    IconData icon, {
+    String title, {
     VoidCallback? onTap,
   }) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: theme.backgroundColor,
-          borderRadius: BorderRadius.circular(12),
-        ),
-        child: SvgPicture.asset(
-          'assets/icons/article.svg',
-          package: 'livechat_sdk',
-          colorFilter: ColorFilter.mode(
-            theme.titleStyle.color!.withOpacity(0.7),
-            BlendMode.srcIn,
+    final titleColor = theme.titleStyle.color ?? const Color(0xFF111827);
+    final subtitleColor = theme.subtitleStyle.color ?? const Color(0xFF6B7280);
+    final iconTint = Color.lerp(theme.primaryColor, Colors.white, 0.88)!;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          child: Row(
+            children: [
+              Container(
+                width: 46,
+                height: 46,
+                decoration: BoxDecoration(
+                  color: iconTint,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Center(
+                  child: SvgPicture.asset(
+                    'assets/icons/article.svg',
+                    package: 'livechat_sdk',
+                    colorFilter: ColorFilter.mode(
+                      titleColor.withOpacity(0.72),
+                      BlendMode.srcIn,
+                    ),
+                    width: 22,
+                    height: 22,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: theme.bodyStyle.copyWith(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    color: titleColor.withOpacity(0.93),
+                    letterSpacing: -0.25,
+                    height: 1.25,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: subtitleColor.withOpacity(0.4),
+                size: 16,
+              ),
+            ],
           ),
-          width: 20,
-          height: 20,
         ),
       ),
-      title: Text(
-        title,
-        style: theme.bodyStyle.copyWith(
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          color: theme.titleStyle.color?.withOpacity(0.9),
-          letterSpacing: -0.2,
-        ),
-      ),
-      trailing: Icon(
-        Icons.chevron_right_rounded,
-        color: theme.subtitleStyle.color?.withOpacity(0.3),
-        size: 20,
-      ),
-      onTap: onTap,
     );
   }
 }

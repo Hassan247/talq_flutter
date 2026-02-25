@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -24,16 +26,39 @@ class _RoomsListViewState extends State<RoomsListView> {
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<LivechatController>().fetchRooms();
-      }
+      if (!mounted) return;
+      _bootstrapHomeData();
     });
+  }
+
+  Future<void> _bootstrapHomeData() async {
+    final controller = context.read<LivechatController>();
+
+    if (controller.isLoading) {
+      await Future<void>.delayed(const Duration(milliseconds: 250));
+      if (!mounted) return;
+      return _bootstrapHomeData();
+    }
+
+    if (!controller.isInitialized) {
+      await controller.initialize();
+      if (!mounted) return;
+    }
+
+    await controller.fetchRooms();
+    if (!mounted) return;
+
+    if (controller.faqs.isEmpty) {
+      await controller.fetchFaqs(reload: true);
+    }
   }
 
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<LivechatController>();
     final theme = controller.theme;
+    final mediaQuery = MediaQuery.of(context);
+    final headerHeight = mediaQuery.padding.top + 360;
 
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light,
@@ -41,158 +66,32 @@ class _RoomsListViewState extends State<RoomsListView> {
         backgroundColor: theme.backgroundColor,
         body: Stack(
           children: [
-            // 1. Dark Header Background
+            _buildAmbientBackground(theme),
             Positioned(
               top: 0,
               left: 0,
               right: 0,
-              height: MediaQuery.of(context).padding.top + 320,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [
-                      theme.primaryColor,
-                      Color.lerp(theme.primaryColor, Colors.black, 0.15)!,
-                    ],
-                  ),
-                  borderRadius: const BorderRadius.only(
-                    bottomLeft: Radius.circular(32),
-                    bottomRight: Radius.circular(32),
-                  ),
-                ),
-                padding: EdgeInsets.only(
-                  top: MediaQuery.of(context).padding.top + 4,
-                  left: 24,
-                  right: 16,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        (controller.workspace?.livechatLogoUrl ??
-                                    controller.workspace?.logoUrl) !=
-                                null
-                            ? CachedNetworkImage(
-                                imageUrl:
-                                    controller.workspace?.livechatLogoUrl ??
-                                    controller.workspace!.logoUrl!,
-                                height: 36,
-                                errorWidget: (context, url, error) =>
-                                    SvgPicture.asset(
-                                      'assets/images/monosend_logo.svg',
-                                      package: 'livechat_sdk',
-                                      height: 36,
-                                      colorFilter: const ColorFilter.mode(
-                                        Colors.white,
-                                        BlendMode.srcIn,
-                                      ),
-                                    ),
-                              )
-                            : Row(
-                                mainAxisSize: MainAxisSize.min,
-                                children: [
-                                  Icon(
-                                    Icons.forum_rounded,
-                                    color: Colors.white,
-                                    size: 28,
-                                  ),
-                                  const SizedBox(width: 10),
-                                  Text(
-                                    'Glint',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontSize: 24,
-                                      fontWeight: FontWeight.w900,
-                                      letterSpacing: -0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                        IconButton(
-                          onPressed: () => Navigator.pop(context),
-                          icon: Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.1),
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.close_rounded,
-                              color: Colors.white,
-                              size: 24,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 36),
-                    Builder(
-                      builder: (context) {
-                        final welcome = controller.workspace?.welcomeMessage;
-                        final hasWelcome =
-                            welcome != null && welcome.isNotEmpty;
-                        final text = hasWelcome
-                            ? welcome
-                            : 'Hello there!\nHow can we help today?';
-
-                        final parts = text.split('\n');
-                        return Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              parts[0],
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 32,
-                                fontWeight: FontWeight.w800,
-                                height: 1.1,
-                                letterSpacing: -0.8,
-                              ),
-                            ),
-                            if (parts.length > 1)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  parts.sublist(1).join('\n'),
-                                  style: TextStyle(
-                                    color: Colors.white.withOpacity(0.9),
-                                    fontSize: 26,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.2,
-                                    letterSpacing: -0.5,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ),
+              height: headerHeight,
+              child: _buildHeroHeader(context, controller, theme),
             ),
-
-            // 2. Scrollable Content overlapping the header
             Positioned.fill(
-              top: MediaQuery.of(context).padding.top + 220,
+              top: mediaQuery.padding.top + 238,
               child: SingleChildScrollView(
-                padding: const EdgeInsets.symmetric(horizontal: 20),
+                padding: EdgeInsets.fromLTRB(
+                  18,
+                  14,
+                  18,
+                  mediaQuery.padding.bottom + 34,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const SizedBox(height: 20),
-                    // Start Conversation Card
+                    const SizedBox(height: 14),
                     StartConversationCard(theme: theme, controller: controller),
+                    const SizedBox(height: 16),
+                    _buildMessagesSection(context, theme, controller),
                     const SizedBox(height: 20),
-                    // Messages Section
-                    _buildMessagesSection(context, theme),
-                    const SizedBox(height: 24),
                     FAQListSection(theme: theme),
-                    const SizedBox(height: 40),
                   ],
                 ),
               ),
@@ -203,20 +102,230 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildMessagesSection(BuildContext context, LivechatTheme theme) {
+  Widget _buildAmbientBackground(LivechatTheme theme) {
+    return Positioned.fill(
+      child: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              Color.lerp(theme.primaryColor, Colors.white, 0.86)!,
+              theme.backgroundColor,
+            ],
+          ),
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -130,
+              right: -80,
+              child: _buildAmbientBlob(
+                color: Color.lerp(theme.primaryColor, Colors.white, 0.65)!,
+                size: 250,
+              ),
+            ),
+            Positioned(
+              top: 220,
+              left: -95,
+              child: _buildAmbientBlob(
+                color: Color.lerp(theme.primaryColor, Colors.white, 0.82)!,
+                size: 210,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAmbientBlob({required Color color, required double size}) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  Widget _buildHeroHeader(
+    BuildContext context,
+    LivechatController controller,
+    LivechatTheme theme,
+  ) {
+    final mediaQuery = MediaQuery.of(context);
+    final welcome = controller.workspace?.welcomeMessage;
+    final hasWelcome = welcome != null && welcome.trim().isNotEmpty;
+
     return Container(
       decoration: BoxDecoration(
-        color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.cardShadowColor.withOpacity(0.08),
-          width: 1,
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            Color.lerp(theme.primaryColor, Colors.black, 0.08)!,
+            Color.lerp(theme.primaryColor, Colors.black, 0.34)!,
+          ],
+        ),
+        borderRadius: const BorderRadius.only(
+          bottomLeft: Radius.circular(42),
+          bottomRight: Radius.circular(42),
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor.withOpacity(0.04),
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: Color.lerp(
+              theme.primaryColor,
+              Colors.black,
+              0.45,
+            )!.withOpacity(0.24),
+            blurRadius: 26,
+            offset: const Offset(0, 14),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -120,
+            right: -50,
+            child: _buildAmbientBlob(
+              color: Colors.white.withOpacity(0.14),
+              size: 230,
+            ),
+          ),
+          Positioned(
+            bottom: -90,
+            left: -30,
+            child: _buildAmbientBlob(
+              color: Colors.white.withOpacity(0.09),
+              size: 190,
+            ),
+          ),
+          Padding(
+            padding: EdgeInsets.only(
+              top: mediaQuery.padding.top + 8,
+              left: 20,
+              right: 20,
+              bottom: 30,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    _buildWorkspaceBrand(controller),
+                    Material(
+                      color: Colors.white.withOpacity(0.14),
+                      shape: const CircleBorder(),
+                      child: InkWell(
+                        onTap: () => Navigator.pop(context),
+                        customBorder: const CircleBorder(),
+                        child: const Padding(
+                          padding: EdgeInsets.all(10),
+                          child: Icon(
+                            Icons.close_rounded,
+                            color: Colors.white,
+                            size: 22,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 34),
+                Text(
+                  hasWelcome
+                      ? welcome
+                      : 'Hello there! How can we help you today?',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 35,
+                    fontWeight: FontWeight.w800,
+                    height: 1.08,
+                    letterSpacing: -1.0,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Text(
+                  'Ask a question, check previous chats, or browse quick answers.',
+                  style: TextStyle(
+                    color: Colors.white.withOpacity(0.78),
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    height: 1.35,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildWorkspaceBrand(LivechatController controller) {
+    final logoUrl =
+        controller.workspace?.livechatLogoUrl ?? controller.workspace?.logoUrl;
+
+    if (logoUrl != null) {
+      return CachedNetworkImage(
+        imageUrl: logoUrl,
+        height: 36,
+        errorWidget: (context, url, error) => SvgPicture.asset(
+          'assets/images/monosend_logo.svg',
+          package: 'livechat_sdk',
+          height: 36,
+          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+        ),
+      );
+    }
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: const [
+        Icon(Icons.forum_rounded, color: Colors.white, size: 28),
+        SizedBox(width: 10),
+        Text(
+          'Glint',
+          style: TextStyle(
+            color: Colors.white,
+            fontSize: 24,
+            fontWeight: FontWeight.w900,
+            letterSpacing: -0.6,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMessagesSection(
+    BuildContext context,
+    LivechatTheme theme,
+    LivechatController controller,
+  ) {
+    final unreadTotal = controller.rooms.fold<int>(
+      0,
+      (sum, room) => sum + room.visitorUnreadCount,
+    );
+
+    final subtitle = unreadTotal > 0
+        ? '$unreadTotal unread message${unreadTotal > 1 ? 's' : ''} waiting'
+        : 'Continue previous conversations';
+
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(28),
+        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+        boxShadow: [
+          BoxShadow(
+            color: theme.cardShadowColor.withOpacity(0.1),
+            blurRadius: 18,
+            offset: const Offset(0, 8),
           ),
         ],
       ),
@@ -229,81 +338,96 @@ class _RoomsListViewState extends State<RoomsListView> {
               MaterialPageRoute(builder: (_) => const MessagesListView()),
             );
           },
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 20),
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 17),
             child: Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.all(12),
+                  width: 52,
+                  height: 52,
                   decoration: BoxDecoration(
-                    color: theme.primaryColor,
-                    shape: BoxShape.circle,
+                    gradient: LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [
+                        Color.lerp(theme.primaryColor, Colors.white, 0.15)!,
+                        Color.lerp(theme.primaryColor, Colors.black, 0.18)!,
+                      ],
+                    ),
+                    borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.primaryColor.withOpacity(0.2),
-                        blurRadius: 8,
+                        color: theme.primaryColor.withOpacity(0.25),
+                        blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
                     ],
                   ),
-                  child: SvgPicture.asset(
-                    'assets/icons/messages.svg',
-                    package: 'livechat_sdk',
-                    colorFilter: const ColorFilter.mode(
-                      Colors.white,
-                      BlendMode.srcIn,
+                  child: Center(
+                    child: SvgPicture.asset(
+                      'assets/icons/messages.svg',
+                      package: 'livechat_sdk',
+                      colorFilter: const ColorFilter.mode(
+                        Colors.white,
+                        BlendMode.srcIn,
+                      ),
+                      width: 22,
+                      height: 22,
                     ),
-                    width: 20,
-                    height: 20,
                   ),
                 ),
-                const SizedBox(width: 16),
+                const SizedBox(width: 14),
                 Expanded(
-                  child: Text(
-                    'Messages',
-                    style: theme.titleStyle.copyWith(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w700,
-                      letterSpacing: -0.3,
-                    ),
-                  ),
-                ),
-                Consumer<LivechatController>(
-                  builder: (context, controller, _) {
-                    final unreadTotal = controller.rooms.fold<int>(
-                      0,
-                      (sum, room) => sum + room.visitorUnreadCount,
-                    );
-
-                    if (unreadTotal == 0) return const SizedBox.shrink();
-
-                    return Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: theme.unreadBadgeColor,
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Text(
-                        '$unreadTotal unread',
-                        style: TextStyle(
-                          color: theme.unreadTextColor,
-                          fontSize: 11,
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Messages',
+                        style: theme.titleStyle.copyWith(
+                          fontSize: 18,
                           fontWeight: FontWeight.w800,
-                          letterSpacing: -0.2,
+                          letterSpacing: -0.5,
                         ),
                       ),
-                    );
-                  },
+                      const SizedBox(height: 3),
+                      Text(
+                        subtitle,
+                        style: theme.subtitleStyle.copyWith(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w500,
+                          color: theme.subtitleStyle.color?.withOpacity(0.85),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(width: 8),
+                if (unreadTotal > 0) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: theme.unreadBadgeColor,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                    child: Text(
+                      unreadTotal > 99 ? '99+' : '$unreadTotal',
+                      style: TextStyle(
+                        color: theme.unreadTextColor,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.2,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 8),
+                ],
                 Icon(
-                  Icons.chevron_right_rounded,
-                  color: theme.subtitleStyle.color?.withOpacity(0.3),
-                  size: 24,
+                  Icons.arrow_forward_ios_rounded,
+                  color: theme.subtitleStyle.color?.withOpacity(0.42),
+                  size: 16,
                 ),
               ],
             ),

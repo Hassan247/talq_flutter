@@ -205,19 +205,7 @@ class _LivechatViewState extends State<LivechatView>
                 scrolledUnderElevation: 0,
                 surfaceTintColor: Colors.transparent,
                 backgroundColor: theme.backgroundColor,
-                leading: IconButton(
-                  icon: SvgPicture.asset(
-                    'assets/icons/arrow-left.svg',
-                    package: 'livechat_sdk',
-                    colorFilter: ColorFilter.mode(
-                      theme.titleStyle.color!,
-                      BlendMode.srcIn,
-                    ),
-                    width: 20,
-                    height: 20,
-                  ),
-                  onPressed: () => Navigator.pop(context),
-                ),
+                leading: BackButton(color: theme.titleStyle.color),
                 centerTitle: false,
                 titleSpacing: 0,
                 title: Row(
@@ -285,7 +273,22 @@ class _LivechatViewState extends State<LivechatView>
                           onRefresh: () => controller.fetchMessages(
                             roomId: controller.roomId,
                           ),
-                          child: controller.messages.isEmpty
+                          child:
+                              controller.isRoomLoading &&
+                                  controller.roomId != null
+                              ? ListView(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                          0.6,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : controller.messages.isEmpty
                               ? ListView(
                                   children: [
                                     SizedBox(
@@ -295,66 +298,86 @@ class _LivechatViewState extends State<LivechatView>
                                       child: Center(
                                         child: Padding(
                                           padding: const EdgeInsets.all(32.0),
-                                          child: Column(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.center,
-                                            children: [
-                                              Container(
-                                                padding: const EdgeInsets.all(
-                                                  24,
-                                                ),
-                                                decoration: BoxDecoration(
-                                                  color: theme.primaryColor
-                                                      .withOpacity(0.04),
-                                                  shape: BoxShape.circle,
-                                                ),
-                                                child: SvgPicture.asset(
-                                                  'assets/icons/messages.svg',
-                                                  package: 'livechat_sdk',
-                                                  colorFilter: ColorFilter.mode(
-                                                    theme.primaryColor
-                                                        .withOpacity(0.15),
-                                                    BlendMode.srcIn,
-                                                  ),
-                                                  width: 56,
-                                                  height: 56,
-                                                ),
-                                              ),
-                                              const SizedBox(height: 32),
-                                              Text(
-                                                controller
-                                                        .workspace
-                                                        ?.welcomeMessage ??
-                                                    'Hello there!\nHow can we help today?',
-                                                textAlign: TextAlign.center,
-                                                style: theme.titleStyle
-                                                    .copyWith(
-                                                      fontSize: 22,
-                                                      fontWeight:
-                                                          FontWeight.w800,
-                                                      color: theme
-                                                          .titleStyle
-                                                          .color
-                                                          ?.withOpacity(0.8),
-                                                      letterSpacing: -0.5,
-                                                      height: 1.2,
+                                          child: controller.roomId != null
+                                              ? Text(
+                                                  'No messages yet',
+                                                  style: theme.subtitleStyle
+                                                      .copyWith(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                )
+                                              : Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            24,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: theme
+                                                            .primaryColor
+                                                            .withOpacity(0.04),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: SvgPicture.asset(
+                                                        'assets/icons/messages.svg',
+                                                        package: 'livechat_sdk',
+                                                        colorFilter:
+                                                            ColorFilter.mode(
+                                                              theme.primaryColor
+                                                                  .withOpacity(
+                                                                    0.15,
+                                                                  ),
+                                                              BlendMode.srcIn,
+                                                            ),
+                                                        width: 56,
+                                                        height: 56,
+                                                      ),
                                                     ),
-                                              ),
-                                              const SizedBox(height: 12),
-                                              Text(
-                                                'Type a message below to begin.',
-                                                style: theme.subtitleStyle
-                                                    .copyWith(
-                                                      fontSize: 15,
-                                                      color: theme
-                                                          .subtitleStyle
-                                                          .color
-                                                          ?.withOpacity(0.5),
-                                                      letterSpacing: -0.2,
+                                                    const SizedBox(height: 32),
+                                                    Text(
+                                                      controller
+                                                              .workspace
+                                                              ?.welcomeMessage ??
+                                                          'Hello there!\nHow can we help today?',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: theme.titleStyle
+                                                          .copyWith(
+                                                            fontSize: 22,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            color: theme
+                                                                .titleStyle
+                                                                .color
+                                                                ?.withOpacity(
+                                                                  0.8,
+                                                                ),
+                                                            letterSpacing: -0.5,
+                                                            height: 1.2,
+                                                          ),
                                                     ),
-                                              ),
-                                            ],
-                                          ),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      'Type a message below to begin.',
+                                                      style: theme.subtitleStyle
+                                                          .copyWith(
+                                                            fontSize: 15,
+                                                            color: theme
+                                                                .subtitleStyle
+                                                                .color
+                                                                ?.withOpacity(
+                                                                  0.5,
+                                                                ),
+                                                            letterSpacing: -0.2,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
                                         ),
                                       ),
                                     ),

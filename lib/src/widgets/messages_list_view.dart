@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -29,19 +28,7 @@ class MessagesListView extends StatelessWidget {
             backgroundColor: activeTheme.backgroundColor,
             elevation: 0,
             scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: SvgPicture.asset(
-                'assets/icons/arrow-left.svg',
-                package: 'livechat_sdk',
-                colorFilter: ColorFilter.mode(
-                  activeTheme.titleStyle.color!,
-                  BlendMode.srcIn,
-                ),
-                width: 20, // Slightly larger for better touch target
-                height: 20,
-              ),
-              onPressed: () => Navigator.pop(context),
-            ),
+            leading: BackButton(color: activeTheme.titleStyle.color),
             centerTitle: true,
             title: Text(
               'Messages',
@@ -95,16 +82,12 @@ class MessagesListView extends StatelessWidget {
                     room: room,
                     workspace: controller.workspace,
                     theme: activeTheme,
-                    onTap: () async {
-                      await controller.fetchMessages(roomId: room.id);
-                      if (context.mounted) {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LivechatView(),
-                          ),
-                        );
-                      }
+                    onTap: () {
+                      controller.fetchMessages(roomId: room.id);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LivechatView()),
+                      );
                     },
                   );
                 },
@@ -151,7 +134,7 @@ class _MessageCard extends StatelessWidget {
     return Container(
       decoration: BoxDecoration(
         color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(20), // Slightly clearer radius
+        borderRadius: BorderRadius.circular(28),
         border: Border.all(
           color: theme.cardShadowColor.withOpacity(0.08), // Subtle border
           width: 1,
@@ -170,7 +153,7 @@ class _MessageCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
+          borderRadius: BorderRadius.circular(28),
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
             child: Row(
