@@ -14,11 +14,11 @@ class TalqClient {
   static const Duration _receiveTimeout = Duration(seconds: 30);
   static const String _defaultHttpUrl = String.fromEnvironment(
     'TALQ_SDK_HTTP_URL',
-    defaultValue: 'https://api.talq.app/graphql',
+    defaultValue: 'https://talq-backend.fly.dev/graphql',
   );
   static const String _defaultWsUrl = String.fromEnvironment(
     'TALQ_SDK_WS_URL',
-    defaultValue: 'wss://api.talq.app/graphql',
+    defaultValue: 'wss://talq-backend.fly.dev/graphql',
   );
 
   static final Dio _downloadDio = Dio(
