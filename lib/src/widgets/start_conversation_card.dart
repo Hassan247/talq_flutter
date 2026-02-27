@@ -1,14 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'chat_view.dart';
 import 'shared_widgets.dart';
 
 class StartConversationCard extends StatelessWidget {
-  final LivechatTheme theme;
-  final LivechatController controller;
+  final TalqTheme theme;
+  final TalqController controller;
 
   const StartConversationCard({
     super.key,
@@ -144,7 +144,7 @@ class StartConversationCard extends StatelessWidget {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (_) => LivechatView(
+                                    builder: (_) => TalqView(
                                       theme: theme,
                                       isNewConversation: true,
                                     ),
@@ -227,7 +227,7 @@ class StartConversationCard extends StatelessWidget {
             ),
           ],
         ),
-        child: LivechatAvatar(
+        child: TalqAvatar(
           imageUrl: imageUrl,
           senderType: SenderType.agent,
           radius: 17,

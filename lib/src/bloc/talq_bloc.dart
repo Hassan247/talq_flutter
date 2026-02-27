@@ -1,51 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 
-import '../state/livechat_controller.dart';
-import 'livechat_event.dart';
-import 'livechat_state.dart';
+import '../state/talq_controller.dart';
+import 'talq_event.dart';
+import 'talq_state.dart';
 
-class LivechatBloc extends Bloc<LivechatEvent, LivechatState> {
-  final LivechatController controller;
+class TalqBloc extends Bloc<TalqEvent, TalqState> {
+  final TalqController controller;
   final bool disposeControllerOnClose;
   late final VoidCallback _controllerListener;
 
-  LivechatBloc({
+  TalqBloc({
     required this.controller,
     this.disposeControllerOnClose = false,
-  }) : super(LivechatState.fromController(controller)) {
-    on<LivechatSyncRequested>(_onSyncRequested);
-    on<LivechatInitializeRequested>(_onInitializeRequested);
-    on<LivechatFetchRoomsRequested>(_onFetchRoomsRequested);
-    on<LivechatFetchMessagesRequested>(_onFetchMessagesRequested);
-    on<LivechatSendMessageRequested>(_onSendMessageRequested);
-    on<LivechatSendFileRequested>(_onSendFileRequested);
-    on<LivechatPrepareNewConversationRequested>(
+  }) : super(TalqState.fromController(controller)) {
+    on<TalqSyncRequested>(_onSyncRequested);
+    on<TalqInitializeRequested>(_onInitializeRequested);
+    on<TalqFetchRoomsRequested>(_onFetchRoomsRequested);
+    on<TalqFetchMessagesRequested>(_onFetchMessagesRequested);
+    on<TalqSendMessageRequested>(_onSendMessageRequested);
+    on<TalqSendFileRequested>(_onSendFileRequested);
+    on<TalqPrepareNewConversationRequested>(
       _onPrepareNewConversationRequested,
     );
-    on<LivechatStartNewConversationRequested>(_onStartNewConversationRequested);
-    on<LivechatFetchFaqsRequested>(_onFetchFaqsRequested);
-    on<LivechatRateRoomRequested>(_onRateRoomRequested);
-    on<LivechatResetSessionRequested>(_onResetSessionRequested);
-    on<LivechatSetChatVisibilityChanged>(_onSetChatVisibilityChanged);
-    on<LivechatSetLifecycleChanged>(_onSetLifecycleChanged);
-    on<LivechatMarkAsReadRequested>(_onMarkAsReadRequested);
-    on<LivechatClearErrorRequested>(_onClearErrorRequested);
+    on<TalqStartNewConversationRequested>(_onStartNewConversationRequested);
+    on<TalqFetchFaqsRequested>(_onFetchFaqsRequested);
+    on<TalqRateRoomRequested>(_onRateRoomRequested);
+    on<TalqResetSessionRequested>(_onResetSessionRequested);
+    on<TalqSetChatVisibilityChanged>(_onSetChatVisibilityChanged);
+    on<TalqSetLifecycleChanged>(_onSetLifecycleChanged);
+    on<TalqMarkAsReadRequested>(_onMarkAsReadRequested);
+    on<TalqClearErrorRequested>(_onClearErrorRequested);
 
-    _controllerListener = () => add(const LivechatSyncRequested());
+    _controllerListener = () => add(const TalqSyncRequested());
     controller.addListener(_controllerListener);
   }
 
   Future<void> _onSyncRequested(
-    LivechatSyncRequested event,
-    Emitter<LivechatState> emit,
+    TalqSyncRequested event,
+    Emitter<TalqState> emit,
   ) async {
-    emit(LivechatState.fromController(controller));
+    emit(TalqState.fromController(controller));
   }
 
   Future<void> _onInitializeRequested(
-    LivechatInitializeRequested event,
-    Emitter<LivechatState> emit,
+    TalqInitializeRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.initialize(
       firstName: event.firstName,
@@ -58,15 +58,15 @@ class LivechatBloc extends Bloc<LivechatEvent, LivechatState> {
   }
 
   Future<void> _onFetchRoomsRequested(
-    LivechatFetchRoomsRequested event,
-    Emitter<LivechatState> emit,
+    TalqFetchRoomsRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.fetchRooms();
   }
 
   Future<void> _onFetchMessagesRequested(
-    LivechatFetchMessagesRequested event,
-    Emitter<LivechatState> emit,
+    TalqFetchMessagesRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.fetchMessages(
       roomId: event.roomId,
@@ -75,8 +75,8 @@ class LivechatBloc extends Bloc<LivechatEvent, LivechatState> {
   }
 
   Future<void> _onSendMessageRequested(
-    LivechatSendMessageRequested event,
-    Emitter<LivechatState> emit,
+    TalqSendMessageRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.sendMessage(
       event.content,
@@ -88,71 +88,71 @@ class LivechatBloc extends Bloc<LivechatEvent, LivechatState> {
   }
 
   Future<void> _onSendFileRequested(
-    LivechatSendFileRequested event,
-    Emitter<LivechatState> emit,
+    TalqSendFileRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.sendFile(event.filePath, caption: event.caption);
   }
 
   Future<void> _onPrepareNewConversationRequested(
-    LivechatPrepareNewConversationRequested event,
-    Emitter<LivechatState> emit,
+    TalqPrepareNewConversationRequested event,
+    Emitter<TalqState> emit,
   ) async {
     controller.prepareNewConversation();
   }
 
   Future<void> _onStartNewConversationRequested(
-    LivechatStartNewConversationRequested event,
-    Emitter<LivechatState> emit,
+    TalqStartNewConversationRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.startNewConversation();
   }
 
   Future<void> _onFetchFaqsRequested(
-    LivechatFetchFaqsRequested event,
-    Emitter<LivechatState> emit,
+    TalqFetchFaqsRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.fetchFaqs(reload: event.reload, query: event.query);
   }
 
   Future<void> _onRateRoomRequested(
-    LivechatRateRoomRequested event,
-    Emitter<LivechatState> emit,
+    TalqRateRoomRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.rateRoom(event.rating, comment: event.comment);
   }
 
   Future<void> _onResetSessionRequested(
-    LivechatResetSessionRequested event,
-    Emitter<LivechatState> emit,
+    TalqResetSessionRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.resetSession();
   }
 
   Future<void> _onSetChatVisibilityChanged(
-    LivechatSetChatVisibilityChanged event,
-    Emitter<LivechatState> emit,
+    TalqSetChatVisibilityChanged event,
+    Emitter<TalqState> emit,
   ) async {
     controller.setChatVisible(event.isVisible);
   }
 
   Future<void> _onSetLifecycleChanged(
-    LivechatSetLifecycleChanged event,
-    Emitter<LivechatState> emit,
+    TalqSetLifecycleChanged event,
+    Emitter<TalqState> emit,
   ) async {
     controller.setLifecycleState(event.lifecycleState);
   }
 
   Future<void> _onMarkAsReadRequested(
-    LivechatMarkAsReadRequested event,
-    Emitter<LivechatState> emit,
+    TalqMarkAsReadRequested event,
+    Emitter<TalqState> emit,
   ) async {
     await controller.markAsRead();
   }
 
   Future<void> _onClearErrorRequested(
-    LivechatClearErrorRequested event,
-    Emitter<LivechatState> emit,
+    TalqClearErrorRequested event,
+    Emitter<TalqState> emit,
   ) async {
     controller.clearError();
   }

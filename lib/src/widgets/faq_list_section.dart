@@ -2,18 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'faq_views.dart';
 
 class FAQListSection extends StatelessWidget {
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
   const FAQListSection({super.key, required this.theme});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LivechatController>(
+    return Consumer<TalqController>(
       builder: (context, controller, _) {
         final faqs = controller.faqs;
         if (faqs.isEmpty) {
@@ -209,7 +209,7 @@ class FAQListSection extends StatelessWidget {
                 child: Center(
                   child: SvgPicture.asset(
                     'assets/icons/article.svg',
-                    package: 'livechat_sdk',
+                    package: 'talq_sdk',
                     colorFilter: ColorFilter.mode(
                       titleColor.withValues(alpha: 0.72),
                       BlendMode.srcIn,

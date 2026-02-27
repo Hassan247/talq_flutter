@@ -1,1 +1,1 @@
-export 'livechat_use_cases.dart';
+export 'talq_use_cases.dart';

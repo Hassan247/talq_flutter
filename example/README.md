@@ -1,4 +1,4 @@
-# livechat_sdk_example
+# talq_sdk_example
 
 A new Flutter project.
 

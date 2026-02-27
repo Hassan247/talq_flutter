@@ -4,19 +4,19 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'chat_view.dart';
 import 'shared_widgets.dart';
 
 class MessagesListView extends StatelessWidget {
-  final LivechatTheme? theme;
+  final TalqTheme? theme;
 
   const MessagesListView({super.key, this.theme});
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LivechatController>(
+    return Consumer<TalqController>(
       builder: (context, controller, child) {
         // use controller's reactive theme, fall back to provided theme
         final activeTheme = theme ?? controller.theme;
@@ -86,7 +86,7 @@ class MessagesListView extends StatelessWidget {
                       controller.fetchMessages(roomId: room.id);
                       Navigator.push(
                         context,
-                        MaterialPageRoute(builder: (_) => const LivechatView()),
+                        MaterialPageRoute(builder: (_) => const TalqView()),
                       );
                     },
                   );
@@ -101,9 +101,9 @@ class MessagesListView extends StatelessWidget {
 }
 
 class _MessageCard extends StatelessWidget {
-  final LivechatRoom room;
-  final LivechatWorkspace? workspace;
-  final LivechatTheme theme;
+  final TalqRoom room;
+  final TalqWorkspace? workspace;
+  final TalqTheme theme;
   final VoidCallback onTap;
 
   const _MessageCard({
@@ -272,7 +272,7 @@ class _MessageCard extends StatelessWidget {
               width: 0,
             ),
           ),
-          child: LivechatAvatar(
+          child: TalqAvatar(
             imageUrl: url,
             senderType: SenderType.agent, // Default to agent style for the list
             radius: 24, // Slightly larger avatar
@@ -318,7 +318,7 @@ class _MessageCard extends StatelessWidget {
     );
   }
 
-  Widget _buildMessageTitle(LivechatMessage? msg, bool hasUnread) {
+  Widget _buildMessageTitle(TalqMessage? msg, bool hasUnread) {
     if (msg == null) {
       return Text(
         'New Conversation',
@@ -398,7 +398,7 @@ class _MessageCard extends StatelessWidget {
     );
   }
 
-  Widget _buildTicks(LivechatMessage message) {
+  Widget _buildTicks(TalqMessage message) {
     // ticks are small, keep them subtle
     Color iconColor = theme.sentTickColor;
     IconData icon = Icons.check;

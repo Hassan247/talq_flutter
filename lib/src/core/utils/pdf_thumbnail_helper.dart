@@ -5,7 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
-import '../livechat_client.dart';
+import '../talq_client.dart';
 
 class PdfMetadata {
   final File? thumbnail;
@@ -56,7 +56,7 @@ class PdfThumbnailHelper {
       if (isRemote) {
         // lowercase comments: download remote file to temp location
         final downloadPath = '${tempDir.path}/${cacheKey}_download.pdf';
-        final bytes = await LivechatClient.downloadBytes(filePathOrUrl);
+        final bytes = await TalqClient.downloadBytes(filePathOrUrl);
         await File(downloadPath).writeAsBytes(bytes);
         localPath = downloadPath;
       }

@@ -1,6 +1,6 @@
-# Livechat Flutter SDK
+# Talq Flutter SDK
 
-A standard, easy-to-use Flutter SDK for integrating premium livechat into any mobile application.
+A standard, easy-to-use Flutter SDK for integrating premium talq into any mobile application.
 
 ## Features
 
@@ -9,7 +9,7 @@ A standard, easy-to-use Flutter SDK for integrating premium livechat into any mo
 - **Real-time Messaging**: Powered by GraphQL Subscriptions for instant updates.
 - **Hardened Networking**: Centralized Dio client with auth/header interceptors and safe timeouts.
 - **Push Notification Ready**: Built-in support for Firebase Cloud Messaging tokens.
-- **Premium UI**: Ready-made, customizable widgets like `LivechatView` and `LivechatFAB`.
+- **Premium UI**: Ready-made, customizable widgets like `TalqView` and `TalqFAB`.
 - **State Management**: Provider-compatible controller plus first-class BLoC support.
 - **Layered Internals**: `usecases -> repository -> remote datasource` for safer extension and maintenance.
 
@@ -19,22 +19,22 @@ A standard, easy-to-use Flutter SDK for integrating premium livechat into any mo
 
    ```yaml
    dependencies:
-     livechat_sdk:
-       path: ./path/to/livechat_sdk
+     talq_sdk:
+       path: ./path/to/talq_sdk
    ```
 
 2. Initialize the SDK scope in your app root:
 
    ```dart
-   final livechatApi = LivechatClient(
+   final talqApi = TalqClient(
      httpUrl: 'https://api.yourdomain.com/graphql',
      wsUrl: 'wss://api.yourdomain.com/graphql',
      apiKey: 'YOUR_API_KEY', // Found in your workspace settings
    );
 
    runApp(
-     LivechatSdkScope(
-       client: livechatApi,
+     TalqSdkScope(
+       client: talqApi,
        child: const MyApp(),
      ),
    );
@@ -43,14 +43,14 @@ A standard, easy-to-use Flutter SDK for integrating premium livechat into any mo
 3. Call `initialize()` through either BLoC events or the controller:
 
    ```dart
-   context.read<LivechatController>().initialize(
+   context.read<TalqController>().initialize(
      email: 'visitor@example.com',
    );
    ```
 
-4. Drop the `LivechatFAB` onto any scaffold:
+4. Drop the `TalqFAB` onto any scaffold:
    ```dart
-   floatingActionButton: const LivechatFAB(),
+   floatingActionButton: const TalqFAB(),
    ```
 
 ## Native Setup
@@ -60,7 +60,7 @@ A standard, easy-to-use Flutter SDK for integrating premium livechat into any mo
 
 ## Internal Architecture
 
-- `LivechatController` handles UI-facing state transitions only.
-- `LivechatUseCases` defines application actions and orchestration points.
-- `LivechatRepository` centralizes request shaping and GraphQL variable mapping.
-- `LivechatRemoteDataSource` is the only layer talking to `LivechatClient`.
+- `TalqController` handles UI-facing state transitions only.
+- `TalqUseCases` defines application actions and orchestration points.
+- `TalqRepository` centralizes request shaping and GraphQL variable mapping.
+- `TalqRemoteDataSource` is the only layer talking to `TalqClient`.

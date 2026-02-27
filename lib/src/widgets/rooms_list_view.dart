@@ -6,16 +6,16 @@ import 'package:flutter/services.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'faq_list_section.dart';
 import 'messages_list_view.dart';
 import 'start_conversation_card.dart';
 
 class RoomsListView extends StatefulWidget {
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
-  const RoomsListView({super.key, this.theme = const LivechatTheme()});
+  const RoomsListView({super.key, this.theme = const TalqTheme()});
 
   @override
   State<RoomsListView> createState() => _RoomsListViewState();
@@ -32,7 +32,7 @@ class _RoomsListViewState extends State<RoomsListView> {
   }
 
   Future<void> _bootstrapHomeData() async {
-    final controller = context.read<LivechatController>();
+    final controller = context.read<TalqController>();
 
     if (controller.isLoading) {
       await Future<void>.delayed(const Duration(milliseconds: 250));
@@ -55,7 +55,7 @@ class _RoomsListViewState extends State<RoomsListView> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<LivechatController>();
+    final controller = context.watch<TalqController>();
     final theme = controller.theme;
     final mediaQuery = MediaQuery.of(context);
     final headerHeight = mediaQuery.padding.top + 360;
@@ -102,7 +102,7 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildAmbientBackground(LivechatTheme theme) {
+  Widget _buildAmbientBackground(TalqTheme theme) {
     return Positioned.fill(
       child: Container(
         decoration: BoxDecoration(
@@ -152,8 +152,8 @@ class _RoomsListViewState extends State<RoomsListView> {
 
   Widget _buildHeroHeader(
     BuildContext context,
-    LivechatController controller,
-    LivechatTheme theme,
+    TalqController controller,
+    TalqTheme theme,
   ) {
     final mediaQuery = MediaQuery.of(context);
     final welcome = controller.workspace?.welcomeMessage;
@@ -267,9 +267,9 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildWorkspaceBrand(LivechatController controller) {
+  Widget _buildWorkspaceBrand(TalqController controller) {
     final logoUrl =
-        controller.workspace?.livechatLogoUrl ?? controller.workspace?.logoUrl;
+        controller.workspace?.talqLogoUrl ?? controller.workspace?.logoUrl;
 
     if (logoUrl != null) {
       return CachedNetworkImage(
@@ -277,7 +277,7 @@ class _RoomsListViewState extends State<RoomsListView> {
         height: 36,
         errorWidget: (context, url, error) => SvgPicture.asset(
           'assets/images/monosend_logo.svg',
-          package: 'livechat_sdk',
+          package: 'talq_sdk',
           height: 36,
           colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
         ),
@@ -290,7 +290,7 @@ class _RoomsListViewState extends State<RoomsListView> {
         Icon(Icons.forum_rounded, color: Colors.white, size: 28),
         SizedBox(width: 10),
         Text(
-          'Glint',
+          'Talq',
           style: TextStyle(
             color: Colors.white,
             fontSize: 24,
@@ -304,8 +304,8 @@ class _RoomsListViewState extends State<RoomsListView> {
 
   Widget _buildMessagesSection(
     BuildContext context,
-    LivechatTheme theme,
-    LivechatController controller,
+    TalqTheme theme,
+    TalqController controller,
   ) {
     final unreadTotal = controller.rooms.fold<int>(
       0,
@@ -370,7 +370,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   child: Center(
                     child: SvgPicture.asset(
                       'assets/icons/messages.svg',
-                      package: 'livechat_sdk',
+                      package: 'talq_sdk',
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,

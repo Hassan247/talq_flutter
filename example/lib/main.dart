@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:livechat_sdk/livechat_sdk.dart';
+import 'package:talq_sdk/talq_sdk.dart';
 
-const _httpUrl = String.fromEnvironment('LIVECHAT_HTTP_URL');
-const _wsUrl = String.fromEnvironment('LIVECHAT_WS_URL');
-const _apiKey = String.fromEnvironment('LIVECHAT_API_KEY');
+const _httpUrl = String.fromEnvironment('TALQ_HTTP_URL');
+const _wsUrl = String.fromEnvironment('TALQ_WS_URL');
+const _apiKey = String.fromEnvironment('TALQ_API_KEY');
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
-  runApp(const LivechatExampleApp());
+  runApp(const TalqExampleApp());
 }
 
-class LivechatExampleApp extends StatelessWidget {
-  const LivechatExampleApp({super.key});
+class TalqExampleApp extends StatelessWidget {
+  const TalqExampleApp({super.key});
 
   bool get _isConfigured =>
       _httpUrl.isNotEmpty && _wsUrl.isNotEmpty && _apiKey.isNotEmpty;
@@ -23,20 +23,20 @@ class LivechatExampleApp extends StatelessWidget {
       return const MaterialApp(home: _ConfigurationErrorScreen());
     }
 
-    final client = LivechatClient(
+    final client = TalqClient(
       httpUrl: _httpUrl,
       wsUrl: _wsUrl,
       apiKey: _apiKey,
     );
 
-    return LivechatSdkScope(
+    return TalqSdkScope(
       client: client,
       child: MaterialApp(
-        title: 'Livechat SDK Example',
+        title: 'Talq SDK Example',
         theme: ThemeData(
           primarySwatch: Colors.blue,
           useMaterial3: true,
-          fontFamily: 'packages/livechat_sdk/BricolageGrotesque',
+          fontFamily: 'packages/talq_sdk/BricolageGrotesque',
         ),
         home: const MyHomePage(),
       ),
@@ -66,21 +66,21 @@ class _MyHomePageState extends State<MyHomePage> {
 
   void _initializeVisitor() {
     final id = _generateUniqueId();
-    context.read<LivechatBloc>().add(
-      LivechatInitializeRequested(email: 'visitor_$id@example.com'),
+    context.read<TalqBloc>().add(
+      TalqInitializeRequested(email: 'visitor_$id@example.com'),
     );
   }
 
   Future<void> _resetSession() async {
-    final bloc = context.read<LivechatBloc>();
-    bloc.add(const LivechatResetSessionRequested());
+    final bloc = context.read<TalqBloc>();
+    bloc.add(const TalqResetSessionRequested());
     final id = _generateUniqueId();
-    bloc.add(LivechatInitializeRequested(email: 'visitor_$id@example.com'));
+    bloc.add(TalqInitializeRequested(email: 'visitor_$id@example.com'));
   }
 
   @override
   Widget build(BuildContext context) {
-    return BlocConsumer<LivechatBloc, LivechatState>(
+    return BlocConsumer<TalqBloc, TalqState>(
       listenWhen: (previous, current) =>
           previous.errorMessage != current.errorMessage,
       listener: (context, state) {
@@ -90,7 +90,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
       },
       builder: (context, state) {
-        final isBusy = state.status == LivechatStatus.loading;
+        final isBusy = state.status == TalqStatus.loading;
 
         return Scaffold(
           appBar: AppBar(title: const Text('My App')),
@@ -107,8 +107,8 @@ class _MyHomePageState extends State<MyHomePage> {
               ],
             ),
           ),
-          floatingActionButton: const LivechatFAB(
-            theme: LivechatTheme(
+          floatingActionButton: const TalqFAB(
+            theme: TalqTheme(
               primaryColor: Colors.deepPurple,
               darkHeaderColor: Color(0xFF311B92),
             ),
@@ -125,16 +125,16 @@ class _ConfigurationErrorScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: const Text('Livechat SDK Example')),
+      appBar: AppBar(title: const Text('Talq SDK Example')),
       body: const Padding(
         padding: EdgeInsets.all(20),
         child: Text(
           'Missing required --dart-define values.\n\n'
           'Run with:\n'
           'flutter run '
-          '--dart-define=LIVECHAT_HTTP_URL=https://your-domain.com/graphql '
-          '--dart-define=LIVECHAT_WS_URL=wss://your-domain.com/graphql '
-          '--dart-define=LIVECHAT_API_KEY=lc_your_api_key',
+          '--dart-define=TALQ_HTTP_URL=https://your-domain.com/graphql '
+          '--dart-define=TALQ_WS_URL=wss://your-domain.com/graphql '
+          '--dart-define=TALQ_API_KEY=lc_your_api_key',
         ),
       ),
     );

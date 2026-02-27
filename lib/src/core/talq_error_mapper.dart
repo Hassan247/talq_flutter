@@ -1,6 +1,6 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-class LivechatErrorMapper {
+class TalqErrorMapper {
   static const String _defaultFallback =
       'Something went wrong. Please try again.';
 

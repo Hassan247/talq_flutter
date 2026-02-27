@@ -1,7 +1,7 @@
-name: livechat_sdk
-description: A standard Flutter SDK for integrating livechat into any mobile app.
+name: talq_sdk
+description: A standard Flutter SDK for integrating talq into any mobile app.
 version: 0.1.0
-homepage: https://github.com/hassan247/livechat-flutter-sdk
+homepage: https://github.com/hassan247/talq-flutter-sdk
 
 environment:
   sdk: '>=3.9.0 <4.0.0'

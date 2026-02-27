@@ -1,4 +1,4 @@
-package com.example.livechat_sdk_example
+package com.example.talq_sdk_example
 
 import io.flutter.embedding.android.FlutterActivity
 

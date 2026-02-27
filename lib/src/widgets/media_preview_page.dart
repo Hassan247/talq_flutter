@@ -6,7 +6,7 @@ import 'package:provider/provider.dart';
 
 import '../core/utils/pdf_thumbnail_helper.dart';
 import '../models/models.dart' as models;
-import '../state/livechat_controller.dart';
+import '../state/talq_controller.dart';
 
 class MediaPreviewPage extends StatefulWidget {
   final File file;
@@ -41,7 +41,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
   }
 
   void _onSend() {
-    final controller = context.read<LivechatController>();
+    final controller = context.read<TalqController>();
     controller.sendFile(
       widget.file.path,
       caption: _captionController.text.trim(),
@@ -51,7 +51,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
 
   @override
   Widget build(BuildContext context) {
-    final controller = context.watch<LivechatController>();
+    final controller = context.watch<TalqController>();
     final theme = controller.theme;
     final fileName = p.basename(widget.file.path);
 
@@ -72,7 +72,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
               ),
               child: SvgPicture.asset(
                 'assets/icons/arrow-left.svg',
-                package: 'livechat_sdk',
+                package: 'talq_sdk',
                 colorFilter: const ColorFilter.mode(
                   Colors.white,
                   BlendMode.srcIn,
@@ -138,7 +138,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                 ),
                                 child: SvgPicture.asset(
                                   'assets/icons/pdf.svg',
-                                  package: 'livechat_sdk',
+                                  package: 'talq_sdk',
                                   width: 64,
                                   height: 64,
                                   colorFilter: const ColorFilter.mode(
@@ -162,7 +162,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                 children: [
                                   SvgPicture.asset(
                                     'assets/icons/pdf.svg',
-                                    package: 'livechat_sdk',
+                                    package: 'talq_sdk',
                                     width: 20,
                                     height: 20,
                                     colorFilter: const ColorFilter.mode(
@@ -254,7 +254,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                     child: Center(
                       child: SvgPicture.asset(
                         'assets/icons/send-message.svg',
-                        package: 'livechat_sdk',
+                        package: 'talq_sdk',
                         colorFilter: const ColorFilter.mode(
                           Colors.white,
                           BlendMode.srcIn,

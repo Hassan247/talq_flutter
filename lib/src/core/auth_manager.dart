@@ -9,8 +9,8 @@ class AuthManager {
       accessibility: KeychainAccessibility.first_unlock_this_device,
     ),
   );
-  static const _tokenKey = 'livechat_visitor_token';
-  static const _deviceIdKey = 'livechat_device_id_v2';
+  static const _tokenKey = 'talq_visitor_token';
+  static const _deviceIdKey = 'talq_device_id_v2';
 
   /// Returns the current visitor token or null if not authenticated
   static Future<String?> getToken() async {

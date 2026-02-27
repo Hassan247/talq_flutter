@@ -1,11 +1,11 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-import '../../core/livechat_client.dart';
+import '../../core/talq_client.dart';
 
-class LivechatRemoteDataSource {
-  final LivechatClient _client;
+class TalqRemoteDataSource {
+  final TalqClient _client;
 
-  LivechatRemoteDataSource(this._client);
+  TalqRemoteDataSource(this._client);
 
   Future<void> initializeClient() => _client.init();
 

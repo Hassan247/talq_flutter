@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 
 class RatingView extends StatefulWidget {
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
-  const RatingView({super.key, this.theme = const LivechatTheme()});
+  const RatingView({super.key, this.theme = const TalqTheme()});
 
   @override
   State<RatingView> createState() => _RatingViewState();
@@ -32,7 +32,7 @@ class _RatingViewState extends State<RatingView>
     );
     _animationController.forward();
 
-    final controller = Provider.of<LivechatController>(context, listen: false);
+    final controller = Provider.of<TalqController>(context, listen: false);
     if (controller.rating != null) {
       _rating = controller.rating!;
       _commentController.text = controller.ratingComment ?? '';
@@ -52,7 +52,7 @@ class _RatingViewState extends State<RatingView>
     });
   }
 
-  Future<void> _submit(LivechatController controller) async {
+  Future<void> _submit(TalqController controller) async {
     if (_rating == 0) return;
     await controller.rateRoom(_rating, comment: _commentController.text);
   }
@@ -152,7 +152,7 @@ class _RatingViewState extends State<RatingView>
                   ),
                 ),
                 const SizedBox(height: 24),
-                Consumer<LivechatController>(
+                Consumer<TalqController>(
                   builder: (context, controller, child) {
                     return SizedBox(
                       width: double.infinity,

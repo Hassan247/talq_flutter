@@ -1,4 +1,4 @@
-class LivechatGraphqlDocuments {
+class TalqGraphqlDocuments {
   static const String initVisitorMutation = r'''
     mutation InitVisitor($input: InitVisitorInput!) {
       initVisitor(input: $input) {
@@ -41,7 +41,7 @@ class LivechatGraphqlDocuments {
           id
           name
           logoUrl
-          livechatLogoUrl
+          talqLogoUrl
           showResponseTime
           responseTimeType
           customResponseTime
@@ -297,7 +297,7 @@ class LivechatGraphqlDocuments {
         id
         name
         logoUrl
-        livechatLogoUrl
+        talqLogoUrl
         showResponseTime
         responseTimeType
         customResponseTime

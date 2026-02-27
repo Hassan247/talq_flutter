@@ -1,13 +1,13 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
 import '../../models/models.dart';
-import '../sources/livechat_remote_datasource.dart';
-import 'livechat_graphql_documents.dart';
+import '../sources/talq_remote_datasource.dart';
+import 'talq_graphql_documents.dart';
 
-class LivechatRepository {
-  final LivechatRemoteDataSource _remote;
+class TalqRepository {
+  final TalqRemoteDataSource _remote;
 
-  LivechatRepository(this._remote);
+  TalqRepository(this._remote);
 
   Future<void> initializeClient() => _remote.initializeClient();
 
@@ -24,7 +24,7 @@ class LivechatRepository {
     Map<String, dynamic>? deviceInfo,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.initVisitorMutation,
+      TalqGraphqlDocuments.initVisitorMutation,
       variables: {
         'input': {
           'deviceId': deviceId,
@@ -43,12 +43,12 @@ class LivechatRepository {
 
   Future<QueryResult> startNewConversation() {
     return _remote.mutate(
-      LivechatGraphqlDocuments.startNewConversationMutation,
+      TalqGraphqlDocuments.startNewConversationMutation,
     );
   }
 
   Future<QueryResult> fetchRooms() {
-    return _remote.query(LivechatGraphqlDocuments.visitorRoomsQuery);
+    return _remote.query(TalqGraphqlDocuments.visitorRoomsQuery);
   }
 
   Future<QueryResult> fetchRoomMessages({
@@ -56,7 +56,7 @@ class LivechatRepository {
     String? afterCursor,
   }) {
     return _remote.query(
-      LivechatGraphqlDocuments.roomWithMessagesQuery,
+      TalqGraphqlDocuments.roomWithMessagesQuery,
       variables: {'roomId': roomId, 'after': afterCursor},
     );
   }
@@ -70,7 +70,7 @@ class LivechatRepository {
     String? replyToId,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.sendVisitorMessageMutation,
+      TalqGraphqlDocuments.sendVisitorMessageMutation,
       variables: {
         'input': {
           'roomId': roomId,
@@ -86,7 +86,7 @@ class LivechatRepository {
 
   Future<QueryResult> sendTyping(String roomId) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.visitorTypingMutation,
+      TalqGraphqlDocuments.visitorTypingMutation,
       variables: {'roomId': roomId},
     );
   }
@@ -96,46 +96,46 @@ class LivechatRepository {
     required String page,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.updateVisitorPageMutation,
+      TalqGraphqlDocuments.updateVisitorPageMutation,
       variables: {'roomId': roomId, 'page': page},
     );
   }
 
   Future<QueryResult> markMessagesAsRead(String roomId) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.markMessagesAsReadMutation,
+      TalqGraphqlDocuments.markMessagesAsReadMutation,
       variables: {'roomId': roomId},
     );
   }
 
   Future<QueryResult> markMessagesAsDelivered(String roomId) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.markMessagesAsDeliveredMutation,
+      TalqGraphqlDocuments.markMessagesAsDeliveredMutation,
       variables: {'roomId': roomId},
     );
   }
 
   Stream<QueryResult> subscribeVisitorNewMessage() {
     return _remote.subscribe(
-      LivechatGraphqlDocuments.visitorNewMessageSubscription,
+      TalqGraphqlDocuments.visitorNewMessageSubscription,
     );
   }
 
   Stream<QueryResult> subscribeVisitorRoomUpdated() {
     return _remote.subscribe(
-      LivechatGraphqlDocuments.visitorRoomUpdatedSubscription,
+      TalqGraphqlDocuments.visitorRoomUpdatedSubscription,
     );
   }
 
   Stream<QueryResult> subscribeVisitorWorkspaceUpdated() {
     return _remote.subscribe(
-      LivechatGraphqlDocuments.visitorWorkspaceUpdatedSubscription,
+      TalqGraphqlDocuments.visitorWorkspaceUpdatedSubscription,
     );
   }
 
   Stream<QueryResult> subscribeTyping(String roomId) {
     return _remote.subscribe(
-      LivechatGraphqlDocuments.typingSubscription,
+      TalqGraphqlDocuments.typingSubscription,
       variables: {'roomId': roomId},
     );
   }
@@ -146,21 +146,21 @@ class LivechatRepository {
     String? comment,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.rateRoomMutation,
+      TalqGraphqlDocuments.rateRoomMutation,
       variables: {'roomId': roomId, 'rating': rating, 'comment': comment},
     );
   }
 
   Future<QueryResult> voteFaq({required String faqId, required bool helpful}) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.voteFaqMutation,
+      TalqGraphqlDocuments.voteFaqMutation,
       variables: {'id': faqId, 'helpful': helpful},
     );
   }
 
   Future<QueryResult> fetchRoomStatus(String roomId) {
     return _remote.query(
-      LivechatGraphqlDocuments.roomStatusQuery,
+      TalqGraphqlDocuments.roomStatusQuery,
       variables: {'id': roomId},
     );
   }
@@ -170,7 +170,7 @@ class LivechatRepository {
     required String emoji,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.addReactionMutation,
+      TalqGraphqlDocuments.addReactionMutation,
       variables: {'messageId': messageId, 'emoji': emoji},
     );
   }
@@ -180,7 +180,7 @@ class LivechatRepository {
     required String emoji,
   }) {
     return _remote.mutate(
-      LivechatGraphqlDocuments.removeReactionMutation,
+      TalqGraphqlDocuments.removeReactionMutation,
       variables: {'messageId': messageId, 'emoji': emoji},
     );
   }
@@ -191,7 +191,7 @@ class LivechatRepository {
     String? afterCursor,
   }) {
     return _remote.query(
-      LivechatGraphqlDocuments.visitorFaqsQuery,
+      TalqGraphqlDocuments.visitorFaqsQuery,
       variables: {'query': query, 'first': first, 'after': afterCursor},
     );
   }

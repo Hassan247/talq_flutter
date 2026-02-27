@@ -6,7 +6,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
-import '../core/livechat_client.dart';
+import '../core/talq_client.dart';
 import '../models/models.dart';
 
 class MediaViewerPage extends StatefulWidget {
@@ -55,7 +55,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
         _tempPdfFile = File('${tempDir.path}/view_$fileName');
 
         if (!await _tempPdfFile!.exists()) {
-          final bytes = await LivechatClient.downloadBytes(widget.url!);
+          final bytes = await TalqClient.downloadBytes(widget.url!);
           await _tempPdfFile!.writeAsBytes(bytes);
         }
 
@@ -106,7 +106,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
               ),
               child: SvgPicture.asset(
                 'assets/icons/arrow-left.svg',
-                package: 'livechat_sdk',
+                package: 'talq_sdk',
                 colorFilter: const ColorFilter.mode(
                   Colors.white,
                   BlendMode.srcIn,

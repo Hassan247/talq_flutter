@@ -2,26 +2,26 @@ import 'package:flutter/material.dart';
 
 import 'package:provider/provider.dart';
 
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'rooms_list_view.dart';
 
-class LivechatFAB extends StatelessWidget {
-  final LivechatTheme theme;
+class TalqFAB extends StatelessWidget {
+  final TalqTheme theme;
   final Widget icon;
 
-  const LivechatFAB({
+  const TalqFAB({
     super.key,
-    this.theme = const LivechatTheme(),
+    this.theme = const TalqTheme(),
     this.icon = const Icon(Icons.chat_bubble, color: Colors.white),
   });
 
   @override
   Widget build(BuildContext context) {
     // Try to get theme from controller first for dynamic customization
-    LivechatTheme activeTheme = theme;
+    TalqTheme activeTheme = theme;
     try {
-      final controller = context.watch<LivechatController>();
+      final controller = context.watch<TalqController>();
       activeTheme = controller.theme;
     } catch (_) {
       // Fallback to widget.theme if Provider is not found

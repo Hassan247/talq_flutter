@@ -14,20 +14,20 @@ import 'package:sticky_headers/sticky_headers.dart';
 
 import '../core/utils/pdf_thumbnail_helper.dart';
 import '../models/models.dart' as models;
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 import 'media_preview_page.dart';
 import 'media_viewer_page.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
 import 'shared_widgets.dart';
 
-class LivechatView extends StatefulWidget {
+class TalqView extends StatefulWidget {
   final String title;
-  final LivechatTheme? theme;
+  final TalqTheme? theme;
   final bool isNewConversation;
 
-  const LivechatView({
+  const TalqView({
     super.key,
     this.title = 'Live Chat',
     this.theme,
@@ -35,16 +35,16 @@ class LivechatView extends StatefulWidget {
   });
 
   @override
-  State<LivechatView> createState() => _LivechatViewState();
+  State<TalqView> createState() => _TalqViewState();
 }
 
-class _LivechatViewState extends State<LivechatView>
+class _TalqViewState extends State<TalqView>
     with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   Timer? _typingThrottle;
-  LivechatController? _controller;
+  TalqController? _controller;
 
   @override
   void initState() {
@@ -54,7 +54,7 @@ class _LivechatViewState extends State<LivechatView>
     WidgetsBinding.instance.addPostFrameCallback((_) {
       // notify controller that chat is now visible
       if (mounted) {
-        context.read<LivechatController>().setChatVisible(true);
+        context.read<TalqController>().setChatVisible(true);
       }
     });
   }
@@ -63,7 +63,7 @@ class _LivechatViewState extends State<LivechatView>
   void didChangeDependencies() {
     super.didChangeDependencies();
     // Save reference to controller for use in dispose()
-    _controller = context.read<LivechatController>();
+    _controller = context.read<TalqController>();
   }
 
   void _onScroll() {
@@ -72,7 +72,7 @@ class _LivechatViewState extends State<LivechatView>
       final currentScroll = _scrollController.position.pixels;
       // Load more when we are 200px from the "top" (which is maxScroll in reverse)
       if (maxScroll - currentScroll <= 200) {
-        final controller = _controller ?? context.read<LivechatController>();
+        final controller = _controller ?? context.read<TalqController>();
         if (!controller.isFetchingMore && controller.hasMoreMessages) {
           controller.fetchMessages(isLoadMore: true);
         }
@@ -93,7 +93,7 @@ class _LivechatViewState extends State<LivechatView>
 
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    context.read<LivechatController>().setLifecycleState(state);
+    context.read<TalqController>().setLifecycleState(state);
   }
 
   void _scrollToBottom() {
@@ -115,12 +115,12 @@ class _LivechatViewState extends State<LivechatView>
     return 'Reply in $time';
   }
 
-  List<_MessageGroup> _groupMessages(List<models.LivechatMessage> messages) {
+  List<_MessageGroup> _groupMessages(List<models.TalqMessage> messages) {
     final groups = <_MessageGroup>[];
     if (messages.isEmpty) return groups;
 
     DateTime? currentDate;
-    List<models.LivechatMessage> currentGroupMessages = [];
+    List<models.TalqMessage> currentGroupMessages = [];
 
     for (final message in messages) {
       final messageDate = DateTime(
@@ -165,7 +165,7 @@ class _LivechatViewState extends State<LivechatView>
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<LivechatController>(
+    return Consumer<TalqController>(
       builder: (context, controller, child) {
         if (!controller.isInitialized && controller.isLoading) {
           return const Scaffold(
@@ -183,12 +183,12 @@ class _LivechatViewState extends State<LivechatView>
           canPop: !shouldRedirect,
           onPopInvokedWithResult: (didPop, _) {
             if (didPop) {
-              context.read<LivechatController>().setChatVisible(false);
+              context.read<TalqController>().setChatVisible(false);
               return;
             }
 
             if (shouldRedirect) {
-              context.read<LivechatController>().setChatVisible(false);
+              context.read<TalqController>().setChatVisible(false);
               Navigator.pushReplacement(
                 context,
                 MaterialPageRoute(builder: (_) => const MessagesListView()),
@@ -210,7 +210,7 @@ class _LivechatViewState extends State<LivechatView>
                 titleSpacing: 0,
                 title: Row(
                   children: [
-                    LivechatAvatar(
+                    TalqAvatar(
                       imageUrl: controller.currentRoom?.assigneeAvatarUrl,
                       senderType: models.SenderType.agent,
                       radius: 18,
@@ -257,7 +257,7 @@ class _LivechatViewState extends State<LivechatView>
                       size: 26,
                     ),
                     onPressed: () {
-                      context.read<LivechatController>().setChatVisible(false);
+                      context.read<TalqController>().setChatVisible(false);
                       Navigator.pop(context);
                     },
                   ),
@@ -327,7 +327,7 @@ class _LivechatViewState extends State<LivechatView>
                                                       ),
                                                       child: SvgPicture.asset(
                                                         'assets/icons/messages.svg',
-                                                        package: 'livechat_sdk',
+                                                        package: 'talq_sdk',
                                                         colorFilter:
                                                             ColorFilter.mode(
                                                               theme.primaryColor
@@ -542,7 +542,7 @@ class _LivechatViewState extends State<LivechatView>
     );
   }
 
-  Widget _buildInputArea(LivechatController controller, LivechatTheme theme) {
+  Widget _buildInputArea(TalqController controller, TalqTheme theme) {
     if (controller.roomStatus == models.RoomStatus.resolved) {
       return Container(
         width: double.infinity,
@@ -613,7 +613,7 @@ class _LivechatViewState extends State<LivechatView>
                           _showAttachmentOptions(context, controller, theme),
                       icon: SvgPicture.asset(
                         'assets/icons/plus.svg',
-                        package: 'livechat_sdk',
+                        package: 'talq_sdk',
                         colorFilter: ColorFilter.mode(
                           theme.primaryColor,
                           BlendMode.srcIn,
@@ -671,7 +671,7 @@ class _LivechatViewState extends State<LivechatView>
                 onPressed: () => _handleSend(controller),
                 icon: SvgPicture.asset(
                   'assets/icons/send-message.svg',
-                  package: 'livechat_sdk',
+                  package: 'talq_sdk',
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -690,8 +690,8 @@ class _LivechatViewState extends State<LivechatView>
 
   Future<void> _showAttachmentOptions(
     BuildContext context,
-    LivechatController controller,
-    LivechatTheme theme,
+    TalqController controller,
+    TalqTheme theme,
   ) async {
     showModalBottomSheet(
       context: context,
@@ -789,7 +789,7 @@ class _LivechatViewState extends State<LivechatView>
   }
 
   Widget _buildOption({
-    required LivechatTheme theme,
+    required TalqTheme theme,
     required String iconPath,
     required String label,
     required VoidCallback onTap,
@@ -807,7 +807,7 @@ class _LivechatViewState extends State<LivechatView>
             ),
             child: SvgPicture.asset(
               iconPath,
-              package: 'livechat_sdk',
+              package: 'talq_sdk',
               width: 24,
               height: 24,
               colorFilter: ColorFilter.mode(
@@ -829,7 +829,7 @@ class _LivechatViewState extends State<LivechatView>
     );
   }
 
-  void _handleSend(LivechatController controller) {
+  void _handleSend(TalqController controller) {
     if (_messageController.text.trim().isEmpty) return;
     controller.sendMessage(_messageController.text);
     _messageController.clear();
@@ -837,7 +837,7 @@ class _LivechatViewState extends State<LivechatView>
     Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
   }
 
-  void _onTextChanged(String text, LivechatController controller) {
+  void _onTextChanged(String text, TalqController controller) {
     if (text.isEmpty) return;
     if (controller.roomId == null) return;
 
@@ -848,8 +848,8 @@ class _LivechatViewState extends State<LivechatView>
   }
 
   Widget _buildReplyOverlay(
-    LivechatController controller,
-    LivechatTheme theme,
+    TalqController controller,
+    TalqTheme theme,
   ) {
     final reply = controller.replyingTo!;
     final senderName =
@@ -923,9 +923,9 @@ class _LivechatViewState extends State<LivechatView>
 
   void _showReactions(
     BuildContext context,
-    LivechatController controller,
-    models.LivechatMessage message,
-    LivechatTheme theme,
+    TalqController controller,
+    models.TalqMessage message,
+    TalqTheme theme,
   ) {
     final reactions = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
 
@@ -966,12 +966,12 @@ class _LivechatViewState extends State<LivechatView>
 }
 
 class _ChatBubble extends StatelessWidget {
-  final models.LivechatMessage message;
+  final models.TalqMessage message;
   final bool isFirstInGroup;
   final bool isLastInGroup;
   final VoidCallback onSwipe;
   final VoidCallback onLongPress;
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
   const _ChatBubble({
     required this.message,
@@ -1260,7 +1260,7 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildAvatar() {
-    return LivechatAvatar(
+    return TalqAvatar(
       imageUrl: message.senderAvatarUrl,
       senderType: message.senderType,
       radius: 16,
@@ -1602,7 +1602,7 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
-  bool _isImageMessage(models.LivechatMessage target, bool hasAttachment) {
+  bool _isImageMessage(models.TalqMessage target, bool hasAttachment) {
     if (target.contentType == models.ContentType.image) {
       return true;
     }
@@ -1625,7 +1625,7 @@ class _ChatBubble extends StatelessWidget {
   }
 
   bool _isDocumentMessage(
-    models.LivechatMessage target,
+    models.TalqMessage target,
     bool hasAttachment,
     bool isImage,
   ) {
@@ -1635,7 +1635,7 @@ class _ChatBubble extends StatelessWidget {
     return hasAttachment && !isImage;
   }
 
-  String _attachmentCaption(models.LivechatMessage target) {
+  String _attachmentCaption(models.TalqMessage target) {
     final cleaned = _stripAttachmentCaption(target.content).trim();
     if (cleaned.isEmpty) {
       return '';
@@ -1690,7 +1690,7 @@ class _ChatBubble extends StatelessWidget {
 
 class _MessageGroup {
   final DateTime date;
-  final List<models.LivechatMessage> messages;
+  final List<models.TalqMessage> messages;
 
   _MessageGroup({required this.date, required this.messages});
 }

@@ -1,19 +1,19 @@
 import 'package:graphql_flutter/graphql_flutter.dart';
 
-import '../core/livechat_client.dart';
-import '../data/repositories/livechat_repository.dart';
-import '../data/sources/livechat_remote_datasource.dart';
+import '../core/talq_client.dart';
+import '../data/repositories/talq_repository.dart';
+import '../data/sources/talq_remote_datasource.dart';
 import '../models/models.dart';
 
-class LivechatUseCases {
-  final LivechatRepository _repository;
+class TalqUseCases {
+  final TalqRepository _repository;
 
-  LivechatUseCases(this._repository);
+  TalqUseCases(this._repository);
 
-  factory LivechatUseCases.fromClient(LivechatClient client) {
-    final remote = LivechatRemoteDataSource(client);
-    final repository = LivechatRepository(remote);
-    return LivechatUseCases(repository);
+  factory TalqUseCases.fromClient(TalqClient client) {
+    final remote = TalqRemoteDataSource(client);
+    final repository = TalqRepository(remote);
+    return TalqUseCases(repository);
   }
 
   Future<void> initializeClient() => _repository.initializeClient();

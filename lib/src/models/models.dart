@@ -68,7 +68,7 @@ enum RoomStatus {
   String toJson() => name.toUpperCase();
 }
 
-class LivechatMessage {
+class TalqMessage {
   final String id;
   final String? roomId;
   final String content;
@@ -81,12 +81,12 @@ class LivechatMessage {
   final DateTime createdAt;
   final bool isRead;
   final bool isDelivered;
-  final LivechatMessage? replyTo;
+  final TalqMessage? replyTo;
   final Map<String, dynamic> reactions;
   final String? localFilePath;
   final bool isUploading;
 
-  LivechatMessage({
+  TalqMessage({
     required this.id,
     this.roomId,
     required this.content,
@@ -105,9 +105,9 @@ class LivechatMessage {
     this.isUploading = false,
   });
 
-  factory LivechatMessage.fromJson(Map<String, dynamic> json) {
+  factory TalqMessage.fromJson(Map<String, dynamic> json) {
     try {
-      return LivechatMessage(
+      return TalqMessage(
         id: json['id'] ?? 'unknown',
         roomId: json['room'] != null ? json['room']['id'] : null,
         content: json['content'] ?? '',
@@ -123,7 +123,7 @@ class LivechatMessage {
         isRead: json['read'] ?? false,
         isDelivered: json['delivered'] ?? false,
         replyTo: json['replyTo'] != null
-            ? LivechatMessage.fromJson(json['replyTo'])
+            ? TalqMessage.fromJson(json['replyTo'])
             : null,
         reactions: json['reactions'] != null
             ? Map<String, dynamic>.from(
@@ -137,9 +137,9 @@ class LivechatMessage {
       );
     } catch (e) {
       if (kDebugMode) {
-        debugPrint('Error parsing LivechatMessage: $e');
+        debugPrint('Error parsing TalqMessage: $e');
       }
-      return LivechatMessage(
+      return TalqMessage(
         id: 'err-${json['id'] ?? DateTime.now().millisecondsSinceEpoch}',
         content: 'Message parsing error',
         senderType: SenderType.system,
@@ -187,7 +187,7 @@ class LivechatMessage {
     }
   }
 
-  LivechatMessage copyWith({
+  TalqMessage copyWith({
     String? id,
     String? content,
     String? fileUrl,
@@ -198,7 +198,7 @@ class LivechatMessage {
     bool? isUploading,
     Map<String, dynamic>? reactions,
   }) {
-    return LivechatMessage(
+    return TalqMessage(
       id: id ?? this.id,
       roomId: roomId,
       content: content ?? this.content,
@@ -219,14 +219,14 @@ class LivechatMessage {
   }
 }
 
-class LivechatVisitor {
+class TalqVisitor {
   final String id;
   final String? firstName;
   final String? lastName;
   final String? email;
   final String? currentPage;
 
-  LivechatVisitor({
+  TalqVisitor({
     required this.id,
     this.firstName,
     this.lastName,
@@ -234,8 +234,8 @@ class LivechatVisitor {
     this.currentPage,
   });
 
-  factory LivechatVisitor.fromJson(Map<String, dynamic> json) {
-    return LivechatVisitor(
+  factory TalqVisitor.fromJson(Map<String, dynamic> json) {
+    return TalqVisitor(
       id: json['id'],
       firstName: json['firstName'],
       lastName: json['lastName'],
@@ -252,14 +252,14 @@ class LivechatVisitor {
     'currentPage': currentPage,
   };
 
-  LivechatVisitor copyWith({
+  TalqVisitor copyWith({
     String? id,
     String? firstName,
     String? lastName,
     String? email,
     String? currentPage,
   }) {
-    return LivechatVisitor(
+    return TalqVisitor(
       id: id ?? this.id,
       firstName: firstName ?? this.firstName,
       lastName: lastName ?? this.lastName,
@@ -269,20 +269,20 @@ class LivechatVisitor {
   }
 }
 
-class LivechatRoom {
+class TalqRoom {
   final String id;
   final RoomStatus status;
   final int unreadCount;
   final int visitorUnreadCount;
   final DateTime? lastMessageAt;
-  final LivechatMessage? lastMessage;
+  final TalqMessage? lastMessage;
   final DateTime createdAt;
   final int? rating;
   final String? ratingComment;
   final String? assigneeName;
   final String? assigneeAvatarUrl;
 
-  LivechatRoom({
+  TalqRoom({
     required this.id,
     required this.status,
     this.unreadCount = 0,
@@ -296,8 +296,8 @@ class LivechatRoom {
     this.assigneeAvatarUrl,
   });
 
-  factory LivechatRoom.fromJson(Map<String, dynamic> json) {
-    return LivechatRoom(
+  factory TalqRoom.fromJson(Map<String, dynamic> json) {
+    return TalqRoom(
       id: json['id'] ?? '',
       status: RoomStatus.fromString(json['status']?.toString()),
       unreadCount: json['unreadCount'] ?? 0,
@@ -306,7 +306,7 @@ class LivechatRoom {
           ? DateTime.tryParse(json['lastMessageAt'].toString())
           : null,
       lastMessage: json['lastMessage'] != null
-          ? LivechatMessage.fromJson(json['lastMessage'])
+          ? TalqMessage.fromJson(json['lastMessage'])
           : null,
       createdAt: json['createdAt'] != null
           ? DateTime.parse(json['createdAt'].toString())
@@ -332,7 +332,7 @@ class LivechatRoom {
   };
 }
 
-class LivechatWorkspace {
+class TalqWorkspace {
   final String id;
   final String name;
   final String? responseTime;
@@ -341,11 +341,11 @@ class LivechatWorkspace {
   final bool autoReplyEnabled;
   final List<String> agentAvatars;
   final String? logoUrl;
-  final String? livechatLogoUrl;
+  final String? talqLogoUrl;
   final String welcomeMessage;
   final String primaryColor;
 
-  LivechatWorkspace({
+  TalqWorkspace({
     required this.id,
     required this.name,
     this.responseTime,
@@ -354,12 +354,12 @@ class LivechatWorkspace {
     this.autoReplyEnabled = false,
     this.agentAvatars = const [],
     this.logoUrl,
-    this.livechatLogoUrl,
+    this.talqLogoUrl,
     this.welcomeMessage = 'Hello there! How can we help you today?',
     this.primaryColor = '#151515',
   });
 
-  factory LivechatWorkspace.fromJson(Map<String, dynamic> json) {
+  factory TalqWorkspace.fromJson(Map<String, dynamic> json) {
     String? rt;
     if (json['showResponseTime'] == true) {
       // use customResponseTime if available (for both AGENT and CUSTOM types)
@@ -373,7 +373,7 @@ class LivechatWorkspace {
       }
     }
 
-    return LivechatWorkspace(
+    return TalqWorkspace(
       id: json['id'],
       name: json['name'],
       responseTime: rt,
@@ -384,14 +384,14 @@ class LivechatWorkspace {
       // but if the backend ever adds it to workspace, we can parse it here.
       // For now, default to empty.
       logoUrl: json['logoUrl'],
-      livechatLogoUrl: json['livechatLogoUrl'],
+      talqLogoUrl: json['talqLogoUrl'],
       welcomeMessage:
           json['welcomeMessage'] ?? 'Hello there! How can we help you today?',
       primaryColor: json['primaryColor'] ?? '#151515',
     );
   }
 
-  LivechatWorkspace copyWith({
+  TalqWorkspace copyWith({
     String? id,
     String? name,
     String? responseTime,
@@ -400,11 +400,11 @@ class LivechatWorkspace {
     bool? autoReplyEnabled,
     List<String>? agentAvatars,
     String? logoUrl,
-    String? livechatLogoUrl,
+    String? talqLogoUrl,
     String? welcomeMessage,
     String? primaryColor,
   }) {
-    return LivechatWorkspace(
+    return TalqWorkspace(
       id: id ?? this.id,
       name: name ?? this.name,
       responseTime: responseTime ?? this.responseTime,
@@ -413,28 +413,28 @@ class LivechatWorkspace {
       autoReplyEnabled: autoReplyEnabled ?? this.autoReplyEnabled,
       agentAvatars: agentAvatars ?? this.agentAvatars,
       logoUrl: logoUrl ?? this.logoUrl,
-      livechatLogoUrl: livechatLogoUrl ?? this.livechatLogoUrl,
+      talqLogoUrl: talqLogoUrl ?? this.talqLogoUrl,
       welcomeMessage: welcomeMessage ?? this.welcomeMessage,
       primaryColor: primaryColor ?? this.primaryColor,
     );
   }
 }
 
-class LivechatFAQ {
+class TalqFAQ {
   final String id;
   final String question;
   final String answer;
   final int sortOrder;
 
-  LivechatFAQ({
+  TalqFAQ({
     required this.id,
     required this.question,
     required this.answer,
     required this.sortOrder,
   });
 
-  factory LivechatFAQ.fromJson(Map<String, dynamic> json) {
-    return LivechatFAQ(
+  factory TalqFAQ.fromJson(Map<String, dynamic> json) {
+    return TalqFAQ(
       id: json['id'],
       question: json['question'],
       answer: json['answer'],
@@ -444,7 +444,7 @@ class LivechatFAQ {
 }
 
 class FAQConnection {
-  final List<LivechatFAQ> faqs;
+  final List<TalqFAQ> faqs;
   final bool hasNextPage;
   final String? endCursor;
   final int totalCount;
@@ -461,7 +461,7 @@ class FAQConnection {
     final pageInfo = json['pageInfo'] ?? {};
 
     return FAQConnection(
-      faqs: edges.map((e) => LivechatFAQ.fromJson(e['node'])).toList(),
+      faqs: edges.map((e) => TalqFAQ.fromJson(e['node'])).toList(),
       hasNextPage: pageInfo['hasNextPage'] ?? false,
       endCursor: pageInfo['endCursor'],
       totalCount: json['totalCount'] ?? 0,

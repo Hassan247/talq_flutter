@@ -3,24 +3,24 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../models/models.dart';
-import '../theme/livechat_theme.dart';
+import '../theme/talq_theme.dart';
 
-class LivechatAvatar extends StatelessWidget {
+class TalqAvatar extends StatelessWidget {
   final String? imageUrl;
   final SenderType senderType;
   final double radius;
   final bool isFaded;
-  final LivechatTheme theme;
+  final TalqTheme theme;
   final Color? borderColor;
   final double borderWidth;
 
-  const LivechatAvatar({
+  const TalqAvatar({
     super.key,
     this.imageUrl,
     this.senderType = SenderType.agent,
     this.radius = 16,
     this.isFaded = false,
-    this.theme = const LivechatTheme(),
+    this.theme = const TalqTheme(),
     this.borderColor,
     this.borderWidth = 2.0,
   });
@@ -40,7 +40,7 @@ class LivechatAvatar extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: SvgPicture.asset(
             'assets/icons/bot-avatar.svg',
-            package: 'livechat_sdk',
+            package: 'talq_sdk',
             width: radius * 2,
             height: radius * 2,
             fit: BoxFit.cover,
@@ -81,7 +81,7 @@ class LivechatAvatar extends StatelessWidget {
               child: senderType == SenderType.bot
                   ? SvgPicture.asset(
                       'assets/icons/bot-avatar.svg',
-                      package: 'livechat_sdk',
+                      package: 'talq_sdk',
                       width: radius * 2,
                       height: radius * 2,
                       fit: BoxFit.cover,
@@ -100,7 +100,7 @@ class LivechatAvatar extends StatelessWidget {
                 child: senderType == SenderType.bot
                     ? SvgPicture.asset(
                         'assets/icons/bot-avatar.svg',
-                        package: 'livechat_sdk',
+                        package: 'talq_sdk',
                         width: radius * 2,
                         height: radius * 2,
                         fit: BoxFit.cover,
@@ -133,7 +133,7 @@ class MessageStatusTicks extends StatelessWidget {
   final bool isRead;
   final bool isDelivered;
   final double size;
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
   const MessageStatusTicks({
     super.key,

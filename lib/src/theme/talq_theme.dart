@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-class LivechatTheme {
+class TalqTheme {
   final Color primaryColor;
   final Color backgroundColor;
   final Color surfaceColor;
@@ -36,7 +36,7 @@ class LivechatTheme {
   // Shapes
   final double borderRadius;
 
-  const LivechatTheme({
+  const TalqTheme({
     this.inputBackgroundColor = const Color(0xFFF1F3F5),
     this.cardShadowColor = const Color(
       0x0D000000,
@@ -81,9 +81,9 @@ class LivechatTheme {
     this.borderRadius = 20.0,
   });
 
-  factory LivechatTheme.light() => const LivechatTheme();
+  factory TalqTheme.light() => const TalqTheme();
 
-  factory LivechatTheme.dark() => const LivechatTheme(
+  factory TalqTheme.dark() => const TalqTheme(
     backgroundColor: Color(0xFF121212),
     surfaceColor: Color(0xFF1E1E1E),
     darkHeaderColor: Color(0xFF000000),
@@ -101,7 +101,7 @@ class LivechatTheme {
     ),
   );
 
-  LivechatTheme copyWith({
+  TalqTheme copyWith({
     Color? primaryColor,
     Color? backgroundColor,
     Color? surfaceColor,
@@ -129,7 +129,7 @@ class LivechatTheme {
     TextStyle? timestampStyle,
     double? borderRadius,
   }) {
-    return LivechatTheme(
+    return TalqTheme(
       primaryColor: primaryColor ?? this.primaryColor,
       backgroundColor: backgroundColor ?? this.backgroundColor,
       surfaceColor: surfaceColor ?? this.surfaceColor,

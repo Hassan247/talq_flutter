@@ -1,0 +1,11 @@
+export 'src/bloc/talq_bloc.dart';
+export 'src/bloc/talq_event.dart';
+export 'src/bloc/talq_state.dart';
+export 'src/core/talq_client.dart';
+export 'src/models/models.dart';
+export 'src/state/talq_controller.dart';
+export 'src/theme/talq_theme.dart';
+export 'src/widgets/chat_view.dart';
+export 'src/widgets/talq_fab.dart';
+export 'src/widgets/rooms_list_view.dart';
+export 'src/widgets/talq_sdk_scope.dart';

@@ -6,22 +6,22 @@ import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
 import '../core/device_info_collector.dart';
-import '../core/livechat_error_mapper.dart';
-import '../core/livechat_client.dart';
+import '../core/talq_error_mapper.dart';
+import '../core/talq_client.dart';
 import '../models/models.dart';
-import '../theme/livechat_theme.dart';
-import '../workflows/livechat_use_cases.dart';
+import '../theme/talq_theme.dart';
+import '../workflows/talq_use_cases.dart';
 
-class LivechatController extends ChangeNotifier {
-  final LivechatUseCases _useCases;
+class TalqController extends ChangeNotifier {
+  final TalqUseCases _useCases;
 
-  List<LivechatMessage> _messages = [];
-  final Map<String, List<LivechatMessage>> _messageCache = {};
-  List<LivechatRoom> _rooms = [];
-  List<LivechatFAQ> _faqs = [];
+  List<TalqMessage> _messages = [];
+  final Map<String, List<TalqMessage>> _messageCache = {};
+  List<TalqRoom> _rooms = [];
+  List<TalqFAQ> _faqs = [];
 
   // Paginated FAQs
-  List<LivechatFAQ> _paginatedFaqs = [];
+  List<TalqFAQ> _paginatedFaqs = [];
   bool _faqHasNextPage = false;
   String? _faqEndCursor;
   String _faqSearchQuery = '';
@@ -35,8 +35,8 @@ class LivechatController extends ChangeNotifier {
   bool _isLoading = false;
   bool _isInitialized = false;
   String? _errorMessage;
-  LivechatVisitor? _visitor;
-  LivechatWorkspace? _workspace;
+  TalqVisitor? _visitor;
+  TalqWorkspace? _workspace;
   String? _roomId;
   RoomStatus _roomStatus = RoomStatus.open;
   bool _isRatingSubmitted = false;
@@ -49,20 +49,20 @@ class LivechatController extends ChangeNotifier {
   StreamSubscription? _roomSubscription;
   StreamSubscription? _workspaceSubscription;
   Timer? _typingTimer;
-  LivechatMessage? _replyingTo;
+  TalqMessage? _replyingTo;
   bool _isChatVisible = false;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   int _fetchVersion = 0; // used to cancel stale fetchMessages calls
 
-  LivechatTheme _theme = const LivechatTheme();
+  TalqTheme _theme = const TalqTheme();
 
-  LivechatController(LivechatClient client)
-    : _useCases = LivechatUseCases.fromClient(client);
+  TalqController(TalqClient client)
+    : _useCases = TalqUseCases.fromClient(client);
 
-  List<LivechatMessage> get messages => _messages;
-  List<LivechatRoom> get rooms => _rooms;
-  List<LivechatFAQ> get faqs => _faqs;
-  List<LivechatFAQ> get paginatedFaqs => _paginatedFaqs;
+  List<TalqMessage> get messages => _messages;
+  List<TalqRoom> get rooms => _rooms;
+  List<TalqFAQ> get faqs => _faqs;
+  List<TalqFAQ> get paginatedFaqs => _paginatedFaqs;
   bool get faqHasNextPage => _faqHasNextPage;
   String get faqSearchQuery => _faqSearchQuery;
   bool get isFaqLoading => _isFaqLoading;
@@ -73,13 +73,13 @@ class LivechatController extends ChangeNotifier {
   bool get isLoading => _isLoading;
   bool get isInitialized => _isInitialized;
   String? get errorMessage => _errorMessage;
-  LivechatVisitor? get visitor => _visitor;
-  LivechatWorkspace? get workspace => _workspace;
+  TalqVisitor? get visitor => _visitor;
+  TalqWorkspace? get workspace => _workspace;
   String? get roomId => _roomId;
   RoomStatus get roomStatus => _roomStatus;
-  LivechatTheme get theme => _theme;
+  TalqTheme get theme => _theme;
 
-  LivechatRoom? get currentRoom {
+  TalqRoom? get currentRoom {
     if (_roomId == null) return null;
     try {
       return _rooms.firstWhere((r) => r.id == _roomId);
@@ -88,8 +88,8 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
-  void _cacheMessagesForRoom(String roomId, List<LivechatMessage> messages) {
-    _messageCache[roomId] = List<LivechatMessage>.from(messages);
+  void _cacheMessagesForRoom(String roomId, List<TalqMessage> messages) {
+    _messageCache[roomId] = List<TalqMessage>.from(messages);
   }
 
   void _cacheCurrentRoomMessages() {
@@ -102,7 +102,7 @@ class LivechatController extends ChangeNotifier {
   String? get ratingComment => _ratingComment;
   bool get showRatingPrompt => _showRatingPrompt;
   bool get isAgentTyping => _isAgentTyping;
-  LivechatMessage? get replyingTo => _replyingTo;
+  TalqMessage? get replyingTo => _replyingTo;
   bool get isChatVisible => _isChatVisible;
   AppLifecycleState get lifecycleState => _lifecycleState;
 
@@ -128,7 +128,7 @@ class LivechatController extends ChangeNotifier {
   }
 
   void _setError(Object? error, {required String fallbackMessage}) {
-    final mapped = LivechatErrorMapper.toUserMessage(
+    final mapped = TalqErrorMapper.toUserMessage(
       error,
       fallbackMessage: fallbackMessage,
     );
@@ -159,12 +159,12 @@ class LivechatController extends ChangeNotifier {
     }
   }
 
-  void setReplyingTo(LivechatMessage? message) {
+  void setReplyingTo(TalqMessage? message) {
     _replyingTo = message;
     notifyListeners();
   }
 
-  /// Initializes the livechat session
+  /// Initializes the talq session
   Future<void> initialize({
     String? firstName,
     String? lastName,
@@ -222,9 +222,9 @@ class LivechatController extends ChangeNotifier {
 
       final authData = result.data!['initVisitor'];
       await AuthManager.saveToken(authData['token']);
-      _visitor = LivechatVisitor.fromJson(authData['visitor']);
+      _visitor = TalqVisitor.fromJson(authData['visitor']);
 
-      final ws = LivechatWorkspace.fromJson(authData['workspace']);
+      final ws = TalqWorkspace.fromJson(authData['workspace']);
       final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
       _workspace = ws.copyWith(agentAvatars: avatars);
 
@@ -232,7 +232,7 @@ class LivechatController extends ChangeNotifier {
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
           _theme = _theme.copyWith(
-            primaryColor: LivechatTheme.fromHex(_workspace!.primaryColor),
+            primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
           );
         } catch (_) {
           // invalid hex, keep default
@@ -241,11 +241,11 @@ class LivechatController extends ChangeNotifier {
 
       // Populate FAQs
       final List faqsList = authData['faqs'] ?? [];
-      _faqs = faqsList.map((f) => LivechatFAQ.fromJson(f)).toList();
+      _faqs = faqsList.map((f) => TalqFAQ.fromJson(f)).toList();
 
       // Populate rooms list
       final List roomsList = authData['visitor']['rooms'] ?? [];
-      final newRooms = roomsList.map((r) => LivechatRoom.fromJson(r)).toList();
+      final newRooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
 
       if (capturedVersion != _fetchVersion) {
         return;
@@ -341,7 +341,7 @@ class LivechatController extends ChangeNotifier {
       }
 
       final roomData = result.data!['startNewConversation'];
-      final newRoom = LivechatRoom.fromJson(roomData);
+      final newRoom = TalqRoom.fromJson(roomData);
 
       // Update local state
       _rooms.insert(0, newRoom);
@@ -384,7 +384,7 @@ class LivechatController extends ChangeNotifier {
     if (!result.hasException) {
       _clearError(notify: true);
       final List roomsList = result.data?['visitorRooms'] ?? [];
-      _rooms = roomsList.map((r) => LivechatRoom.fromJson(r)).toList();
+      _rooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
       _sortRooms();
       notifyListeners();
       return;
@@ -441,7 +441,7 @@ class LivechatController extends ChangeNotifier {
 
         final cachedMessages = _messageCache[targetRoomId];
         if (cachedMessages != null) {
-          _messages = List<LivechatMessage>.from(cachedMessages);
+          _messages = List<TalqMessage>.from(cachedMessages);
           _isRoomLoading = false;
         } else {
           _messages = [];
@@ -451,7 +451,7 @@ class LivechatController extends ChangeNotifier {
       } else if (_messages.isEmpty) {
         final cachedMessages = _messageCache[targetRoomId];
         if (cachedMessages != null) {
-          _messages = List<LivechatMessage>.from(cachedMessages);
+          _messages = List<TalqMessage>.from(cachedMessages);
           _isRoomLoading = false;
         } else {
           _isRoomLoading = true;
@@ -519,11 +519,11 @@ class LivechatController extends ChangeNotifier {
     final pageInfo = messagesData?['pageInfo'];
     final List eventList = roomData['events'] ?? [];
 
-    List<LivechatMessage> newMessages = [];
+    List<TalqMessage> newMessages = [];
 
     try {
       newMessages = edges
-          .map((e) => LivechatMessage.fromJson(e['node']))
+          .map((e) => TalqMessage.fromJson(e['node']))
           .toList();
     } catch (e) {
       _setError(e, fallbackMessage: 'Unable to parse messages right now.');
@@ -615,7 +615,7 @@ class LivechatController extends ChangeNotifier {
           );
         } else {
           final roomData = createResult.data!['startNewConversation'];
-          final newRoom = LivechatRoom.fromJson(roomData);
+          final newRoom = TalqRoom.fromJson(roomData);
 
           // Update local state
           _rooms.insert(0, newRoom);
@@ -643,7 +643,7 @@ class LivechatController extends ChangeNotifier {
     // IF tempId was NOT provided, we need to add the optimistic message now.
     // If it WAS provided, it's already in the list (from sendFile).
     if (tempId == null) {
-      final optMsg = LivechatMessage(
+      final optMsg = TalqMessage(
         id: effectiveTempId,
         content: content,
         senderType: SenderType.visitor,
@@ -666,7 +666,7 @@ class LivechatController extends ChangeNotifier {
         final room = _rooms[roomIdx];
         final previewMsg = tempId != null
             ? _messages.firstWhere((m) => m.id == tempId)
-            : LivechatMessage(
+            : TalqMessage(
                 id: effectiveTempId,
                 content: content,
                 senderType: SenderType.visitor,
@@ -677,7 +677,7 @@ class LivechatController extends ChangeNotifier {
                 replyTo: null,
               );
 
-        _rooms[roomIdx] = LivechatRoom(
+        _rooms[roomIdx] = TalqRoom(
           id: room.id,
           status: room.status,
           unreadCount: room.unreadCount,
@@ -707,7 +707,7 @@ class LivechatController extends ChangeNotifier {
 
     if (result.hasException) {
       debugPrint(
-        '[LivechatController] sendMessage failed: ${result.exception}',
+        '[TalqController] sendMessage failed: ${result.exception}',
       );
       _setError(
         result.exception,
@@ -729,10 +729,10 @@ class LivechatController extends ChangeNotifier {
     if (index != -1) {
       final oldMsg = _messages[index];
       final data = result.data!['sendVisitorMessage'];
-      final realMessage = LivechatMessage.fromJson(data);
+      final realMessage = TalqMessage.fromJson(data);
 
       // Preserve read/delivered status if already applied by room pulse
-      final persistedMessage = LivechatMessage(
+      final persistedMessage = TalqMessage(
         id: realMessage.id,
         roomId: realMessage.roomId,
         content: realMessage.content,
@@ -761,7 +761,7 @@ class LivechatController extends ChangeNotifier {
       final roomIdx = _rooms.indexWhere((r) => r.id == _roomId);
       if (roomIdx != -1) {
         final room = _rooms[roomIdx];
-        _rooms[roomIdx] = LivechatRoom(
+        _rooms[roomIdx] = TalqRoom(
           id: room.id,
           status: room.status,
           unreadCount: room.unreadCount,
@@ -802,7 +802,7 @@ class LivechatController extends ChangeNotifier {
     final messageContent = trimmedCaption.isNotEmpty
         ? trimmedCaption
         : (contentType == ContentType.image ? ' ' : fileName);
-    final optMsg = LivechatMessage(
+    final optMsg = TalqMessage(
       id: tempId,
       content: messageContent,
       senderType: SenderType.visitor,
@@ -836,7 +836,7 @@ class LivechatController extends ChangeNotifier {
       // 4. No need to remove temporary optimistic message anymore,
       // sendMessage will replace it instead of creating a new one.
     } catch (e) {
-      debugPrint('[LivechatController] sendFile failed: $e');
+      debugPrint('[TalqController] sendFile failed: $e');
       _setError(e, fallbackMessage: 'Unable to upload file right now.');
       _markMessageUploadFailed(tempId);
       notifyListeners();
@@ -889,7 +889,7 @@ class LivechatController extends ChangeNotifier {
     if (roomIndex != -1) {
       final room = _rooms[roomIndex];
       if (room.visitorUnreadCount > 0) {
-        _rooms[roomIndex] = LivechatRoom(
+        _rooms[roomIndex] = TalqRoom(
           id: room.id,
           status: room.status,
           unreadCount: room.unreadCount,
@@ -932,7 +932,7 @@ class LivechatController extends ChangeNotifier {
     _messageSubscription = _useCases.subscribeVisitorNewMessage().listen(
       (result) async {
         if (result.data != null) {
-          final newMessage = LivechatMessage.fromJson(
+          final newMessage = TalqMessage.fromJson(
             result.data!['visitorNewMessage'],
           );
 
@@ -940,7 +940,7 @@ class LivechatController extends ChangeNotifier {
           final roomIndex = _rooms.indexWhere((r) => r.id == newMessage.roomId);
           if (roomIndex != -1) {
             final room = _rooms[roomIndex];
-            _rooms[roomIndex] = LivechatRoom(
+            _rooms[roomIndex] = TalqRoom(
               id: room.id,
               status: room.status,
               unreadCount: room.unreadCount,
@@ -976,7 +976,7 @@ class LivechatController extends ChangeNotifier {
             if (existingIdx != -1) {
               // Message exists, preserve status during replacement
               final oldMsg = _messages[existingIdx];
-              final persistedMessage = LivechatMessage(
+              final persistedMessage = TalqMessage(
                 id: newMessage.id,
                 roomId: newMessage.roomId,
                 content: newMessage.content,
@@ -1011,7 +1011,7 @@ class LivechatController extends ChangeNotifier {
         }
       },
       onError: (error) {
-        debugPrint('[LivechatController] Message Subscription Error: $error');
+        debugPrint('[TalqController] Message Subscription Error: $error');
       },
     );
 
@@ -1029,7 +1029,7 @@ class LivechatController extends ChangeNotifier {
 
           // 1. Update the main rooms list
           final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
-          final newRoom = LivechatRoom.fromJson(roomData);
+          final newRoom = TalqRoom.fromJson(roomData);
 
           if (roomIndex != -1) {
             final existingRoom = _rooms[roomIndex];
@@ -1044,7 +1044,7 @@ class LivechatController extends ChangeNotifier {
               );
             }
 
-            _rooms[roomIndex] = LivechatRoom(
+            _rooms[roomIndex] = TalqRoom(
               id: newRoom.id,
               status: newRoom.status,
               unreadCount: newRoom.unreadCount,
@@ -1133,7 +1133,7 @@ class LivechatController extends ChangeNotifier {
                 if ((shouldMarkRead && !m.isRead) ||
                     (shouldMarkDelivered && !m.isDelivered)) {
                   changed = true;
-                  return LivechatMessage(
+                  return TalqMessage(
                     id: m.id,
                     roomId: m.roomId,
                     content: m.content,
@@ -1168,7 +1168,7 @@ class LivechatController extends ChangeNotifier {
         }
       },
       onError: (error) {
-        debugPrint('[LivechatController] Room Subscription Error: $error');
+        debugPrint('[TalqController] Room Subscription Error: $error');
       },
     );
   }
@@ -1180,7 +1180,7 @@ class LivechatController extends ChangeNotifier {
       (result) {
         if (result.data != null) {
           final wsData = result.data!['visitorWorkspaceUpdated'];
-          final newWorkspace = LivechatWorkspace.fromJson(wsData);
+          final newWorkspace = TalqWorkspace.fromJson(wsData);
 
           // preserve agent avatars from existing workspace
           final avatars = _workspace?.agentAvatars ?? [];
@@ -1190,10 +1190,10 @@ class LivechatController extends ChangeNotifier {
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               _theme = _theme.copyWith(
-                primaryColor: LivechatTheme.fromHex(_workspace!.primaryColor),
+                primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
               );
               debugPrint(
-                '[LivechatController] Theme updated: primaryColor=${_workspace!.primaryColor}',
+                '[TalqController] Theme updated: primaryColor=${_workspace!.primaryColor}',
               );
             } catch (_) {
               // invalid hex, keep current theme
@@ -1204,7 +1204,7 @@ class LivechatController extends ChangeNotifier {
         }
       },
       onError: (error) {
-        debugPrint('[LivechatController] Workspace Subscription Error: $error');
+        debugPrint('[TalqController] Workspace Subscription Error: $error');
       },
     );
   }
@@ -1236,7 +1236,7 @@ class LivechatController extends ChangeNotifier {
           },
           onError: (error) {
             debugPrint(
-              '[LivechatController] Typing Subscription Error: $error',
+              '[TalqController] Typing Subscription Error: $error',
             );
           },
         );
@@ -1334,7 +1334,7 @@ class LivechatController extends ChangeNotifier {
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
         final oldMsg = _messages[messageIndex];
-        _messages[messageIndex] = LivechatMessage(
+        _messages[messageIndex] = TalqMessage(
           id: oldMsg.id,
           roomId: oldMsg.roomId,
           content: oldMsg.content,
@@ -1376,7 +1376,7 @@ class LivechatController extends ChangeNotifier {
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
         final oldMsg = _messages[messageIndex];
-        _messages[messageIndex] = LivechatMessage(
+        _messages[messageIndex] = TalqMessage(
           id: oldMsg.id,
           roomId: oldMsg.roomId,
           content: oldMsg.content,

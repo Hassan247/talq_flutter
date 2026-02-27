@@ -6,13 +6,13 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
 import '../models/models.dart';
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 
 class FAQListView extends StatefulWidget {
-  final LivechatTheme theme;
+  final TalqTheme theme;
 
-  const FAQListView({super.key, this.theme = const LivechatTheme()});
+  const FAQListView({super.key, this.theme = const TalqTheme()});
 
   @override
   State<FAQListView> createState() => _FAQListViewState();
@@ -31,7 +31,7 @@ class _FAQListViewState extends State<FAQListView> {
 
     // Initial fetch if empty
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = context.read<LivechatController>();
+      final controller = context.read<TalqController>();
       if (controller.paginatedFaqs.isEmpty) {
         controller.fetchFaqs(reload: true);
       }
@@ -50,14 +50,14 @@ class _FAQListViewState extends State<FAQListView> {
   void _onScroll() {
     if (_scrollController.position.pixels >=
         _scrollController.position.maxScrollExtent - 200) {
-      context.read<LivechatController>().fetchFaqs();
+      context.read<TalqController>().fetchFaqs();
     }
   }
 
   void _onSearchChanged(String query) {
     if (_debounce?.isActive ?? false) _debounce?.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
-      context.read<LivechatController>().fetchFaqs(query: query);
+      context.read<TalqController>().fetchFaqs(query: query);
     });
   }
 
@@ -74,7 +74,7 @@ class _FAQListViewState extends State<FAQListView> {
           leading: IconButton(
             icon: SvgPicture.asset(
               'assets/icons/arrow-left.svg',
-              package: 'livechat_sdk',
+              package: 'talq_sdk',
               colorFilter: ColorFilter.mode(
                 widget.theme.titleStyle.color!,
                 BlendMode.srcIn,
@@ -97,7 +97,7 @@ class _FAQListViewState extends State<FAQListView> {
           children: [
             _buildSearchBar(),
             Expanded(
-              child: Consumer<LivechatController>(
+              child: Consumer<TalqController>(
                 builder: (context, controller, _) {
                   final faqs = controller.paginatedFaqs;
 
@@ -221,7 +221,7 @@ class _FAQListViewState extends State<FAQListView> {
     );
   }
 
-  Widget _buildFAQCard(BuildContext context, LivechatFAQ faq) {
+  Widget _buildFAQCard(BuildContext context, TalqFAQ faq) {
     return Container(
       decoration: BoxDecoration(
         color: widget.theme.surfaceColor,
@@ -262,7 +262,7 @@ class _FAQListViewState extends State<FAQListView> {
                   ),
                   child: SvgPicture.asset(
                     'assets/icons/article.svg',
-                    package: 'livechat_sdk',
+                    package: 'talq_sdk',
                     colorFilter: ColorFilter.mode(
                       widget.theme.primaryColor, // Use primary color for icon
                       BlendMode.srcIn,
@@ -284,7 +284,7 @@ class _FAQListViewState extends State<FAQListView> {
                 const SizedBox(width: 10),
                 SvgPicture.asset(
                   'assets/icons/arrow-right.svg',
-                  package: 'livechat_sdk',
+                  package: 'talq_sdk',
                   colorFilter: ColorFilter.mode(
                     widget.theme.subtitleStyle.color!.withValues(alpha: 0.5),
                     BlendMode.srcIn,
@@ -302,13 +302,13 @@ class _FAQListViewState extends State<FAQListView> {
 }
 
 class FAQDetailView extends StatefulWidget {
-  final LivechatFAQ faq;
-  final LivechatTheme theme;
+  final TalqFAQ faq;
+  final TalqTheme theme;
 
   const FAQDetailView({
     super.key,
     required this.faq,
-    this.theme = const LivechatTheme(),
+    this.theme = const TalqTheme(),
   });
 
   @override
@@ -327,7 +327,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
       _isHelpful = helpful;
     });
 
-    final controller = context.read<LivechatController>();
+    final controller = context.read<TalqController>();
     await controller.voteFAQ(widget.faq.id, helpful);
   }
 
@@ -342,7 +342,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
         leading: IconButton(
           icon: SvgPicture.asset(
             'assets/icons/arrow-left.svg',
-            package: 'livechat_sdk',
+            package: 'talq_sdk',
             colorFilter: ColorFilter.mode(
               widget.theme.titleStyle.color!,
               BlendMode.srcIn,

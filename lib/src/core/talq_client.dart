@@ -8,7 +8,7 @@ import 'package:path/path.dart' as path;
 
 import 'auth_manager.dart';
 
-class LivechatClient {
+class TalqClient {
   static const Duration _connectTimeout = Duration(seconds: 15);
   static const Duration _sendTimeout = Duration(seconds: 30);
   static const Duration _receiveTimeout = Duration(seconds: 30);
@@ -28,7 +28,7 @@ class LivechatClient {
   final String wsUrl;
   final String apiKey;
 
-  LivechatClient({
+  TalqClient({
     required this.httpUrl,
     required this.wsUrl,
     required this.apiKey,

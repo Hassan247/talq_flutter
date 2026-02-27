@@ -2,13 +2,13 @@ import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 
 import '../models/models.dart';
-import '../state/livechat_controller.dart';
-import '../theme/livechat_theme.dart';
+import '../state/talq_controller.dart';
+import '../theme/talq_theme.dart';
 
-enum LivechatStatus { initial, loading, ready, failure }
+enum TalqStatus { initial, loading, ready, failure }
 
-class LivechatState extends Equatable {
-  final LivechatStatus status;
+class TalqState extends Equatable {
+  final TalqStatus status;
   final bool isInitialized;
   final bool isLoading;
   final bool isRoomLoading;
@@ -26,18 +26,18 @@ class LivechatState extends Equatable {
   final String? errorMessage;
   final int? rating;
   final String? ratingComment;
-  final LivechatVisitor? visitor;
-  final LivechatWorkspace? workspace;
-  final LivechatMessage? replyingTo;
-  final LivechatTheme theme;
-  final List<LivechatRoom> rooms;
-  final List<LivechatMessage> messages;
-  final List<LivechatFAQ> faqs;
-  final List<LivechatFAQ> paginatedFaqs;
+  final TalqVisitor? visitor;
+  final TalqWorkspace? workspace;
+  final TalqMessage? replyingTo;
+  final TalqTheme theme;
+  final List<TalqRoom> rooms;
+  final List<TalqMessage> messages;
+  final List<TalqFAQ> faqs;
+  final List<TalqFAQ> paginatedFaqs;
   final String faqSearchQuery;
 
-  const LivechatState({
-    this.status = LivechatStatus.initial,
+  const TalqState({
+    this.status = TalqStatus.initial,
     this.isInitialized = false,
     this.isLoading = false,
     this.isRoomLoading = false,
@@ -58,7 +58,7 @@ class LivechatState extends Equatable {
     this.visitor,
     this.workspace,
     this.replyingTo,
-    this.theme = const LivechatTheme(),
+    this.theme = const TalqTheme(),
     this.rooms = const [],
     this.messages = const [],
     this.faqs = const [],
@@ -66,8 +66,8 @@ class LivechatState extends Equatable {
     this.faqSearchQuery = '',
   });
 
-  factory LivechatState.fromController(LivechatController controller) {
-    return LivechatState(
+  factory TalqState.fromController(TalqController controller) {
+    return TalqState(
       status: _deriveStatus(controller),
       isInitialized: controller.isInitialized,
       isLoading: controller.isLoading,
@@ -90,16 +90,16 @@ class LivechatState extends Equatable {
       workspace: controller.workspace,
       replyingTo: controller.replyingTo,
       theme: controller.theme,
-      rooms: List<LivechatRoom>.unmodifiable(controller.rooms),
-      messages: List<LivechatMessage>.unmodifiable(controller.messages),
-      faqs: List<LivechatFAQ>.unmodifiable(controller.faqs),
-      paginatedFaqs: List<LivechatFAQ>.unmodifiable(controller.paginatedFaqs),
+      rooms: List<TalqRoom>.unmodifiable(controller.rooms),
+      messages: List<TalqMessage>.unmodifiable(controller.messages),
+      faqs: List<TalqFAQ>.unmodifiable(controller.faqs),
+      paginatedFaqs: List<TalqFAQ>.unmodifiable(controller.paginatedFaqs),
       faqSearchQuery: controller.faqSearchQuery,
     );
   }
 
-  LivechatState copyWith({
-    LivechatStatus? status,
+  TalqState copyWith({
+    TalqStatus? status,
     bool? isInitialized,
     bool? isLoading,
     bool? isRoomLoading,
@@ -117,17 +117,17 @@ class LivechatState extends Equatable {
     String? errorMessage,
     int? rating,
     String? ratingComment,
-    LivechatVisitor? visitor,
-    LivechatWorkspace? workspace,
-    LivechatMessage? replyingTo,
-    LivechatTheme? theme,
-    List<LivechatRoom>? rooms,
-    List<LivechatMessage>? messages,
-    List<LivechatFAQ>? faqs,
-    List<LivechatFAQ>? paginatedFaqs,
+    TalqVisitor? visitor,
+    TalqWorkspace? workspace,
+    TalqMessage? replyingTo,
+    TalqTheme? theme,
+    List<TalqRoom>? rooms,
+    List<TalqMessage>? messages,
+    List<TalqFAQ>? faqs,
+    List<TalqFAQ>? paginatedFaqs,
     String? faqSearchQuery,
   }) {
-    return LivechatState(
+    return TalqState(
       status: status ?? this.status,
       isInitialized: isInitialized ?? this.isInitialized,
       isLoading: isLoading ?? this.isLoading,
@@ -189,18 +189,18 @@ class LivechatState extends Equatable {
     faqSearchQuery,
   ];
 
-  static LivechatStatus _deriveStatus(LivechatController controller) {
+  static TalqStatus _deriveStatus(TalqController controller) {
     if (!controller.isInitialized && !controller.isLoading) {
-      return LivechatStatus.initial;
+      return TalqStatus.initial;
     }
     if (controller.isLoading ||
         controller.isRoomLoading ||
         controller.isFaqLoading) {
-      return LivechatStatus.loading;
+      return TalqStatus.loading;
     }
     if ((controller.errorMessage ?? '').isNotEmpty) {
-      return LivechatStatus.failure;
+      return TalqStatus.failure;
     }
-    return LivechatStatus.ready;
+    return TalqStatus.ready;
   }
 }

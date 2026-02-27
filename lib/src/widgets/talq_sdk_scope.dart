@@ -4,17 +4,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:provider/provider.dart';
 
-import '../bloc/livechat_bloc.dart';
-import '../core/livechat_client.dart';
-import '../state/livechat_controller.dart';
+import '../bloc/talq_bloc.dart';
+import '../core/talq_client.dart';
+import '../state/talq_controller.dart';
 
-class LivechatSdkScope extends StatefulWidget {
-  final LivechatClient client;
+class TalqSdkScope extends StatefulWidget {
+  final TalqClient client;
   final Widget child;
   final bool provideBloc;
-  final LivechatController? controller;
+  final TalqController? controller;
 
-  const LivechatSdkScope({
+  const TalqSdkScope({
     super.key,
     required this.client,
     required this.child,
@@ -23,21 +23,21 @@ class LivechatSdkScope extends StatefulWidget {
   });
 
   @override
-  State<LivechatSdkScope> createState() => _LivechatSdkScopeState();
+  State<TalqSdkScope> createState() => _TalqSdkScopeState();
 }
 
-class _LivechatSdkScopeState extends State<LivechatSdkScope> {
-  late final LivechatController _controller;
+class _TalqSdkScopeState extends State<TalqSdkScope> {
+  late final TalqController _controller;
   late final bool _ownsController;
-  LivechatBloc? _bloc;
+  TalqBloc? _bloc;
 
   @override
   void initState() {
     super.initState();
     _ownsController = widget.controller == null;
-    _controller = widget.controller ?? LivechatController(widget.client);
+    _controller = widget.controller ?? TalqController(widget.client);
     if (widget.provideBloc) {
-      _bloc = LivechatBloc(controller: _controller);
+      _bloc = TalqBloc(controller: _controller);
     }
   }
 
@@ -54,7 +54,7 @@ class _LivechatSdkScopeState extends State<LivechatSdkScope> {
 
   @override
   Widget build(BuildContext context) {
-    final child = ChangeNotifierProvider<LivechatController>.value(
+    final child = ChangeNotifierProvider<TalqController>.value(
       value: _controller,
       child: widget.child,
     );
@@ -63,6 +63,6 @@ class _LivechatSdkScopeState extends State<LivechatSdkScope> {
       return child;
     }
 
-    return BlocProvider<LivechatBloc>.value(value: _bloc!, child: child);
+    return BlocProvider<TalqBloc>.value(value: _bloc!, child: child);
   }
 }
