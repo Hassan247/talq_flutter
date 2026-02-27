@@ -30,26 +30,8 @@ class TalqFAB extends StatelessWidget {
     return FloatingActionButton(
       onPressed: () {
         Navigator.of(context).push(
-          PageRouteBuilder(
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                RoomsListView(theme: activeTheme),
-            transitionsBuilder:
-                (context, animation, secondaryAnimation, child) {
-                  const begin = 0.0;
-                  const end = 1.0;
-                  const curve = Curves.easeOutBack;
-
-                  var tween = Tween(
-                    begin: begin,
-                    end: end,
-                  ).chain(CurveTween(curve: curve));
-
-                  return ScaleTransition(
-                    scale: animation.drive(tween),
-                    alignment: Alignment.bottomRight,
-                    child: child,
-                  );
-                },
+          MaterialPageRoute(
+            builder: (context) => RoomsListView(theme: activeTheme),
           ),
         );
       },
