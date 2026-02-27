@@ -36,19 +36,18 @@ class TalqClient {
   final String wsUrl;
   final String apiKey;
 
-  TalqClient({
-    required String apiKey,
-  }) : apiKey = _requireNonEmpty(apiKey, 'apiKey'),
-       httpUrl = _requireNonEmpty(_defaultHttpUrl, 'TALQ_SDK_HTTP_URL'),
-       wsUrl = _requireNonEmpty(_defaultWsUrl, 'TALQ_SDK_WS_URL'),
-       _dio = Dio(
-         BaseOptions(
-           connectTimeout: _connectTimeout,
-           sendTimeout: _sendTimeout,
-           receiveTimeout: _receiveTimeout,
-         ),
-       ),
-       _graphqlHttpClient = _TimeoutHttpClient(timeout: _receiveTimeout) {
+  TalqClient({required String apiKey, String? httpUrl, String? wsUrl})
+    : apiKey = _requireNonEmpty(apiKey, 'apiKey'),
+      httpUrl = _requireNonEmpty(httpUrl ?? _defaultHttpUrl, 'httpUrl'),
+      wsUrl = _requireNonEmpty(wsUrl ?? _defaultWsUrl, 'wsUrl'),
+      _dio = Dio(
+        BaseOptions(
+          connectTimeout: _connectTimeout,
+          sendTimeout: _sendTimeout,
+          receiveTimeout: _receiveTimeout,
+        ),
+      ),
+      _graphqlHttpClient = _TimeoutHttpClient(timeout: _receiveTimeout) {
     _configureDio();
   }
 
@@ -60,11 +59,18 @@ class TalqClient {
     return normalized;
   }
 
+  static bool _isNgrokUrl(String url) =>
+      url.contains('ngrok-free.app') || url.contains('ngrok.app');
+
   void _configureDio() {
+    final isNgrokEndpoint = _isNgrokUrl(httpUrl);
     _dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) async {
           options.headers['X-Api-Key'] = apiKey;
+          if (isNgrokEndpoint) {
+            options.headers['ngrok-skip-browser-warning'] = 'true';
+          }
           final token = await AuthManager.getToken();
           if (token != null && token.isNotEmpty) {
             options.headers['Authorization'] = 'Bearer $token';
@@ -92,9 +98,15 @@ class TalqClient {
 
   /// Initializes the GraphQL client with proper links and authentication
   Future<void> init() async {
+    final isNgrokEndpoint = _isNgrokUrl(httpUrl);
+    final httpHeaders = <String, String>{'X-Api-Key': apiKey};
+    if (isNgrokEndpoint) {
+      httpHeaders['ngrok-skip-browser-warning'] = 'true';
+    }
+
     final HttpLink httpLink = HttpLink(
       httpUrl,
-      defaultHeaders: {'X-Api-Key': apiKey},
+      defaultHeaders: httpHeaders,
       httpClient: _graphqlHttpClient,
     );
 
@@ -112,7 +124,11 @@ class TalqClient {
         inactivityTimeout: const Duration(seconds: 30),
         initialPayload: () async {
           final token = await AuthManager.getToken();
-          return token != null ? {'Authorization': 'Bearer $token'} : null;
+          final payload = <String, String>{'X-Api-Key': apiKey};
+          if (token != null && token.isNotEmpty) {
+            payload['Authorization'] = 'Bearer $token';
+          }
+          return payload;
         },
       ),
     );
