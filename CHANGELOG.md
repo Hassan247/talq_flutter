@@ -1,7 +1,7 @@
 ## 0.1.1
 
 - Made `TalqClient` API-key-first: only `apiKey` is required for standard integration.
-- Added internal default Talq endpoints, with optional overrides kept for advanced/self-host setups.
+- Added internal default Talq endpoints managed inside the SDK.
 - Simplified example and docs to require only `TALQ_API_KEY`.
 
 ## 0.1.0

@@ -38,11 +38,9 @@ class TalqClient {
 
   TalqClient({
     required String apiKey,
-    String? httpUrl,
-    String? wsUrl,
   }) : apiKey = _requireNonEmpty(apiKey, 'apiKey'),
-       httpUrl = _resolveEndpoint(httpUrl, _defaultHttpUrl, 'httpUrl'),
-       wsUrl = _resolveEndpoint(wsUrl, _defaultWsUrl, 'wsUrl'),
+       httpUrl = _requireNonEmpty(_defaultHttpUrl, 'TALQ_SDK_HTTP_URL'),
+       wsUrl = _requireNonEmpty(_defaultWsUrl, 'TALQ_SDK_WS_URL'),
        _dio = Dio(
          BaseOptions(
            connectTimeout: _connectTimeout,
@@ -58,18 +56,6 @@ class TalqClient {
     final normalized = value.trim();
     if (normalized.isEmpty) {
       throw ArgumentError.value(value, label, 'must not be empty');
-    }
-    return normalized;
-  }
-
-  static String _resolveEndpoint(
-    String? override,
-    String fallback,
-    String label,
-  ) {
-    final normalized = (override ?? fallback).trim();
-    if (normalized.isEmpty) {
-      throw ArgumentError.value(override, label, 'must not be empty');
     }
     return normalized;
   }
