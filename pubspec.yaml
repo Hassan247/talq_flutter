@@ -1,6 +1,6 @@
 name: talq_sdk
 description: A standard Flutter SDK for integrating talq into any mobile app.
-version: 0.1.0
+version: 0.1.1
 homepage: https://github.com/hassan247/talq-flutter-sdk
 
 environment:

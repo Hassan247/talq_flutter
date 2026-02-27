@@ -12,6 +12,14 @@ class TalqClient {
   static const Duration _connectTimeout = Duration(seconds: 15);
   static const Duration _sendTimeout = Duration(seconds: 30);
   static const Duration _receiveTimeout = Duration(seconds: 30);
+  static const String _defaultHttpUrl = String.fromEnvironment(
+    'TALQ_SDK_HTTP_URL',
+    defaultValue: 'https://api.talq.app/graphql',
+  );
+  static const String _defaultWsUrl = String.fromEnvironment(
+    'TALQ_SDK_WS_URL',
+    defaultValue: 'wss://api.talq.app/graphql',
+  );
 
   static final Dio _downloadDio = Dio(
     BaseOptions(
@@ -29,19 +37,41 @@ class TalqClient {
   final String apiKey;
 
   TalqClient({
-    required this.httpUrl,
-    required this.wsUrl,
-    required this.apiKey,
-  }) : _dio = Dio(
+    required String apiKey,
+    String? httpUrl,
+    String? wsUrl,
+  }) : apiKey = _requireNonEmpty(apiKey, 'apiKey'),
+       httpUrl = _resolveEndpoint(httpUrl, _defaultHttpUrl, 'httpUrl'),
+       wsUrl = _resolveEndpoint(wsUrl, _defaultWsUrl, 'wsUrl'),
+       _dio = Dio(
          BaseOptions(
            connectTimeout: _connectTimeout,
            sendTimeout: _sendTimeout,
            receiveTimeout: _receiveTimeout,
-           headers: {'X-Api-Key': apiKey},
          ),
        ),
        _graphqlHttpClient = _TimeoutHttpClient(timeout: _receiveTimeout) {
     _configureDio();
+  }
+
+  static String _requireNonEmpty(String value, String label) {
+    final normalized = value.trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError.value(value, label, 'must not be empty');
+    }
+    return normalized;
+  }
+
+  static String _resolveEndpoint(
+    String? override,
+    String fallback,
+    String label,
+  ) {
+    final normalized = (override ?? fallback).trim();
+    if (normalized.isEmpty) {
+      throw ArgumentError.value(override, label, 'must not be empty');
+    }
+    return normalized;
   }
 
   void _configureDio() {

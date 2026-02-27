@@ -2,8 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talq_sdk/talq_sdk.dart';
 
-const _httpUrl = String.fromEnvironment('TALQ_HTTP_URL');
-const _wsUrl = String.fromEnvironment('TALQ_WS_URL');
 const _apiKey = String.fromEnvironment('TALQ_API_KEY');
 
 void main() {
@@ -14,8 +12,7 @@ void main() {
 class TalqExampleApp extends StatelessWidget {
   const TalqExampleApp({super.key});
 
-  bool get _isConfigured =>
-      _httpUrl.isNotEmpty && _wsUrl.isNotEmpty && _apiKey.isNotEmpty;
+  bool get _isConfigured => _apiKey.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
@@ -24,8 +21,6 @@ class TalqExampleApp extends StatelessWidget {
     }
 
     final client = TalqClient(
-      httpUrl: _httpUrl,
-      wsUrl: _wsUrl,
       apiKey: _apiKey,
     );
 
@@ -129,11 +124,9 @@ class _ConfigurationErrorScreen extends StatelessWidget {
       body: const Padding(
         padding: EdgeInsets.all(20),
         child: Text(
-          'Missing required --dart-define values.\n\n'
+          'Missing required API key.\n\n'
           'Run with:\n'
           'flutter run '
-          '--dart-define=TALQ_HTTP_URL=https://your-domain.com/graphql '
-          '--dart-define=TALQ_WS_URL=wss://your-domain.com/graphql '
           '--dart-define=TALQ_API_KEY=lc_your_api_key',
         ),
       ),

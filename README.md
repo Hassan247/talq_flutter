@@ -27,8 +27,6 @@ A standard, easy-to-use Flutter SDK for integrating premium talq into any mobile
 
    ```dart
    final talqApi = TalqClient(
-     httpUrl: 'https://api.yourdomain.com/graphql',
-     wsUrl: 'wss://api.yourdomain.com/graphql',
      apiKey: 'YOUR_API_KEY', // Found in your workspace settings
    );
 
@@ -39,6 +37,8 @@ A standard, easy-to-use Flutter SDK for integrating premium talq into any mobile
      ),
    );
    ```
+
+   `TalqClient` uses Talq-managed default endpoints internally. Integrators only need an API key.
 
 3. Call `initialize()` through either BLoC events or the controller:
 
