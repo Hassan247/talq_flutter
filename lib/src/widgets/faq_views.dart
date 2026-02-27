@@ -113,8 +113,9 @@ class _FAQListViewState extends State<FAQListView> {
                           Icon(
                             Icons.help_outline,
                             size: 64,
-                            color: widget.theme.subtitleStyle.color
-                                ?.withOpacity(0.5),
+                            color: widget.theme.subtitleStyle.color?.withValues(
+                              alpha: 0.5,
+                            ),
                           ),
                           const SizedBox(height: 16),
                           Text(
@@ -207,7 +208,7 @@ class _FAQListViewState extends State<FAQListView> {
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide(
-              color: widget.theme.primaryColor.withOpacity(0.3),
+              color: widget.theme.primaryColor.withValues(alpha: 0.3),
               width: 1,
             ),
           ),
@@ -226,12 +227,12 @@ class _FAQListViewState extends State<FAQListView> {
         color: widget.theme.surfaceColor,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: widget.theme.cardShadowColor.withOpacity(0.08),
+          color: widget.theme.cardShadowColor.withValues(alpha: 0.08),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: widget.theme.cardShadowColor.withOpacity(0.04),
+            color: widget.theme.cardShadowColor.withValues(alpha: 0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -285,7 +286,7 @@ class _FAQListViewState extends State<FAQListView> {
                   'assets/icons/arrow-right.svg',
                   package: 'livechat_sdk',
                   colorFilter: ColorFilter.mode(
-                    widget.theme.subtitleStyle.color!.withOpacity(0.5),
+                    widget.theme.subtitleStyle.color!.withValues(alpha: 0.5),
                     BlendMode.srcIn,
                   ),
                   width: 14,
@@ -368,7 +369,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: widget.theme.primaryColor.withOpacity(0.1),
+                color: widget.theme.primaryColor.withValues(alpha: 0.1),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Text(
@@ -398,7 +399,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
                 p: widget.theme.bodyStyle.copyWith(
                   height: 1.7,
                   fontSize: 16,
-                  color: widget.theme.titleStyle.color?.withOpacity(0.7),
+                  color: widget.theme.titleStyle.color?.withValues(alpha: 0.7),
                 ),
                 h1: widget.theme.titleStyle.copyWith(
                   fontSize: 24,
@@ -425,10 +426,10 @@ class _FAQDetailViewState extends State<FAQDetailView> {
   Widget _buildFeedbackSection() {
     return Container(
       decoration: BoxDecoration(
-        color: widget.theme.backgroundColor.withOpacity(0.5),
+        color: widget.theme.backgroundColor.withValues(alpha: 0.5),
         borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: widget.theme.cardShadowColor.withOpacity(0.08),
+          color: widget.theme.cardShadowColor.withValues(alpha: 0.08),
           width: 1,
         ),
       ),
@@ -444,7 +445,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           Container(
             padding: const EdgeInsets.all(12),
             decoration: BoxDecoration(
-              color: widget.theme.resolvedTextColor.withOpacity(0.1),
+              color: widget.theme.resolvedTextColor.withValues(alpha: 0.1),
               shape: BoxShape.circle,
             ),
             child: Icon(
@@ -496,7 +497,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
             style: widget.theme.subtitleStyle.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w700,
-              color: widget.theme.titleStyle.color?.withOpacity(0.5),
+              color: widget.theme.titleStyle.color?.withValues(alpha: 0.5),
               letterSpacing: -0.2,
             ),
           ),
@@ -521,13 +522,15 @@ class _FAQDetailViewState extends State<FAQDetailView> {
         icon: Icon(icon, size: 18),
         label: Text(label),
         style: OutlinedButton.styleFrom(
-          foregroundColor: widget.theme.titleStyle.color?.withOpacity(0.8),
+          foregroundColor: widget.theme.titleStyle.color?.withValues(
+            alpha: 0.8,
+          ),
           padding: const EdgeInsets.symmetric(vertical: 14),
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
           side: BorderSide(
-            color: widget.theme.cardShadowColor.withOpacity(0.12),
+            color: widget.theme.cardShadowColor.withValues(alpha: 0.12),
           ),
           backgroundColor: widget.theme.surfaceColor,
           textStyle: const TextStyle(

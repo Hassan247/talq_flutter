@@ -2,9 +2,10 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:crypto/crypto.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
+
+import '../livechat_client.dart';
 
 class PdfMetadata {
   final File? thumbnail;
@@ -55,13 +56,9 @@ class PdfThumbnailHelper {
       if (isRemote) {
         // lowercase comments: download remote file to temp location
         final downloadPath = '${tempDir.path}/${cacheKey}_download.pdf';
-        final response = await http.get(Uri.parse(filePathOrUrl));
-        if (response.statusCode == 200) {
-          await File(downloadPath).writeAsBytes(response.bodyBytes);
-          localPath = downloadPath;
-        } else {
-          return null;
-        }
+        final bytes = await LivechatClient.downloadBytes(filePathOrUrl);
+        await File(downloadPath).writeAsBytes(bytes);
+        localPath = downloadPath;
       }
 
       final file = File(localPath);

@@ -67,7 +67,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: SvgPicture.asset(
@@ -133,7 +133,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                               Container(
                                 padding: const EdgeInsets.all(32),
                                 decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.05),
+                                  color: Colors.white.withValues(alpha: 0.05),
                                   borderRadius: BorderRadius.circular(24),
                                 ),
                                 child: SvgPicture.asset(
@@ -154,7 +154,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                 vertical: 10,
                               ),
                               decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.1),
+                                color: Colors.white.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(20),
                               ),
                               child: Row(
@@ -199,7 +199,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
               MediaQuery.of(context).padding.bottom + 16,
             ),
             decoration: BoxDecoration(
-              color: Colors.black.withOpacity(0.8),
+              color: Colors.black.withValues(alpha: 0.8),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(24),
               ),
@@ -209,10 +209,10 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                 Expanded(
                   child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.15),
+                      color: Colors.white.withValues(alpha: 0.15),
                       borderRadius: BorderRadius.circular(28),
                       border: Border.all(
-                        color: Colors.white.withOpacity(0.1),
+                        color: Colors.white.withValues(alpha: 0.1),
                         width: 1,
                       ),
                     ),
@@ -245,7 +245,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                       shape: BoxShape.circle,
                       boxShadow: [
                         BoxShadow(
-                          color: theme.primaryColor.withOpacity(0.3),
+                          color: theme.primaryColor.withValues(alpha: 0.3),
                           blurRadius: 10,
                           offset: const Offset(0, 4),
                         ),

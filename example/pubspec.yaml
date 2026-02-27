@@ -11,7 +11,7 @@ dependencies:
     sdk: flutter
   livechat_sdk:
     path: ../
-  provider: ^6.1.1
+  flutter_bloc: ^8.1.6
 
 dev_dependencies:
   flutter_test:

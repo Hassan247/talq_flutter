@@ -1,38 +1,45 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:livechat_sdk/livechat_sdk.dart';
-import 'package:provider/provider.dart';
+
+const _httpUrl = String.fromEnvironment('LIVECHAT_HTTP_URL');
+const _wsUrl = String.fromEnvironment('LIVECHAT_WS_URL');
+const _apiKey = String.fromEnvironment('LIVECHAT_API_KEY');
 
 void main() {
-  // 1. Setup the API client
-  final livechatApi = LivechatClient(
-    httpUrl: 'https://0e73-102-90-125-25.ngrok-free.app/graphql',
-    wsUrl: 'wss://0e73-102-90-125-25.ngrok-free.app/graphql',
-    apiKey: 'lc_8b39111a-f6cd-4c14-8ae1-2c86012baf8594bd32e2',
-  );
-
-  runApp(
-    MultiProvider(
-      providers: [
-        ChangeNotifierProvider(create: (_) => LivechatController(livechatApi)),
-      ],
-      child: const MyApp(),
-    ),
-  );
+  WidgetsFlutterBinding.ensureInitialized();
+  runApp(const LivechatExampleApp());
 }
 
-class MyApp extends StatelessWidget {
-  const MyApp({super.key});
+class LivechatExampleApp extends StatelessWidget {
+  const LivechatExampleApp({super.key});
+
+  bool get _isConfigured =>
+      _httpUrl.isNotEmpty && _wsUrl.isNotEmpty && _apiKey.isNotEmpty;
 
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Livechat SDK Example',
-      theme: ThemeData(
-        primarySwatch: Colors.blue,
-        useMaterial3: true,
-        fontFamily: 'packages/livechat_sdk/BricolageGrotesque',
+    if (!_isConfigured) {
+      return const MaterialApp(home: _ConfigurationErrorScreen());
+    }
+
+    final client = LivechatClient(
+      httpUrl: _httpUrl,
+      wsUrl: _wsUrl,
+      apiKey: _apiKey,
+    );
+
+    return LivechatSdkScope(
+      client: client,
+      child: MaterialApp(
+        title: 'Livechat SDK Example',
+        theme: ThemeData(
+          primarySwatch: Colors.blue,
+          useMaterial3: true,
+          fontFamily: 'packages/livechat_sdk/BricolageGrotesque',
+        ),
+        home: const MyHomePage(),
       ),
-      home: const MyHomePage(),
     );
   }
 }
@@ -51,58 +58,83 @@ class _MyHomePageState extends State<MyHomePage> {
   @override
   void initState() {
     super.initState();
-    // 2. Initialize the chat session AFTER the first frame to avoid "setState during build"
-    WidgetsBinding.instance.addPostFrameCallback((_) async {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      final controller = context.read<LivechatController>();
-      final id = _generateUniqueId();
-      await controller.initialize(
-        firstName: 'Visitor',
-        lastName: id,
-        email: 'visitor_$id@example.com',
-      );
+      _initializeVisitor();
     });
+  }
+
+  void _initializeVisitor() {
+    final id = _generateUniqueId();
+    context.read<LivechatBloc>().add(
+      LivechatInitializeRequested(email: 'visitor_$id@example.com'),
+    );
+  }
+
+  Future<void> _resetSession() async {
+    final bloc = context.read<LivechatBloc>();
+    bloc.add(const LivechatResetSessionRequested());
+    final id = _generateUniqueId();
+    bloc.add(LivechatInitializeRequested(email: 'visitor_$id@example.com'));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(title: const Text('My App')),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            const Text('Click the chat button below to start talking!'),
-            const SizedBox(height: 20),
-            ElevatedButton(
-              onPressed: () async {
-                final controller = context.read<LivechatController>();
-                await controller.resetSession();
-                // Re-initialize to register as a new user
-                final id = _generateUniqueId();
-                await controller.initialize(
-                  firstName: 'Visitor',
-                  lastName: id,
-                  email: 'visitor_$id@payasap.com',
-                );
-                if (mounted) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(
-                      content: Text('Session Reset! New identity created.'),
-                    ),
-                  );
-                }
-              },
-              child: const Text('Reset Session'),
+    return BlocConsumer<LivechatBloc, LivechatState>(
+      listenWhen: (previous, current) =>
+          previous.errorMessage != current.errorMessage,
+      listener: (context, state) {
+        if (state.errorMessage == null || state.errorMessage!.isEmpty) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(state.errorMessage!)));
+      },
+      builder: (context, state) {
+        final isBusy = state.status == LivechatStatus.loading;
+
+        return Scaffold(
+          appBar: AppBar(title: const Text('My App')),
+          body: Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                const Text('Click the chat button below to start talking!'),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: isBusy ? null : _resetSession,
+                  child: Text(isBusy ? 'Please wait...' : 'Reset Session'),
+                ),
+              ],
             ),
-          ],
-        ),
-      ),
-      // 3. Drop in the FAB with a custom theme
-      floatingActionButton: const LivechatFAB(
-        theme: LivechatTheme(
-          primaryColor: Colors.deepPurple,
-          darkHeaderColor: Color(0xFF311B92),
+          ),
+          floatingActionButton: const LivechatFAB(
+            theme: LivechatTheme(
+              primaryColor: Colors.deepPurple,
+              darkHeaderColor: Color(0xFF311B92),
+            ),
+          ),
+        );
+      },
+    );
+  }
+}
+
+class _ConfigurationErrorScreen extends StatelessWidget {
+  const _ConfigurationErrorScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(title: const Text('Livechat SDK Example')),
+      body: const Padding(
+        padding: EdgeInsets.all(20),
+        child: Text(
+          'Missing required --dart-define values.\n\n'
+          'Run with:\n'
+          'flutter run '
+          '--dart-define=LIVECHAT_HTTP_URL=https://your-domain.com/graphql '
+          '--dart-define=LIVECHAT_WS_URL=wss://your-domain.com/graphql '
+          '--dart-define=LIVECHAT_API_KEY=lc_your_api_key',
         ),
       ),
     );

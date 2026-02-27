@@ -30,12 +30,12 @@ class FAQListSection extends StatelessWidget {
                 color: theme.surfaceColor,
                 borderRadius: BorderRadius.circular(28),
                 border: Border.all(
-                  color: theme.cardShadowColor.withOpacity(0.08),
+                  color: theme.cardShadowColor.withValues(alpha: 0.08),
                   width: 1,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.cardShadowColor.withOpacity(0.08),
+                    color: theme.cardShadowColor.withValues(alpha: 0.08),
                     blurRadius: 16,
                     offset: const Offset(0, 7),
                   ),
@@ -90,7 +90,7 @@ class FAQListSection extends StatelessWidget {
                     height: 1,
                     indent: 18,
                     endIndent: 18,
-                    color: theme.cardShadowColor.withOpacity(0.08),
+                    color: theme.cardShadowColor.withValues(alpha: 0.08),
                   ),
                   ...displayFaqs.asMap().entries.map((entry) {
                     final index = entry.key;
@@ -102,7 +102,9 @@ class FAQListSection extends StatelessWidget {
                             height: 1,
                             indent: 18,
                             endIndent: 18,
-                            color: theme.cardShadowColor.withOpacity(0.08),
+                            color: theme.cardShadowColor.withValues(
+                              alpha: 0.08,
+                            ),
                           ),
                         _buildResourceItem(
                           context,
@@ -125,7 +127,7 @@ class FAQListSection extends StatelessWidget {
                       height: 1,
                       indent: 18,
                       endIndent: 18,
-                      color: theme.cardShadowColor.withOpacity(0.08),
+                      color: theme.cardShadowColor.withValues(alpha: 0.08),
                     ),
                     Material(
                       color: Colors.transparent,
@@ -160,7 +162,9 @@ class FAQListSection extends StatelessWidget {
                               const Spacer(),
                               Icon(
                                 Icons.arrow_forward_rounded,
-                                color: theme.primaryColor.withOpacity(0.7),
+                                color: theme.primaryColor.withValues(
+                                  alpha: 0.7,
+                                ),
                                 size: 18,
                               ),
                             ],
@@ -207,7 +211,7 @@ class FAQListSection extends StatelessWidget {
                     'assets/icons/article.svg',
                     package: 'livechat_sdk',
                     colorFilter: ColorFilter.mode(
-                      titleColor.withOpacity(0.72),
+                      titleColor.withValues(alpha: 0.72),
                       BlendMode.srcIn,
                     ),
                     width: 22,
@@ -224,7 +228,7 @@ class FAQListSection extends StatelessWidget {
                   style: theme.bodyStyle.copyWith(
                     fontSize: 17,
                     fontWeight: FontWeight.w600,
-                    color: titleColor.withOpacity(0.93),
+                    color: titleColor.withValues(alpha: 0.93),
                     letterSpacing: -0.25,
                     height: 1.25,
                   ),
@@ -233,7 +237,7 @@ class FAQListSection extends StatelessWidget {
               const SizedBox(width: 8),
               Icon(
                 Icons.arrow_forward_ios_rounded,
-                color: subtitleColor.withOpacity(0.4),
+                color: subtitleColor.withValues(alpha: 0.4),
                 size: 16,
               ),
             ],

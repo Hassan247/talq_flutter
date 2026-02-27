@@ -1,9 +1,29 @@
+import 'dart:io';
+
+import 'package:dio/dio.dart';
+import 'package:flutter/foundation.dart';
 import 'package:graphql_flutter/graphql_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:path/path.dart' as path;
 
 import 'auth_manager.dart';
 
 class LivechatClient {
+  static const Duration _connectTimeout = Duration(seconds: 15);
+  static const Duration _sendTimeout = Duration(seconds: 30);
+  static const Duration _receiveTimeout = Duration(seconds: 30);
+
+  static final Dio _downloadDio = Dio(
+    BaseOptions(
+      connectTimeout: _connectTimeout,
+      sendTimeout: _sendTimeout,
+      receiveTimeout: _receiveTimeout,
+    ),
+  );
+
   late GraphQLClient client;
+  final Dio _dio;
+  final http.Client _graphqlHttpClient;
   final String httpUrl;
   final String wsUrl;
   final String apiKey;
@@ -12,13 +32,54 @@ class LivechatClient {
     required this.httpUrl,
     required this.wsUrl,
     required this.apiKey,
-  });
+  }) : _dio = Dio(
+         BaseOptions(
+           connectTimeout: _connectTimeout,
+           sendTimeout: _sendTimeout,
+           receiveTimeout: _receiveTimeout,
+           headers: {'X-Api-Key': apiKey},
+         ),
+       ),
+       _graphqlHttpClient = _TimeoutHttpClient(timeout: _receiveTimeout) {
+    _configureDio();
+  }
+
+  void _configureDio() {
+    _dio.interceptors.add(
+      InterceptorsWrapper(
+        onRequest: (options, handler) async {
+          options.headers['X-Api-Key'] = apiKey;
+          final token = await AuthManager.getToken();
+          if (token != null && token.isNotEmpty) {
+            options.headers['Authorization'] = 'Bearer $token';
+          } else {
+            options.headers.remove('Authorization');
+          }
+          handler.next(options);
+        },
+      ),
+    );
+
+    if (kDebugMode) {
+      _dio.interceptors.add(
+        LogInterceptor(
+          request: true,
+          requestHeader: false,
+          requestBody: false,
+          responseHeader: false,
+          responseBody: false,
+          error: true,
+        ),
+      );
+    }
+  }
 
   /// Initializes the GraphQL client with proper links and authentication
   Future<void> init() async {
     final HttpLink httpLink = HttpLink(
       httpUrl,
       defaultHeaders: {'X-Api-Key': apiKey},
+      httpClient: _graphqlHttpClient,
     );
 
     final AuthLink authLink = AuthLink(
@@ -85,5 +146,68 @@ class LivechatClient {
     return client.subscribe(
       SubscriptionOptions(document: gql(document), variables: variables ?? {}),
     );
+  }
+
+  Future<String> uploadFile(String filePath) async {
+    final uploadUrl = Uri.parse(
+      httpUrl,
+    ).replace(path: '/upload', query: null).toString();
+
+    final response = await _dio.post<Map<String, dynamic>>(
+      uploadUrl,
+      data: FormData.fromMap({
+        'file': await MultipartFile.fromFile(
+          filePath,
+          filename: path.basename(filePath),
+        ),
+      }),
+      options: Options(
+        contentType: 'multipart/form-data',
+        responseType: ResponseType.json,
+      ),
+    );
+
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode < 200 || statusCode >= 300) {
+      throw HttpException('Upload failed with status code $statusCode');
+    }
+
+    final fileUrl = response.data?['url']?.toString();
+    if (fileUrl == null || fileUrl.isEmpty) {
+      throw const FormatException('Upload response is missing a file URL.');
+    }
+    return fileUrl;
+  }
+
+  static Future<List<int>> downloadBytes(String url) async {
+    final response = await _downloadDio.get<List<int>>(
+      url,
+      options: Options(responseType: ResponseType.bytes),
+    );
+
+    final statusCode = response.statusCode ?? 0;
+    if (statusCode < 200 || statusCode >= 300) {
+      throw HttpException('Download failed with status code $statusCode');
+    }
+
+    return response.data ?? const <int>[];
+  }
+}
+
+class _TimeoutHttpClient extends http.BaseClient {
+  final Duration timeout;
+  final http.Client _innerClient;
+
+  _TimeoutHttpClient({required this.timeout, http.Client? innerClient})
+    : _innerClient = innerClient ?? http.Client();
+
+  @override
+  Future<http.StreamedResponse> send(http.BaseRequest request) {
+    return _innerClient.send(request).timeout(timeout);
+  }
+
+  @override
+  void close() {
+    _innerClient.close();
   }
 }

@@ -98,7 +98,11 @@ class LivechatErrorMapper {
       return 'Your session expired. Please reopen chat and try again.';
     }
 
-    if (_containsAny(lower, const ['timed out', 'timeout', 'deadline exceeded'])) {
+    if (_containsAny(lower, const [
+      'timed out',
+      'timeout',
+      'deadline exceeded',
+    ])) {
       return 'Request timed out. Please try again.';
     }
 

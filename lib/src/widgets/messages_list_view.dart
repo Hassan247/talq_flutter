@@ -52,8 +52,8 @@ class MessagesListView extends StatelessWidget {
                       Icon(
                         Icons.chat_bubble_outline_rounded,
                         size: 48,
-                        color: activeTheme.subtitleStyle.color?.withOpacity(
-                          0.5,
+                        color: activeTheme.subtitleStyle.color?.withValues(
+                          alpha: 0.5,
                         ),
                       ),
                       const SizedBox(height: 16),
@@ -136,13 +136,13 @@ class _MessageCard extends StatelessWidget {
         color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(28),
         border: Border.all(
-          color: theme.cardShadowColor.withOpacity(0.08), // Subtle border
+          color: theme.cardShadowColor.withValues(alpha: 0.08), // Subtle border
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor.withOpacity(
-              0.04,
+            color: theme.cardShadowColor.withValues(
+              alpha: 0.04,
             ), // Very subtle shadow
             blurRadius: 12,
             offset: const Offset(0, 4),
@@ -225,11 +225,11 @@ class _MessageCard extends StatelessWidget {
                                 ),
                                 decoration: BoxDecoration(
                                   color: theme.resolvedBackgroundColor
-                                      .withOpacity(0.5),
+                                      .withValues(alpha: 0.5),
                                   borderRadius: BorderRadius.circular(6),
                                   border: Border.all(
-                                    color: theme.resolvedTextColor.withOpacity(
-                                      0.1,
+                                    color: theme.resolvedTextColor.withValues(
+                                      alpha: 0.1,
                                     ),
                                     width: 1,
                                   ),
@@ -239,8 +239,8 @@ class _MessageCard extends StatelessWidget {
                                   style: TextStyle(
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
-                                    color: theme.resolvedTextColor.withOpacity(
-                                      0.8,
+                                    color: theme.resolvedTextColor.withValues(
+                                      alpha: 0.8,
                                     ),
                                     letterSpacing: 0.2,
                                   ),
@@ -293,7 +293,7 @@ class _MessageCard extends StatelessWidget {
                 border: Border.all(color: theme.surfaceColor, width: 3),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.1),
+                    color: Colors.black.withValues(alpha: 0.1),
                     blurRadius: 4,
                     offset: const Offset(0, 2),
                   ),
@@ -335,7 +335,7 @@ class _MessageCard extends StatelessWidget {
       fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
       color: hasUnread
           ? theme.titleStyle.color
-          : theme.titleStyle.color?.withOpacity(0.85),
+          : theme.titleStyle.color?.withValues(alpha: 0.85),
       letterSpacing: -0.4,
       height: 1.2,
     );

@@ -70,7 +70,7 @@ class _RatingViewState extends State<RatingView>
             borderRadius: BorderRadius.circular(28),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.1),
+                color: Colors.black.withValues(alpha: 0.1),
                 blurRadius: 20,
                 offset: const Offset(0, 10),
               ),
@@ -83,7 +83,7 @@ class _RatingViewState extends State<RatingView>
                 width: 60,
                 height: 60,
                 decoration: BoxDecoration(
-                  color: widget.theme.primaryColor.withOpacity(0.1),
+                  color: widget.theme.primaryColor.withValues(alpha: 0.1),
                   shape: BoxShape.circle,
                 ),
                 child: Icon(

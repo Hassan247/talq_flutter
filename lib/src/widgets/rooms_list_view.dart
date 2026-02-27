@@ -179,7 +179,7 @@ class _RoomsListViewState extends State<RoomsListView> {
               theme.primaryColor,
               Colors.black,
               0.45,
-            )!.withOpacity(0.24),
+            )!.withValues(alpha: 0.24),
             blurRadius: 26,
             offset: const Offset(0, 14),
           ),
@@ -191,7 +191,7 @@ class _RoomsListViewState extends State<RoomsListView> {
             top: -120,
             right: -50,
             child: _buildAmbientBlob(
-              color: Colors.white.withOpacity(0.14),
+              color: Colors.white.withValues(alpha: 0.14),
               size: 230,
             ),
           ),
@@ -199,7 +199,7 @@ class _RoomsListViewState extends State<RoomsListView> {
             bottom: -90,
             left: -30,
             child: _buildAmbientBlob(
-              color: Colors.white.withOpacity(0.09),
+              color: Colors.white.withValues(alpha: 0.09),
               size: 190,
             ),
           ),
@@ -218,7 +218,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   children: [
                     _buildWorkspaceBrand(controller),
                     Material(
-                      color: Colors.white.withOpacity(0.14),
+                      color: Colors.white.withValues(alpha: 0.14),
                       shape: const CircleBorder(),
                       child: InkWell(
                         onTap: () => Navigator.pop(context),
@@ -252,7 +252,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Text(
                   'Ask a question, check previous chats, or browse quick answers.',
                   style: TextStyle(
-                    color: Colors.white.withOpacity(0.78),
+                    color: Colors.white.withValues(alpha: 0.78),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     height: 1.35,
@@ -320,10 +320,13 @@ class _RoomsListViewState extends State<RoomsListView> {
       decoration: BoxDecoration(
         color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: Colors.white.withOpacity(0.8), width: 1),
+        border: Border.all(
+          color: Colors.white.withValues(alpha: 0.8),
+          width: 1,
+        ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor.withOpacity(0.1),
+            color: theme.cardShadowColor.withValues(alpha: 0.1),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -358,7 +361,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                     borderRadius: BorderRadius.circular(16),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.primaryColor.withOpacity(0.25),
+                        color: theme.primaryColor.withValues(alpha: 0.25),
                         blurRadius: 14,
                         offset: const Offset(0, 4),
                       ),
@@ -396,7 +399,9 @@ class _RoomsListViewState extends State<RoomsListView> {
                         style: theme.subtitleStyle.copyWith(
                           fontSize: 13,
                           fontWeight: FontWeight.w500,
-                          color: theme.subtitleStyle.color?.withOpacity(0.85),
+                          color: theme.subtitleStyle.color?.withValues(
+                            alpha: 0.85,
+                          ),
                         ),
                       ),
                     ],
@@ -426,7 +431,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                 ],
                 Icon(
                   Icons.arrow_forward_ios_rounded,
-                  color: theme.subtitleStyle.color?.withOpacity(0.42),
+                  color: theme.subtitleStyle.color?.withValues(alpha: 0.42),
                   size: 16,
                 ),
               ],

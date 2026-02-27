@@ -137,7 +137,7 @@ class LivechatMessage {
       );
     } catch (e) {
       if (kDebugMode) {
-        print('Error parsing LivechatMessage: $e. Data: $json');
+        debugPrint('Error parsing LivechatMessage: $e');
       }
       return LivechatMessage(
         id: 'err-${json['id'] ?? DateTime.now().millisecondsSinceEpoch}',

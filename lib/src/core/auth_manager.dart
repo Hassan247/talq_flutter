@@ -1,12 +1,14 @@
-import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:uuid/uuid.dart';
 
 class AuthManager {
-  static const _storage = FlutterSecureStorage();
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+    iOptions: IOSOptions(
+      accessibility: KeychainAccessibility.first_unlock_this_device,
+    ),
+  );
   static const _tokenKey = 'livechat_visitor_token';
   static const _deviceIdKey = 'livechat_device_id_v2';
 
@@ -17,6 +19,7 @@ class AuthManager {
 
   /// Saves the visitor token securely
   static Future<void> saveToken(String token) async {
+    if (token.trim().isEmpty) return;
     await _storage.write(key: _tokenKey, value: token);
   }
 
@@ -27,59 +30,28 @@ class AuthManager {
 
   /// Completely resets the visitor identity (clears token and generates new device ID)
   static Future<void> resetSession() async {
-    if (kDebugMode) {
-      debugPrint('[AuthManager] Resetting session...');
-    }
     await _storage.delete(key: _tokenKey);
-    // generate a new random device id to create a fresh visitor identity
     final newDeviceId = const Uuid().v4();
-    if (kDebugMode) {
-      debugPrint('[AuthManager] Generated NEW device ID: $newDeviceId');
-    }
     await _storage.write(key: _deviceIdKey, value: newDeviceId);
   }
 
   /// Gets or generates a unique device ID
   static Future<String> getDeviceId() async {
     String? deviceId = await _storage.read(key: _deviceIdKey);
-    if (deviceId != null) {
-      if (kDebugMode) {
-        debugPrint('[AuthManager] Using EXISTING device ID: $deviceId');
-      }
+    if (deviceId != null && deviceId.isNotEmpty) {
       return deviceId;
     }
 
-    deviceId = await _calculateDeviceId();
-    if (kDebugMode) {
-      debugPrint(
-        '[AuthManager] Generated FALLBACK/INITIAL device ID: $deviceId',
-      );
-    }
+    deviceId = const Uuid().v4();
     await _storage.write(key: _deviceIdKey, value: deviceId);
     return deviceId;
   }
 
-  static Future<String> _calculateDeviceId() async {
-    final deviceInfo = DeviceInfoPlugin();
-    try {
-      if (Platform.isAndroid) {
-        final androidInfo = await deviceInfo.androidInfo;
-        return androidInfo.id; // Marshmallow and above
-      } else if (Platform.isIOS) {
-        final iosInfo = await deviceInfo.iosInfo;
-        return iosInfo.identifierForVendor ?? const Uuid().v4();
-      }
-    } catch (e) {
-      // Fallback to random UUID if hardware ID fails
-      return const Uuid().v4();
-    }
-    return const Uuid().v4();
-  }
-
   /// Returns the platform string for the backend
   static String getPlatform() {
-    if (Platform.isIOS) return 'IOS';
-    if (Platform.isAndroid) return 'ANDROID';
+    if (kIsWeb) return 'WEB';
+    if (defaultTargetPlatform == TargetPlatform.iOS) return 'IOS';
+    if (defaultTargetPlatform == TargetPlatform.android) return 'ANDROID';
     return 'WEB';
   }
 }

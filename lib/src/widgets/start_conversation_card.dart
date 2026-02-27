@@ -32,7 +32,7 @@ class StartConversationCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(28),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor.withOpacity(0.1),
+            color: theme.cardShadowColor.withValues(alpha: 0.1),
             blurRadius: 18,
             offset: const Offset(0, 8),
           ),
@@ -66,10 +66,10 @@ class StartConversationCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               decoration: BoxDecoration(
-                color: primarySoft.withOpacity(0.3),
+                color: primarySoft.withValues(alpha: 0.3),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(
-                  color: primarySoft.withOpacity(0.9),
+                  color: primarySoft.withValues(alpha: 0.9),
                   width: 1,
                 ),
               ),
@@ -128,7 +128,7 @@ class StartConversationCard extends StatelessWidget {
                     borderRadius: BorderRadius.circular(18),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.primaryColor.withOpacity(0.28),
+                        color: theme.primaryColor.withValues(alpha: 0.28),
                         blurRadius: 18,
                         offset: const Offset(0, 8),
                       ),
@@ -221,7 +221,7 @@ class StartConversationCard extends StatelessWidget {
           border: Border.all(color: Colors.white, width: 3),
           boxShadow: [
             BoxShadow(
-              color: theme.primaryColor.withOpacity(0.14),
+              color: theme.primaryColor.withValues(alpha: 0.14),
               blurRadius: 8,
               offset: const Offset(0, 3),
             ),
@@ -249,7 +249,7 @@ class StartConversationCard extends StatelessWidget {
           style: theme.subtitleStyle.copyWith(
             fontSize: 12.5,
             fontWeight: FontWeight.w600,
-            color: theme.subtitleStyle.color?.withOpacity(0.85),
+            color: theme.subtitleStyle.color?.withValues(alpha: 0.85),
           ),
         ),
         const SizedBox(height: 3),

@@ -1,5 +1,6 @@
-library livechat_sdk;
-
+export 'src/bloc/livechat_bloc.dart';
+export 'src/bloc/livechat_event.dart';
+export 'src/bloc/livechat_state.dart';
 export 'src/core/livechat_client.dart';
 export 'src/models/models.dart';
 export 'src/state/livechat_controller.dart';
@@ -7,3 +8,4 @@ export 'src/theme/livechat_theme.dart';
 export 'src/widgets/chat_view.dart';
 export 'src/widgets/livechat_fab.dart';
 export 'src/widgets/rooms_list_view.dart';
+export 'src/widgets/livechat_sdk_scope.dart';

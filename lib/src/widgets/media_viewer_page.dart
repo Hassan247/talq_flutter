@@ -3,10 +3,10 @@ import 'dart:io';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:http/http.dart' as http;
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
+import '../core/livechat_client.dart';
 import '../models/models.dart';
 
 class MediaViewerPage extends StatefulWidget {
@@ -55,12 +55,8 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
         _tempPdfFile = File('${tempDir.path}/view_$fileName');
 
         if (!await _tempPdfFile!.exists()) {
-          final response = await http.get(Uri.parse(widget.url!));
-          if (response.statusCode == 200) {
-            await _tempPdfFile!.writeAsBytes(response.bodyBytes);
-          } else {
-            throw Exception('Failed to download PDF');
-          }
+          final bytes = await LivechatClient.downloadBytes(widget.url!);
+          await _tempPdfFile!.writeAsBytes(bytes);
         }
 
         _pdfController = PdfControllerPinch(
@@ -96,7 +92,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
-        backgroundColor: Colors.black.withOpacity(0.5),
+        backgroundColor: Colors.black.withValues(alpha: 0.5),
         elevation: 0,
         leadingWidth: 70,
         leading: Center(
@@ -105,7 +101,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
             child: Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.1),
+                color: Colors.white.withValues(alpha: 0.1),
                 shape: BoxShape.circle,
               ),
               child: SvgPicture.asset(

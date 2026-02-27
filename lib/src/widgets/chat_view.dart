@@ -181,7 +181,7 @@ class _LivechatViewState extends State<LivechatView>
 
         return PopScope(
           canPop: !shouldRedirect,
-          onPopInvoked: (didPop) {
+          onPopInvokedWithResult: (didPop, _) {
             if (didPop) {
               context.read<LivechatController>().setChatVisible(false);
               return;
@@ -239,8 +239,8 @@ class _LivechatViewState extends State<LivechatView>
                               ),
                               style: theme.subtitleStyle.copyWith(
                                 fontSize: 12,
-                                color: theme.subtitleStyle.color?.withOpacity(
-                                  0.6,
+                                color: theme.subtitleStyle.color?.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
                             ),
@@ -253,7 +253,7 @@ class _LivechatViewState extends State<LivechatView>
                   IconButton(
                     icon: Icon(
                       Icons.close_rounded,
-                      color: theme.titleStyle.color?.withOpacity(0.8),
+                      color: theme.titleStyle.color?.withValues(alpha: 0.8),
                       size: 26,
                     ),
                     onPressed: () {
@@ -320,7 +320,9 @@ class _LivechatViewState extends State<LivechatView>
                                                       decoration: BoxDecoration(
                                                         color: theme
                                                             .primaryColor
-                                                            .withOpacity(0.04),
+                                                            .withValues(
+                                                              alpha: 0.04,
+                                                            ),
                                                         shape: BoxShape.circle,
                                                       ),
                                                       child: SvgPicture.asset(
@@ -329,8 +331,8 @@ class _LivechatViewState extends State<LivechatView>
                                                         colorFilter:
                                                             ColorFilter.mode(
                                                               theme.primaryColor
-                                                                  .withOpacity(
-                                                                    0.15,
+                                                                  .withValues(
+                                                                    alpha: 0.15,
                                                                   ),
                                                               BlendMode.srcIn,
                                                             ),
@@ -354,8 +356,8 @@ class _LivechatViewState extends State<LivechatView>
                                                             color: theme
                                                                 .titleStyle
                                                                 .color
-                                                                ?.withOpacity(
-                                                                  0.8,
+                                                                ?.withValues(
+                                                                  alpha: 0.8,
                                                                 ),
                                                             letterSpacing: -0.5,
                                                             height: 1.2,
@@ -370,8 +372,8 @@ class _LivechatViewState extends State<LivechatView>
                                                             color: theme
                                                                 .subtitleStyle
                                                                 .color
-                                                                ?.withOpacity(
-                                                                  0.5,
+                                                                ?.withValues(
+                                                                  alpha: 0.5,
                                                                 ),
                                                             letterSpacing: -0.2,
                                                           ),
@@ -430,8 +432,8 @@ class _LivechatViewState extends State<LivechatView>
                                           ),
                                           decoration: BoxDecoration(
                                             color: Color.alphaBlend(
-                                              theme.primaryColor.withOpacity(
-                                                0.1,
+                                              theme.primaryColor.withValues(
+                                                alpha: 0.1,
                                               ),
                                               theme.backgroundColor,
                                             ),
@@ -528,7 +530,7 @@ class _LivechatViewState extends State<LivechatView>
                   ),
                   if (controller.showRatingPrompt)
                     Container(
-                      color: Colors.black.withOpacity(0.5),
+                      color: Colors.black.withValues(alpha: 0.5),
                       child: RatingView(theme: theme),
                     ),
                 ],
@@ -550,7 +552,7 @@ class _LivechatViewState extends State<LivechatView>
           color: theme.resolvedBackgroundColor,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
-            color: theme.resolvedTextColor.withOpacity(0.1),
+            color: theme.resolvedTextColor.withValues(alpha: 0.1),
             width: 1,
           ),
         ),
@@ -571,7 +573,7 @@ class _LivechatViewState extends State<LivechatView>
             Text(
               'You cannot send new messages',
               style: TextStyle(
-                color: theme.resolvedTextColor.withOpacity(0.7),
+                color: theme.resolvedTextColor.withValues(alpha: 0.7),
                 fontSize: 13,
               ),
             ),
@@ -592,12 +594,12 @@ class _LivechatViewState extends State<LivechatView>
                   color: theme.surfaceColor,
                   borderRadius: BorderRadius.circular(28),
                   border: Border.all(
-                    color: theme.cardShadowColor.withOpacity(0.08),
+                    color: theme.cardShadowColor.withValues(alpha: 0.08),
                     width: 1,
                   ),
                   boxShadow: [
                     BoxShadow(
-                      color: theme.cardShadowColor.withOpacity(0.04),
+                      color: theme.cardShadowColor.withValues(alpha: 0.04),
                       blurRadius: 10,
                       offset: const Offset(0, 2),
                     ),
@@ -620,7 +622,9 @@ class _LivechatViewState extends State<LivechatView>
                         height: 24,
                       ),
                       style: IconButton.styleFrom(
-                        backgroundColor: theme.primaryColor.withOpacity(0.05),
+                        backgroundColor: theme.primaryColor.withValues(
+                          alpha: 0.05,
+                        ),
                         padding: const EdgeInsets.all(8),
                       ),
                     ),
@@ -657,7 +661,7 @@ class _LivechatViewState extends State<LivechatView>
                 shape: BoxShape.circle,
                 boxShadow: [
                   BoxShadow(
-                    color: theme.primaryColor.withOpacity(0.3),
+                    color: theme.primaryColor.withValues(alpha: 0.3),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -858,7 +862,9 @@ class _LivechatViewState extends State<LivechatView>
       decoration: BoxDecoration(
         color: theme.surfaceColor,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.cardShadowColor.withOpacity(0.08)),
+        border: Border.all(
+          color: theme.cardShadowColor.withValues(alpha: 0.08),
+        ),
       ),
       child: IntrinsicHeight(
         child: Row(
@@ -893,7 +899,7 @@ class _LivechatViewState extends State<LivechatView>
                     overflow: TextOverflow.ellipsis,
                     style: theme.subtitleStyle.copyWith(
                       fontSize: 14,
-                      color: theme.subtitleStyle.color?.withOpacity(0.8),
+                      color: theme.subtitleStyle.color?.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -934,7 +940,7 @@ class _LivechatViewState extends State<LivechatView>
           borderRadius: BorderRadius.circular(40),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.1),
+              color: Colors.black.withValues(alpha: 0.1),
               blurRadius: 10,
               offset: const Offset(0, 4),
             ),
@@ -1071,16 +1077,16 @@ class _ChatBubble extends StatelessWidget {
                             boxShadow: [
                               if (!isMe)
                                 BoxShadow(
-                                  color: theme.cardShadowColor.withOpacity(
-                                    0.06,
+                                  color: theme.cardShadowColor.withValues(
+                                    alpha: 0.06,
                                   ),
                                   blurRadius: 8,
                                   offset: const Offset(0, 3),
                                 ),
                               if (isMe)
                                 BoxShadow(
-                                  color: theme.userBubbleColor.withOpacity(
-                                    0.12,
+                                  color: theme.userBubbleColor.withValues(
+                                    alpha: 0.12,
                                   ),
                                   blurRadius: 10,
                                   offset: const Offset(0, 4),
@@ -1128,8 +1134,8 @@ class _ChatBubble extends StatelessWidget {
                                       timeStr,
                                       style: theme.timestampStyle.copyWith(
                                         color: isMe
-                                            ? theme.userTextColor.withOpacity(
-                                                0.7,
+                                            ? theme.userTextColor.withValues(
+                                                alpha: 0.7,
                                               )
                                             : theme.subtitleStyle.color,
                                       ),
@@ -1168,7 +1174,7 @@ class _ChatBubble extends StatelessWidget {
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.1),
+            color: Colors.black.withValues(alpha: 0.1),
             blurRadius: 4,
             offset: const Offset(0, 2),
           ),
@@ -1207,12 +1213,14 @@ class _ChatBubble extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: isMe
-            ? Colors.black.withOpacity(0.1)
-            : theme.backgroundColor.withOpacity(0.6),
+            ? Colors.black.withValues(alpha: 0.1)
+            : theme.backgroundColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
         border: Border(
           left: BorderSide(
-            color: isMe ? Colors.white.withOpacity(0.4) : theme.primaryColor,
+            color: isMe
+                ? Colors.white.withValues(alpha: 0.4)
+                : theme.primaryColor,
             width: 3.5,
           ),
         ),
@@ -1242,8 +1250,8 @@ class _ChatBubble extends StatelessWidget {
               fontSize: 13,
               height: 1.3,
               color: isMe
-                  ? Colors.white.withOpacity(0.85)
-                  : theme.subtitleStyle.color?.withOpacity(0.8),
+                  ? Colors.white.withValues(alpha: 0.85)
+                  : theme.subtitleStyle.color?.withValues(alpha: 0.8),
             ),
           ),
         ],
@@ -1469,8 +1477,8 @@ class _ChatBubble extends StatelessWidget {
       clipBehavior: Clip.antiAlias,
       decoration: BoxDecoration(
         color: isMe
-            ? theme.userBubbleColor.withOpacity(0.1)
-            : theme.primaryColor.withOpacity(0.05),
+            ? theme.userBubbleColor.withValues(alpha: 0.1)
+            : theme.primaryColor.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
       ),
       child: InkWell(
@@ -1563,7 +1571,7 @@ class _ChatBubble extends StatelessWidget {
                                           (isMe
                                                   ? theme.userTextColor
                                                   : theme.agentTextColor)
-                                              .withOpacity(0.6),
+                                              .withValues(alpha: 0.6),
                                     ),
                                   )
                                 else if (message.isUploading)
@@ -1575,7 +1583,7 @@ class _ChatBubble extends StatelessWidget {
                                           (isMe
                                                   ? theme.userTextColor
                                                   : theme.agentTextColor)
-                                              .withOpacity(0.6),
+                                              .withValues(alpha: 0.6),
                                     ),
                                   ),
                               ],
