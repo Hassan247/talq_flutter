@@ -38,8 +38,7 @@ class TalqView extends StatefulWidget {
   State<TalqView> createState() => _TalqViewState();
 }
 
-class _TalqViewState extends State<TalqView>
-    with WidgetsBindingObserver {
+class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
@@ -583,9 +582,13 @@ class _TalqViewState extends State<TalqView>
     }
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
       decoration: BoxDecoration(color: theme.backgroundColor),
       child: SafeArea(
+        top: false,
+        left: false,
+        right: false,
+        minimum: const EdgeInsets.only(bottom: 4),
         child: Row(
           children: [
             Expanded(
@@ -847,10 +850,7 @@ class _TalqViewState extends State<TalqView>
     }
   }
 
-  Widget _buildReplyOverlay(
-    TalqController controller,
-    TalqTheme theme,
-  ) {
+  Widget _buildReplyOverlay(TalqController controller, TalqTheme theme) {
     final reply = controller.replyingTo!;
     final senderName =
         reply.senderName ??
