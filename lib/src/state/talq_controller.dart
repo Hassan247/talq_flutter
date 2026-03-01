@@ -1,13 +1,14 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
 import '../core/device_info_collector.dart';
-import '../core/talq_error_mapper.dart';
 import '../core/talq_client.dart';
+import '../core/talq_error_mapper.dart';
 import '../models/models.dart';
 import '../theme/talq_theme.dart';
 import '../workflows/talq_use_cases.dart';
@@ -18,6 +19,9 @@ class TalqController extends ChangeNotifier {
   List<TalqMessage> _messages = [];
   final Map<String, List<TalqMessage>> _messageCache = {};
   List<TalqRoom> _rooms = [];
+  static const int _roomListChunkSize = 15;
+  int _visibleRoomCount = _roomListChunkSize;
+  bool _isFetchingMoreRooms = false;
   List<TalqFAQ> _faqs = [];
 
   // Paginated FAQs
@@ -61,6 +65,11 @@ class TalqController extends ChangeNotifier {
 
   List<TalqMessage> get messages => _messages;
   List<TalqRoom> get rooms => _rooms;
+  List<TalqRoom> get visibleRooms => _rooms
+      .take(math.min(_visibleRoomCount, _rooms.length))
+      .toList(growable: false);
+  bool get hasMoreRoomsToDisplay => _visibleRoomCount < _rooms.length;
+  bool get isFetchingMoreRooms => _isFetchingMoreRooms;
   List<TalqFAQ> get faqs => _faqs;
   List<TalqFAQ> get paginatedFaqs => _paginatedFaqs;
   bool get faqHasNextPage => _faqHasNextPage;
@@ -95,6 +104,64 @@ class TalqController extends ChangeNotifier {
   void _cacheCurrentRoomMessages() {
     if (_roomId == null) return;
     _cacheMessagesForRoom(_roomId!, _messages);
+  }
+
+  void _syncVisibleRoomCount({bool reset = false}) {
+    if (_rooms.isEmpty) {
+      _visibleRoomCount = 0;
+      return;
+    }
+
+    if (reset || _visibleRoomCount == 0) {
+      _visibleRoomCount = math.min(_roomListChunkSize, _rooms.length);
+      return;
+    }
+
+    _visibleRoomCount = math.min(_visibleRoomCount, _rooms.length);
+  }
+
+  List<TalqMessage> _mergeMessagesNewestFirst({
+    required List<TalqMessage> localMessages,
+    required List<TalqMessage> serverMessages,
+  }) {
+    final mergedById = <String, TalqMessage>{
+      for (final message in localMessages) message.id: message,
+    };
+
+    for (final serverMessage in serverMessages) {
+      final existingMessage = mergedById[serverMessage.id];
+      if (existingMessage == null) {
+        mergedById[serverMessage.id] = serverMessage;
+        continue;
+      }
+
+      mergedById[serverMessage.id] = TalqMessage(
+        id: serverMessage.id,
+        roomId: serverMessage.roomId ?? existingMessage.roomId,
+        content: serverMessage.content,
+        senderType: serverMessage.senderType,
+        senderName: serverMessage.senderName ?? existingMessage.senderName,
+        senderAvatarUrl:
+            serverMessage.senderAvatarUrl ?? existingMessage.senderAvatarUrl,
+        contentType: serverMessage.contentType,
+        fileUrl: serverMessage.fileUrl ?? existingMessage.fileUrl,
+        fileName: serverMessage.fileName ?? existingMessage.fileName,
+        createdAt: serverMessage.createdAt,
+        isRead: serverMessage.isRead || existingMessage.isRead,
+        isDelivered: serverMessage.isDelivered || existingMessage.isDelivered,
+        replyTo: serverMessage.replyTo ?? existingMessage.replyTo,
+        reactions: serverMessage.reactions.isNotEmpty
+            ? serverMessage.reactions
+            : existingMessage.reactions,
+        localFilePath: existingMessage.localFilePath,
+        isUploading: false,
+      );
+    }
+
+    final mergedMessages = mergedById.values.toList()
+      ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+
+    return mergedMessages;
   }
 
   bool get isRatingSubmitted => _isRatingSubmitted;
@@ -200,6 +267,7 @@ class TalqController extends ChangeNotifier {
               'os': deviceInfo['os'],
             }
           : null;
+      debugPrint('[TalqController] Starting initVisitor...');
 
       final result = await _useCases.initVisitor(
         deviceId: deviceId,
@@ -212,7 +280,14 @@ class TalqController extends ChangeNotifier {
         deviceInfo: devicePayload,
       );
 
+      debugPrint(
+        '[TalqController] initVisitor result hasException: ${result.hasException}',
+      );
+
       if (result.hasException) {
+        debugPrint(
+          '[TalqController] initVisitor exception: ${result.exception}',
+        );
         _setError(
           result.exception,
           fallbackMessage: 'Unable to start chat right now.',
@@ -253,6 +328,7 @@ class TalqController extends ChangeNotifier {
 
       _rooms = newRooms;
       _sortRooms();
+      _syncVisibleRoomCount(reset: true);
 
       // Try to find an active room or default to the most recent one
       if (_rooms.isNotEmpty) {
@@ -346,6 +422,7 @@ class TalqController extends ChangeNotifier {
       // Update local state
       _rooms.insert(0, newRoom);
       _sortRooms();
+      _syncVisibleRoomCount();
       _roomId = newRoom.id;
       _roomStatus = newRoom.status;
       _messages = [];
@@ -379,13 +456,14 @@ class TalqController extends ChangeNotifier {
   }
 
   /// Refreshes the list of visitor rooms
-  Future<void> fetchRooms() async {
+  Future<void> fetchRooms({bool resetVisibleWindow = false}) async {
     final result = await _useCases.fetchRooms();
     if (!result.hasException) {
       _clearError(notify: true);
       final List roomsList = result.data?['visitorRooms'] ?? [];
       _rooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
       _sortRooms();
+      _syncVisibleRoomCount(reset: resetVisibleWindow);
       notifyListeners();
       return;
     }
@@ -403,6 +481,8 @@ class TalqController extends ChangeNotifier {
     _visitor = null;
     _roomId = null;
     _rooms = [];
+    _visibleRoomCount = 0;
+    _isFetchingMoreRooms = false;
     _messages = [];
     _messageCache.clear();
     _isRoomLoading = false;
@@ -412,6 +492,36 @@ class TalqController extends ChangeNotifier {
     _roomSubscription?.cancel();
     _workspaceSubscription?.cancel();
     notifyListeners();
+  }
+
+  Future<void> fetchMoreRooms() async {
+    if (_isFetchingMoreRooms) return;
+
+    if (hasMoreRoomsToDisplay) {
+      _visibleRoomCount = math.min(
+        _visibleRoomCount + _roomListChunkSize,
+        _rooms.length,
+      );
+      notifyListeners();
+      return;
+    }
+
+    _isFetchingMoreRooms = true;
+    notifyListeners();
+
+    final previousRoomCount = _rooms.length;
+    try {
+      await fetchRooms();
+      if (_rooms.length > previousRoomCount && hasMoreRoomsToDisplay) {
+        _visibleRoomCount = math.min(
+          _visibleRoomCount + _roomListChunkSize,
+          _rooms.length,
+        );
+      }
+    } finally {
+      _isFetchingMoreRooms = false;
+      notifyListeners();
+    }
   }
 
   /// Fetches conversation history for a specific room or the active one
@@ -522,9 +632,7 @@ class TalqController extends ChangeNotifier {
     List<TalqMessage> newMessages = [];
 
     try {
-      newMessages = edges
-          .map((e) => TalqMessage.fromJson(e['node']))
-          .toList();
+      newMessages = edges.map((e) => TalqMessage.fromJson(e['node'])).toList();
     } catch (e) {
       _setError(e, fallbackMessage: 'Unable to parse messages right now.');
     }
@@ -553,12 +661,12 @@ class TalqController extends ChangeNotifier {
     // Pagination status
     _hasMoreMessages = pageInfo?['hasNextPage'] ?? false;
 
-    if (isLoadMore) {
-      // Append older messages to the end
-      _messages.addAll(newMessages);
-    } else {
-      _messages = newMessages; // Replace list
+    _messages = _mergeMessagesNewestFirst(
+      localMessages: _messages,
+      serverMessages: newMessages,
+    );
 
+    if (!isLoadMore) {
       // Re-inject events logic (only on initial load for now to keep it simple)
       final assignedEvents = eventList
           .where((e) => e['type'] == 'ROOM_ASSIGNED')
@@ -602,6 +710,31 @@ class TalqController extends ChangeNotifier {
   }) async {
     if (content.trim().isEmpty && fileUrl == null) return;
 
+    final effectiveTempId =
+        tempId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}';
+    final replyToId = _replyingTo?.id;
+    final optimisticCreatedAt = DateTime.now();
+
+    // IF tempId was NOT provided, we add the optimistic message immediately.
+    // This prevents visible delay when a new room has to be created first.
+    if (tempId == null) {
+      final optMsg = TalqMessage(
+        id: effectiveTempId,
+        content: content,
+        senderType: SenderType.visitor,
+        contentType: contentType,
+        fileUrl: fileUrl,
+        fileName: fileName,
+        createdAt: optimisticCreatedAt,
+        replyTo: _replyingTo,
+      );
+
+      _messages.insert(0, optMsg);
+      _replyingTo = null; // Clear after sending
+      _cacheCurrentRoomMessages();
+      notifyListeners();
+    }
+
     // IF _roomId is null, it means we are in "new conversation" mode (e.g. from "Send us a message").
     // We must force the creation of a NEW room first, otherwise the backend might attach
     // this message to an existing open room.
@@ -613,50 +746,36 @@ class TalqController extends ChangeNotifier {
             createResult.exception,
             fallbackMessage: 'Unable to start a new conversation right now.',
           );
-        } else {
-          final roomData = createResult.data!['startNewConversation'];
-          final newRoom = TalqRoom.fromJson(roomData);
-
-          // Update local state
-          _rooms.insert(0, newRoom);
-          _sortRooms();
-          _roomId = newRoom.id;
-          _roomStatus = newRoom.status;
-          // _messages is already empty or has optimistic message, don't clear it
-          _showRatingPrompt = false;
-          _isRatingSubmitted = false;
-          _startTypingSubscription();
-          _startMessageSubscription();
+          if (tempId == null) {
+            _messages.removeWhere((m) => m.id == effectiveTempId);
+            notifyListeners();
+          }
+          return;
         }
+
+        final roomData = createResult.data!['startNewConversation'];
+        final newRoom = TalqRoom.fromJson(roomData);
+
+        // Update local state
+        _rooms.insert(0, newRoom);
+        _sortRooms();
+        _roomId = newRoom.id;
+        _roomStatus = newRoom.status;
+        _showRatingPrompt = false;
+        _isRatingSubmitted = false;
+        _startTypingSubscription();
+        _startMessageSubscription();
       } catch (e) {
         _setError(
           e,
           fallbackMessage: 'Unable to start a new conversation right now.',
         );
+        if (tempId == null) {
+          _messages.removeWhere((m) => m.id == effectiveTempId);
+          notifyListeners();
+        }
+        return;
       }
-    }
-
-    final effectiveTempId =
-        tempId ?? 'temp-${DateTime.now().millisecondsSinceEpoch}';
-    final replyToId = _replyingTo?.id;
-
-    // IF tempId was NOT provided, we need to add the optimistic message now.
-    // If it WAS provided, it's already in the list (from sendFile).
-    if (tempId == null) {
-      final optMsg = TalqMessage(
-        id: effectiveTempId,
-        content: content,
-        senderType: SenderType.visitor,
-        contentType: contentType,
-        fileUrl: fileUrl,
-        fileName: fileName,
-        createdAt: DateTime.now(),
-        replyTo: _replyingTo,
-      );
-
-      // REVERSE SCROLL CHANGE: Insert at beginning (Newest)
-      _messages.insert(0, optMsg);
-      _replyingTo = null; // Clear after sending
     }
 
     // Update room preview optimistically
@@ -673,7 +792,7 @@ class TalqController extends ChangeNotifier {
                 contentType: contentType,
                 fileUrl: fileUrl,
                 fileName: fileName,
-                createdAt: DateTime.now(),
+                createdAt: optimisticCreatedAt,
                 replyTo: null,
               );
 
@@ -706,9 +825,7 @@ class TalqController extends ChangeNotifier {
     );
 
     if (result.hasException) {
-      debugPrint(
-        '[TalqController] sendMessage failed: ${result.exception}',
-      );
+      debugPrint('[TalqController] sendMessage failed: ${result.exception}');
       _setError(
         result.exception,
         fallbackMessage: 'Unable to send message right now.',
@@ -750,6 +867,10 @@ class TalqController extends ChangeNotifier {
       );
 
       _messages[index] = persistedMessage;
+      _messages = _mergeMessagesNewestFirst(
+        localMessages: _messages,
+        serverMessages: const [],
+      );
 
       // Update room ID if it was still null (fallback)
       if (_roomId == null) {
@@ -1235,9 +1356,7 @@ class TalqController extends ChangeNotifier {
             }
           },
           onError: (error) {
-            debugPrint(
-              '[TalqController] Typing Subscription Error: $error',
-            );
+            debugPrint('[TalqController] Typing Subscription Error: $error');
           },
         );
   }
@@ -1458,5 +1577,6 @@ class TalqController extends ChangeNotifier {
       final bTime = b.lastMessageAt ?? b.createdAt;
       return bTime.compareTo(aTime);
     });
+    _syncVisibleRoomCount();
   }
 }

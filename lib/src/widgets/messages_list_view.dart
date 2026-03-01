@@ -1,3 +1,5 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -7,19 +9,80 @@ import '../models/models.dart';
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'chat_view.dart';
+import 'live_pull_to_refresh.dart';
 import 'shared_widgets.dart';
 
-class MessagesListView extends StatelessWidget {
+class MessagesListView extends StatefulWidget {
   final TalqTheme? theme;
 
   const MessagesListView({super.key, this.theme});
 
   @override
+  State<MessagesListView> createState() => _MessagesListViewState();
+}
+
+class _MessagesListViewState extends State<MessagesListView> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isRefreshing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      final controller = context.read<TalqController>();
+      if (controller.rooms.isEmpty && !controller.isLoading) {
+        controller.fetchRooms(resetVisibleWindow: true);
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _scrollController
+      ..removeListener(_onScroll)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    if (!_scrollController.hasClients) return;
+    final threshold = _scrollController.position.maxScrollExtent - 240;
+    if (_scrollController.position.pixels < threshold) return;
+
+    final controller = context.read<TalqController>();
+    if (!controller.isFetchingMoreRooms) {
+      controller.fetchMoreRooms();
+    }
+  }
+
+  Future<void> _handleRefresh(TalqController controller) async {
+    if (_isRefreshing) return;
+    setState(() => _isRefreshing = true);
+    try {
+      await controller.fetchRooms(resetVisibleWindow: true);
+    } finally {
+      if (mounted) {
+        setState(() => _isRefreshing = false);
+      }
+    }
+  }
+
+  void _openRoom(TalqController controller, TalqRoom room) {
+    controller.fetchMessages(roomId: room.id);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const TalqView()),
+    );
+  }
+
+  @override
   Widget build(BuildContext context) {
     return Consumer<TalqController>(
       builder: (context, controller, child) {
-        // use controller's reactive theme, fall back to provided theme
-        final activeTheme = theme ?? controller.theme;
+        final activeTheme = widget.theme ?? controller.theme;
+        final isDark = Theme.of(context).brightness == Brightness.dark;
 
         return Scaffold(
           backgroundColor: activeTheme.backgroundColor,
@@ -33,69 +96,152 @@ class MessagesListView extends StatelessWidget {
             title: Text(
               'Messages',
               style: activeTheme.titleStyle.copyWith(
-                fontSize: 17, // Standard iOS-like header size
-                fontWeight: FontWeight.w600,
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                letterSpacing: -0.25,
               ),
             ),
           ),
-          body: Builder(
-            builder: (context) {
-              if (controller.isLoading && controller.rooms.isEmpty) {
-                return const Center(child: CircularProgressIndicator());
-              }
-
-              if (controller.rooms.isEmpty) {
-                return Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        size: 48,
-                        color: activeTheme.subtitleStyle.color?.withValues(
-                          alpha: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 16),
-                      Text(
-                        'No messages yet',
-                        style: activeTheme.subtitleStyle.copyWith(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              }
-
-              return ListView.separated(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 12,
+          body: Stack(
+            children: [
+              Positioned.fill(child: _buildAmbientBackground(activeTheme)),
+              if (controller.isLoading && controller.rooms.isEmpty)
+                const Center(child: CircularProgressIndicator())
+              else if (controller.rooms.isEmpty)
+                _buildEmptyState(activeTheme)
+              else
+                LivePullToRefresh(
+                  isDark: isDark,
+                  isRefreshing: _isRefreshing,
+                  progressColor: activeTheme.primaryColor,
+                  onRefresh: () => _handleRefresh(controller),
+                  child: _buildList(activeTheme, controller),
                 ),
-                itemCount: controller.rooms.length,
-                separatorBuilder: (context, index) => const SizedBox(height: 8),
-                itemBuilder: (context, index) {
-                  final room = controller.rooms[index];
-                  return _MessageCard(
-                    room: room,
-                    workspace: controller.workspace,
-                    theme: activeTheme,
-                    onTap: () {
-                      controller.fetchMessages(roomId: room.id);
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const TalqView()),
-                      );
-                    },
-                  );
-                },
-              );
-            },
+            ],
           ),
         );
       },
+    );
+  }
+
+  Widget _buildAmbientBackground(TalqTheme theme) {
+    return IgnorePointer(
+      child: Stack(
+        children: [
+          Positioned(
+            top: -140,
+            right: -60,
+            child: _buildAmbientBlob(
+              color: Color.lerp(theme.primaryColor, Colors.white, 0.72)!,
+              size: 220,
+            ),
+          ),
+          Positioned(
+            top: 120,
+            left: -70,
+            child: _buildAmbientBlob(
+              color: Color.lerp(theme.primaryColor, Colors.white, 0.88)!,
+              size: 180,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAmbientBlob({required Color color, required double size}) {
+    return ImageFiltered(
+      imageFilter: ImageFilter.blur(sigmaX: 42, sigmaY: 42),
+      child: Container(
+        width: size,
+        height: size,
+        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+      ),
+    );
+  }
+
+  Widget _buildList(TalqTheme theme, TalqController controller) {
+    final rooms = controller.visibleRooms;
+    final showBottomLoader = controller.isFetchingMoreRooms;
+    final totalItems = rooms.length + (showBottomLoader ? 1 : 0);
+
+    return ListView.builder(
+      controller: _scrollController,
+      physics: LivePullToRefresh.cappedScrollPhysics(),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+      itemCount: totalItems,
+      itemBuilder: (context, index) {
+        final roomIndex = index;
+        if (roomIndex < rooms.length) {
+          final room = rooms[roomIndex];
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _MessageCard(
+              room: room,
+              workspace: controller.workspace,
+              theme: theme,
+              onTap: () => _openRoom(controller, room),
+            ),
+          );
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          child: Center(
+            child: SizedBox(
+              width: 22,
+              height: 22,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.2,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEmptyState(TalqTheme theme) {
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.all(28),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.08),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.chat_bubble_outline_rounded,
+                size: 46,
+                color: theme.primaryColor.withValues(alpha: 0.7),
+              ),
+            ),
+            const SizedBox(height: 22),
+            Text(
+              'No conversations yet',
+              style: theme.titleStyle.copyWith(
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.5,
+              ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              'Your messages will appear here.',
+              textAlign: TextAlign.center,
+              style: theme.subtitleStyle.copyWith(
+                fontSize: 14,
+                color: theme.subtitleStyle.color?.withValues(alpha: 0.78),
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -117,7 +263,6 @@ class _MessageCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final lastMsg = room.lastMessage;
     final hasUnread = room.visitorUnreadCount > 0;
-
     final isMe = lastMsg?.senderType == SenderType.visitor;
     final isBot = lastMsg?.senderType == SenderType.bot;
     final displayName = isBot
@@ -126,26 +271,30 @@ class _MessageCard extends StatelessWidget {
     final avatarUrl = isBot
         ? null
         : (room.assigneeAvatarUrl ?? workspace?.logoUrl);
-
     final timeStr = room.lastMessageAt != null
-        ? DateFormat('jm').format(room.lastMessageAt!)
+        ? DateFormat('jm').format(room.lastMessageAt!.toLocal())
         : '';
 
     return Container(
       decoration: BoxDecoration(
-        color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.surfaceColor,
+            Color.lerp(theme.surfaceColor, theme.primaryColor, 0.035)!,
+          ],
+        ),
+        borderRadius: BorderRadius.circular(24),
         border: Border.all(
-          color: theme.cardShadowColor.withValues(alpha: 0.08), // Subtle border
+          color: theme.cardShadowColor.withValues(alpha: 0.1),
           width: 1,
         ),
         boxShadow: [
           BoxShadow(
-            color: theme.cardShadowColor.withValues(
-              alpha: 0.04,
-            ), // Very subtle shadow
-            blurRadius: 12,
-            offset: const Offset(0, 4),
+            color: theme.cardShadowColor.withValues(alpha: 0.06),
+            blurRadius: 14,
+            offset: const Offset(0, 6),
           ),
         ],
       ),
@@ -153,100 +302,58 @@ class _MessageCard extends StatelessWidget {
         color: Colors.transparent,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(28),
+          borderRadius: BorderRadius.circular(24),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
+            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Avatar Area
-                _buildAvatar(displayName, avatarUrl, hasUnread),
-                const SizedBox(width: 16),
-
-                // Content Area
+                _buildAvatar(avatarUrl, hasUnread),
+                const SizedBox(width: 12),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Header Row: Message Content (Primary)
                       Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Expanded(
                             child: _buildMessageTitle(lastMsg, hasUnread),
                           ),
+                          if (room.status == RoomStatus.resolved)
+                            _buildResolvedChip(),
                         ],
                       ),
-                      const SizedBox(height: 4),
-
-                      // Subtitle Row: Name • Time
+                      const SizedBox(height: 5),
                       Row(
                         children: [
-                          if (isMe && lastMsg != null) ...[
-                            _buildTicks(lastMsg),
-                            const SizedBox(width: 4),
-                          ],
-                          Expanded(
-                            child: Text.rich(
-                              TextSpan(
-                                children: [
-                                  TextSpan(
-                                    text: '${isMe ? 'You' : displayName} • ',
+                          Flexible(
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    '${isMe ? 'You' : displayName}${timeStr.isNotEmpty ? ' • $timeStr' : ''}',
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
                                     style: theme.subtitleStyle.copyWith(
-                                      fontWeight: FontWeight.w500,
-                                      color: theme.subtitleStyle.color,
-                                    ),
-                                  ),
-                                  TextSpan(
-                                    text: timeStr,
-                                    style: theme.subtitleStyle.copyWith(
+                                      fontSize: 13,
+                                      fontWeight: hasUnread
+                                          ? FontWeight.w700
+                                          : FontWeight.w500,
                                       color: hasUnread
                                           ? theme.primaryColor
-                                          : theme.subtitleStyle.color,
-                                      fontWeight: hasUnread
-                                          ? FontWeight.w600
-                                          : FontWeight.normal,
+                                          : theme.subtitleStyle.color
+                                                ?.withValues(alpha: 0.85),
                                     ),
                                   ),
+                                ),
+                                if (isMe && lastMsg != null) ...[
+                                  const SizedBox(width: 4),
+                                  _buildTicks(lastMsg),
                                 ],
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                              ],
                             ),
                           ),
-                          if (room.status == RoomStatus.resolved)
-                            Padding(
-                              padding: const EdgeInsets.only(left: 8),
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 8,
-                                  vertical: 4,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: theme.resolvedBackgroundColor
-                                      .withValues(alpha: 0.5),
-                                  borderRadius: BorderRadius.circular(6),
-                                  border: Border.all(
-                                    color: theme.resolvedTextColor.withValues(
-                                      alpha: 0.1,
-                                    ),
-                                    width: 1,
-                                  ),
-                                ),
-                                child: Text(
-                                  'Resolved',
-                                  style: TextStyle(
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    color: theme.resolvedTextColor.withValues(
-                                      alpha: 0.8,
-                                    ),
-                                    letterSpacing: 0.2,
-                                  ),
-                                ),
-                              ),
-                            ),
                         ],
                       ),
                     ],
@@ -260,57 +367,27 @@ class _MessageCard extends StatelessWidget {
     );
   }
 
-  Widget _buildAvatar(String name, String? url, bool hasUnread) {
+  Widget _buildAvatar(String? url, bool hasUnread) {
     return Stack(
       clipBehavior: Clip.none,
       children: [
-        Container(
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(
-              color: theme.surfaceColor, // seamless blend
-              width: 0,
-            ),
-          ),
-          child: TalqAvatar(
-            imageUrl: url,
-            senderType: SenderType.agent, // Default to agent style for the list
-            radius: 24, // Slightly larger avatar
-            theme: theme,
-          ),
+        TalqAvatar(
+          imageUrl: url,
+          senderType: SenderType.agent,
+          radius: 25,
+          theme: theme,
         ),
         if (hasUnread)
           Positioned(
             top: -2,
             right: -2,
             child: Container(
-              height: 22,
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              constraints: const BoxConstraints(minWidth: 22),
+              width: 11,
+              height: 11,
               decoration: BoxDecoration(
                 color: theme.primaryColor,
-                borderRadius: BorderRadius.circular(11),
-                border: Border.all(color: theme.surfaceColor, width: 3),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 4,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-              ),
-              child: Center(
-                child: Text(
-                  room.visitorUnreadCount > 9
-                      ? '9+'
-                      : '${room.visitorUnreadCount}',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.2,
-                  ),
-                ),
+                shape: BoxShape.circle,
+                border: Border.all(color: theme.surfaceColor, width: 2),
               ),
             ),
           ),
@@ -318,96 +395,97 @@ class _MessageCard extends StatelessWidget {
     );
   }
 
+  Widget _buildResolvedChip() {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: theme.resolvedBackgroundColor.withValues(alpha: 0.6),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: theme.resolvedTextColor.withValues(alpha: 0.2),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        'Resolved',
+        style: TextStyle(
+          color: theme.resolvedTextColor.withValues(alpha: 0.85),
+          fontSize: 10,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 0.2,
+        ),
+      ),
+    );
+  }
+
   Widget _buildMessageTitle(TalqMessage? msg, bool hasUnread) {
     if (msg == null) {
       return Text(
         'New Conversation',
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
         style: theme.titleStyle.copyWith(
-          fontSize: 16,
-          fontWeight: FontWeight.w600,
-          color: theme.titleStyle.color,
+          fontSize: 18,
+          fontWeight: FontWeight.w700,
+          letterSpacing: -0.45,
         ),
       );
     }
 
-    final style = theme.titleStyle.copyWith(
-      fontSize: 16,
-      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w600,
+    final baseStyle = theme.titleStyle.copyWith(
+      fontSize: 17,
+      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w700,
       color: hasUnread
           ? theme.titleStyle.color
-          : theme.titleStyle.color?.withValues(alpha: 0.85),
-      letterSpacing: -0.4,
+          : theme.titleStyle.color?.withValues(alpha: 0.88),
+      letterSpacing: -0.45,
       height: 1.2,
     );
 
-    IconData? icon;
-    String label = '';
-    String content = msg.content;
-
     if (msg.contentType == ContentType.image) {
-      icon = Icons.photo_camera_outlined;
-      label = 'Photo';
-    } else if (msg.contentType == ContentType.pdf) {
-      icon = Icons.description_outlined;
-      label = 'Document';
-    } else if (msg.content.contains('.m4a') ||
-        msg.content.contains('.mp3') ||
-        msg.content.contains('.wav')) {
-      icon = Icons.mic_none_outlined;
-      label = 'Voice note';
-      if (content.startsWith('Sent an audio:')) content = '';
-    }
-
-    if (icon != null) {
       return Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            icon,
+            Icons.photo_camera_outlined,
             size: 16,
-            color: hasUnread ? theme.primaryColor : theme.titleStyle.color,
+            color: theme.primaryColor,
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 5),
+          Text('Photo', style: baseStyle.copyWith(fontStyle: FontStyle.italic)),
+        ],
+      );
+    }
+
+    if (msg.contentType == ContentType.pdf) {
+      return Row(
+        children: [
+          Icon(Icons.description_outlined, size: 16, color: theme.primaryColor),
+          const SizedBox(width: 5),
           Text(
-            label,
-            style: style.copyWith(
-              fontStyle: FontStyle.italic,
-              color: hasUnread ? theme.primaryColor : null,
-            ),
+            'Document',
+            style: baseStyle.copyWith(fontStyle: FontStyle.italic),
           ),
-          if (content.isNotEmpty) ...[
-            const SizedBox(width: 4),
-            Expanded(
-              child: Text(
-                content,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: style,
-              ),
-            ),
-          ],
         ],
       );
     }
 
     return Text(
-      content,
+      msg.content,
       maxLines: 1,
       overflow: TextOverflow.ellipsis,
-      style: style,
+      style: baseStyle,
     );
   }
 
   Widget _buildTicks(TalqMessage message) {
-    // ticks are small, keep them subtle
-    Color iconColor = theme.sentTickColor;
-    IconData icon = Icons.check;
+    var icon = Icons.check_rounded;
+    var iconColor = theme.sentTickColor;
 
     if (message.isRead) {
-      icon = Icons.done_all;
+      icon = Icons.done_all_rounded;
       iconColor = theme.readTickColor;
     } else if (message.isDelivered) {
-      icon = Icons.done_all;
+      icon = Icons.done_all_rounded;
       iconColor = theme.deliveredTickColor;
     }
 

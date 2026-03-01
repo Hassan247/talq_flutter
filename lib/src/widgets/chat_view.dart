@@ -122,10 +122,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     List<models.TalqMessage> currentGroupMessages = [];
 
     for (final message in messages) {
+      final localCreatedAt = message.createdAt.toLocal();
       final messageDate = DateTime(
-        message.createdAt.year,
-        message.createdAt.month,
-        message.createdAt.day,
+        localCreatedAt.year,
+        localCreatedAt.month,
+        localCreatedAt.day,
       );
 
       if (currentDate == null) {
@@ -268,230 +269,223 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                   Column(
                     children: [
                       Expanded(
-                        child: RefreshIndicator(
-                          onRefresh: () => controller.fetchMessages(
-                            roomId: controller.roomId,
-                          ),
-                          child:
-                              controller.isRoomLoading &&
-                                  controller.roomId != null
-                              ? ListView(
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                          0.6,
-                                      child: const Center(
-                                        child: CircularProgressIndicator(),
-                                      ),
+                        child:
+                            controller.isRoomLoading &&
+                                controller.roomId != null
+                            ? ListView(
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                        0.6,
+                                    child: const Center(
+                                      child: CircularProgressIndicator(),
                                     ),
-                                  ],
-                                )
-                              : controller.messages.isEmpty
-                              ? ListView(
-                                  children: [
-                                    SizedBox(
-                                      height:
-                                          MediaQuery.of(context).size.height *
-                                          0.6,
-                                      child: Center(
-                                        child: Padding(
-                                          padding: const EdgeInsets.all(32.0),
-                                          child: controller.roomId != null
-                                              ? Text(
-                                                  'No messages yet',
-                                                  style: theme.subtitleStyle
-                                                      .copyWith(
-                                                        fontSize: 16,
-                                                        fontWeight:
-                                                            FontWeight.w500,
-                                                      ),
-                                                )
-                                              : Column(
-                                                  mainAxisAlignment:
-                                                      MainAxisAlignment.center,
-                                                  children: [
-                                                    Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            24,
-                                                          ),
-                                                      decoration: BoxDecoration(
-                                                        color: theme
-                                                            .primaryColor
-                                                            .withValues(
-                                                              alpha: 0.04,
-                                                            ),
-                                                        shape: BoxShape.circle,
-                                                      ),
-                                                      child: SvgPicture.asset(
-                                                        'assets/icons/messages.svg',
-                                                        package: 'talq_sdk',
-                                                        colorFilter:
-                                                            ColorFilter.mode(
-                                                              theme.primaryColor
-                                                                  .withValues(
-                                                                    alpha: 0.15,
-                                                                  ),
-                                                              BlendMode.srcIn,
-                                                            ),
-                                                        width: 56,
-                                                        height: 56,
-                                                      ),
-                                                    ),
-                                                    const SizedBox(height: 32),
-                                                    Text(
-                                                      controller
-                                                              .workspace
-                                                              ?.welcomeMessage ??
-                                                          'Hello there!\nHow can we help today?',
-                                                      textAlign:
-                                                          TextAlign.center,
-                                                      style: theme.titleStyle
-                                                          .copyWith(
-                                                            fontSize: 22,
-                                                            fontWeight:
-                                                                FontWeight.w800,
-                                                            color: theme
-                                                                .titleStyle
-                                                                .color
-                                                                ?.withValues(
-                                                                  alpha: 0.8,
-                                                                ),
-                                                            letterSpacing: -0.5,
-                                                            height: 1.2,
-                                                          ),
-                                                    ),
-                                                    const SizedBox(height: 12),
-                                                    Text(
-                                                      'Type a message below to begin.',
-                                                      style: theme.subtitleStyle
-                                                          .copyWith(
-                                                            fontSize: 15,
-                                                            color: theme
-                                                                .subtitleStyle
-                                                                .color
-                                                                ?.withValues(
-                                                                  alpha: 0.5,
-                                                                ),
-                                                            letterSpacing: -0.2,
-                                                          ),
-                                                    ),
-                                                  ],
-                                                ),
-                                        ),
-                                      ),
-                                    ),
-                                  ],
-                                )
-                              : ListView.builder(
-                                  controller: _scrollController,
-                                  padding: const EdgeInsets.only(
-                                    left: 16,
-                                    right: 0,
-                                    top: 16,
-                                    bottom: 16,
                                   ),
-                                  reverse: true,
-                                  itemCount:
-                                      _groupMessages(
-                                        controller.messages,
-                                      ).length +
-                                      (controller.isFetchingMore ? 1 : 0),
-                                  itemBuilder: (context, index) {
-                                    if (index ==
-                                        _groupMessages(
-                                          controller.messages,
-                                        ).length) {
-                                      return const Padding(
-                                        padding: EdgeInsets.all(16.0),
-                                        child: Center(
-                                          child: CircularProgressIndicator(),
+                                ],
+                              )
+                            : controller.messages.isEmpty
+                            ? ListView(
+                                children: [
+                                  SizedBox(
+                                    height:
+                                        MediaQuery.of(context).size.height *
+                                        0.6,
+                                    child: Center(
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(32.0),
+                                        child: controller.roomId != null
+                                            ? Text(
+                                                'No messages yet',
+                                                style: theme.subtitleStyle
+                                                    .copyWith(
+                                                      fontSize: 16,
+                                                      fontWeight:
+                                                          FontWeight.w500,
+                                                    ),
+                                              )
+                                            : Column(
+                                                mainAxisAlignment:
+                                                    MainAxisAlignment.center,
+                                                children: [
+                                                  Container(
+                                                    padding:
+                                                        const EdgeInsets.all(
+                                                          24,
+                                                        ),
+                                                    decoration: BoxDecoration(
+                                                      color: theme.primaryColor
+                                                          .withValues(
+                                                            alpha: 0.04,
+                                                          ),
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                    child: SvgPicture.asset(
+                                                      'assets/icons/messages.svg',
+                                                      package: 'talq_sdk',
+                                                      colorFilter:
+                                                          ColorFilter.mode(
+                                                            theme.primaryColor
+                                                                .withValues(
+                                                                  alpha: 0.15,
+                                                                ),
+                                                            BlendMode.srcIn,
+                                                          ),
+                                                      width: 56,
+                                                      height: 56,
+                                                    ),
+                                                  ),
+                                                  const SizedBox(height: 32),
+                                                  Text(
+                                                    controller
+                                                            .workspace
+                                                            ?.welcomeMessage ??
+                                                        'Hello there!\nHow can we help today?',
+                                                    textAlign: TextAlign.center,
+                                                    style: theme.titleStyle
+                                                        .copyWith(
+                                                          fontSize: 22,
+                                                          fontWeight:
+                                                              FontWeight.w800,
+                                                          color: theme
+                                                              .titleStyle
+                                                              .color
+                                                              ?.withValues(
+                                                                alpha: 0.8,
+                                                              ),
+                                                          letterSpacing: -0.5,
+                                                          height: 1.2,
+                                                        ),
+                                                  ),
+                                                  const SizedBox(height: 12),
+                                                  Text(
+                                                    'Type a message below to begin.',
+                                                    style: theme.subtitleStyle
+                                                        .copyWith(
+                                                          fontSize: 15,
+                                                          color: theme
+                                                              .subtitleStyle
+                                                              .color
+                                                              ?.withValues(
+                                                                alpha: 0.5,
+                                                              ),
+                                                          letterSpacing: -0.2,
+                                                        ),
+                                                  ),
+                                                ],
+                                              ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              )
+                            : Builder(
+                                builder: (context) {
+                                  final groupedMessages = _groupMessages(
+                                    controller.messages,
+                                  );
+                                  return ListView.builder(
+                                    controller: _scrollController,
+                                    padding: const EdgeInsets.only(
+                                      left: 16,
+                                      right: 0,
+                                      top: 16,
+                                      bottom: 16,
+                                    ),
+                                    reverse: true,
+                                    itemCount:
+                                        groupedMessages.length +
+                                        (controller.isFetchingMore ? 1 : 0),
+                                    itemBuilder: (context, index) {
+                                      if (index == groupedMessages.length) {
+                                        return const Padding(
+                                          padding: EdgeInsets.all(16.0),
+                                          child: Center(
+                                            child: CircularProgressIndicator(),
+                                          ),
+                                        );
+                                      }
+
+                                      final group = groupedMessages[index];
+                                      final date = group.date;
+                                      final messages = group.messages;
+
+                                      return StickyHeader(
+                                        header: Container(
+                                          width: double.infinity,
+                                          padding: const EdgeInsets.symmetric(
+                                            vertical: 24,
+                                          ),
+                                          alignment: Alignment.center,
+                                          child: Container(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 16,
+                                              vertical: 6,
+                                            ),
+                                            decoration: BoxDecoration(
+                                              color: Color.alphaBlend(
+                                                theme.primaryColor.withValues(
+                                                  alpha: 0.1,
+                                                ),
+                                                theme.backgroundColor,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                            child: Text(
+                                              _getDateLabel(date),
+                                              style: TextStyle(
+                                                fontSize: 10,
+                                                fontWeight: FontWeight.w800,
+                                                color: theme.primaryColor,
+                                                letterSpacing: 1.0,
+                                              ),
+                                            ),
+                                          ),
+                                        ),
+                                        content: ListView.builder(
+                                          shrinkWrap: true,
+                                          physics:
+                                              const NeverScrollableScrollPhysics(),
+                                          itemCount: messages.length,
+                                          reverse: true,
+                                          itemBuilder: (context, msgIndex) {
+                                            final message = messages[msgIndex];
+
+                                            final isLastInGroup =
+                                                msgIndex == 0 ||
+                                                messages[msgIndex - 1]
+                                                        .senderType !=
+                                                    message.senderType;
+
+                                            final isFirstInGroup =
+                                                msgIndex ==
+                                                    messages.length - 1 ||
+                                                messages[msgIndex + 1]
+                                                        .senderType !=
+                                                    message.senderType;
+
+                                            return _ChatBubble(
+                                              message: message,
+                                              theme: theme,
+                                              isFirstInGroup: isFirstInGroup,
+                                              isLastInGroup: isLastInGroup,
+                                              onSwipe: () => controller
+                                                  .setReplyingTo(message),
+                                              onLongPress: () => _showReactions(
+                                                context,
+                                                controller,
+                                                message,
+                                                theme,
+                                              ),
+                                            );
+                                          },
                                         ),
                                       );
-                                    }
-
-                                    final group = _groupMessages(
-                                      controller.messages,
-                                    )[index];
-                                    final date = group.date;
-                                    final messages = group.messages;
-
-                                    return StickyHeader(
-                                      header: Container(
-                                        width: double.infinity,
-                                        padding: const EdgeInsets.symmetric(
-                                          vertical: 24,
-                                        ),
-                                        alignment: Alignment.center,
-                                        child: Container(
-                                          padding: const EdgeInsets.symmetric(
-                                            horizontal: 16,
-                                            vertical: 6,
-                                          ),
-                                          decoration: BoxDecoration(
-                                            color: Color.alphaBlend(
-                                              theme.primaryColor.withValues(
-                                                alpha: 0.1,
-                                              ),
-                                              theme.backgroundColor,
-                                            ),
-                                            borderRadius: BorderRadius.circular(
-                                              20,
-                                            ),
-                                          ),
-                                          child: Text(
-                                            _getDateLabel(date),
-                                            style: TextStyle(
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.w800,
-                                              color: theme.primaryColor,
-                                              letterSpacing: 1.0,
-                                            ),
-                                          ),
-                                        ),
-                                      ),
-                                      content: ListView.builder(
-                                        shrinkWrap: true,
-                                        physics:
-                                            const NeverScrollableScrollPhysics(),
-                                        itemCount: messages.length,
-                                        reverse: true,
-                                        itemBuilder: (context, msgIndex) {
-                                          final message = messages[msgIndex];
-
-                                          final isLastInGroup =
-                                              msgIndex == 0 ||
-                                              messages[msgIndex - 1]
-                                                      .senderType !=
-                                                  message.senderType;
-
-                                          final isFirstInGroup =
-                                              msgIndex == messages.length - 1 ||
-                                              messages[msgIndex + 1]
-                                                      .senderType !=
-                                                  message.senderType;
-
-                                          return _ChatBubble(
-                                            message: message,
-                                            theme: theme,
-                                            isFirstInGroup: isFirstInGroup,
-                                            isLastInGroup: isLastInGroup,
-                                            onSwipe: () => controller
-                                                .setReplyingTo(message),
-                                            onLongPress: () => _showReactions(
-                                              context,
-                                              controller,
-                                              message,
-                                              theme,
-                                            ),
-                                          );
-                                        },
-                                      ),
-                                    );
-                                  },
-                                ),
-                        ),
+                                    },
+                                  );
+                                },
+                              ),
                       ),
                       if (controller.isAgentTyping)
                         Padding(
@@ -993,7 +987,7 @@ class _ChatBubble extends StatelessWidget {
     final isImage = _isImageMessage(message, hasAttachment);
     final isDocument = _isDocumentMessage(message, hasAttachment, isImage);
     final attachmentCaption = _attachmentCaption(message);
-    final timeStr = DateFormat('jm').format(message.createdAt);
+    final timeStr = DateFormat('jm').format(message.createdAt.toLocal());
 
     return Padding(
       padding: EdgeInsets.only(
@@ -1269,7 +1263,9 @@ class _ChatBubble extends StatelessWidget {
 
   Widget _buildSystemMessage() {
     final isReassignment = message.content.startsWith('Reassigned to');
-    final timeStr = DateFormat('MMM d, h:mm a').format(message.createdAt);
+    final timeStr = DateFormat(
+      'MMM d, h:mm a',
+    ).format(message.createdAt.toLocal());
 
     if (isReassignment) {
       // Beautiful divider with horizontal lines for reassignment events
