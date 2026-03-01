@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:dio/dio.dart';
@@ -98,6 +99,10 @@ class TalqClient {
 
   /// Initializes the GraphQL client with proper links and authentication
   Future<void> init() async {
+    debugPrint(
+      '[TalqClient] initializing with httpUrl: $httpUrl, wsUrl: $wsUrl',
+    );
+
     final isNgrokEndpoint = _isNgrokUrl(httpUrl);
     final httpHeaders = <String, String>{'X-Api-Key': apiKey};
     if (isNgrokEndpoint) {
@@ -151,9 +156,21 @@ class TalqClient {
     String document, {
     Map<String, dynamic>? variables,
   }) async {
-    return await client.mutate(
-      MutationOptions(document: gql(document), variables: variables ?? {}),
+    final options = WatchQueryOptions(
+      document: gql(document),
+      variables: variables ?? {},
+      fetchPolicy: FetchPolicy.networkOnly,
     );
+    final observableQuery = client.watchQuery(options);
+    final stream = observableQuery.stream
+        .where((result) => !result.isLoading)
+        .timeout(
+          const Duration(seconds: 30),
+          onTimeout: (sink) => sink.addError(
+            TimeoutException('Mutation timed out after 30 seconds'),
+          ),
+        );
+    return await stream.first;
   }
 
   /// Helper to perform queries
