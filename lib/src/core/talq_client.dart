@@ -144,11 +144,18 @@ class TalqClient {
       wsLink,
       authLink.concat(httpLink),
     );
-
-    client = GraphQLClient(
-      link: link,
-      cache: GraphQLCache(store: InMemoryStore()),
-    );
+    // Create client
+    try {
+      client = GraphQLClient(
+        cache: GraphQLCache(store: HiveStore()),
+        link: link,
+        queryRequestTimeout: _receiveTimeout,
+      );
+      print('[TalqClient] Successfully initialized with link.');
+    } catch (e) {
+      debugPrint('[TalqClient] Error initializing GraphQL client: $e');
+      rethrow;
+    }
   }
 
   /// Helper to perform mutations
@@ -156,21 +163,9 @@ class TalqClient {
     String document, {
     Map<String, dynamic>? variables,
   }) async {
-    final options = WatchQueryOptions(
-      document: gql(document),
-      variables: variables ?? {},
-      fetchPolicy: FetchPolicy.networkOnly,
+    return await client.mutate(
+      MutationOptions(document: gql(document), variables: variables ?? {}),
     );
-    final observableQuery = client.watchQuery(options);
-    final stream = observableQuery.stream
-        .where((result) => !result.isLoading)
-        .timeout(
-          const Duration(seconds: 30),
-          onTimeout: (sink) => sink.addError(
-            TimeoutException('Mutation timed out after 30 seconds'),
-          ),
-        );
-    return await stream.first;
   }
 
   /// Helper to perform queries
