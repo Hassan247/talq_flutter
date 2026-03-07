@@ -147,7 +147,7 @@ class TalqClient {
     // Create client
     try {
       client = GraphQLClient(
-        cache: GraphQLCache(store: HiveStore()),
+        cache: GraphQLCache(store: InMemoryStore()),
         link: link,
         queryRequestTimeout: _receiveTimeout,
       );
