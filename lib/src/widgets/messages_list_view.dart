@@ -1,5 +1,3 @@
-import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
@@ -101,10 +99,25 @@ class _MessagesListViewState extends State<MessagesListView> {
                 letterSpacing: -0.25,
               ),
             ),
+            actions: [
+              IconButton(
+                icon: Icon(
+                  Icons.add_rounded,
+                  color: activeTheme.titleStyle.color,
+                ),
+                onPressed: () {
+                  controller.prepareNewConversation();
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const TalqView()),
+                  );
+                },
+              ),
+              const SizedBox(width: 8),
+            ],
           ),
           body: Stack(
             children: [
-              Positioned.fill(child: _buildAmbientBackground(activeTheme)),
               if (controller.isLoading && controller.rooms.isEmpty)
                 const Center(child: CircularProgressIndicator())
               else if (controller.rooms.isEmpty)
@@ -121,42 +134,6 @@ class _MessagesListViewState extends State<MessagesListView> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildAmbientBackground(TalqTheme theme) {
-    return IgnorePointer(
-      child: Stack(
-        children: [
-          Positioned(
-            top: -140,
-            right: -60,
-            child: _buildAmbientBlob(
-              color: Color.lerp(theme.primaryColor, Colors.white, 0.72)!,
-              size: 220,
-            ),
-          ),
-          Positioned(
-            top: 120,
-            left: -70,
-            child: _buildAmbientBlob(
-              color: Color.lerp(theme.primaryColor, Colors.white, 0.88)!,
-              size: 180,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAmbientBlob({required Color color, required double size}) {
-    return ImageFiltered(
-      imageFilter: ImageFilter.blur(sigmaX: 42, sigmaY: 42),
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-      ),
     );
   }
 

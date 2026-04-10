@@ -352,7 +352,7 @@ class TalqController extends ChangeNotifier {
 
       // 4. Load initial messages (markAsRead will be called by setChatVisible when chat opens)
       if (_roomId != null) {
-        await fetchMessages(roomId: _roomId);
+        unawaited(fetchMessages(roomId: _roomId));
       }
 
       // 5. Start subscriptions
@@ -364,7 +364,7 @@ class TalqController extends ChangeNotifier {
 
       // Update current page if provided
       if (currentPage != null) {
-        await updatePage(currentPage);
+        unawaited(updatePage(currentPage));
       }
 
       _isInitialized = true;
