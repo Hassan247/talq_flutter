@@ -89,45 +89,50 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.black,
-      appBar: AppBar(
-        backgroundColor: Colors.black.withValues(alpha: 0.5),
-        elevation: 0,
-        leadingWidth: 70,
-        leading: Center(
-          child: GestureDetector(
-            onTap: () => Navigator.pop(context),
-            child: Container(
-              padding: const EdgeInsets.all(8),
-              decoration: BoxDecoration(
-                color: Colors.white.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: SvgPicture.asset(
-                'assets/icons/arrow-left.svg',
-                package: 'talq_sdk',
-                colorFilter: const ColorFilter.mode(
-                  Colors.white,
-                  BlendMode.srcIn,
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        appBar: AppBar(
+          backgroundColor: Colors.black.withValues(alpha: 0.5),
+          elevation: 0,
+          leadingWidth: 70,
+          leading: Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pop(context),
+              child: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.1),
+                  shape: BoxShape.circle,
                 ),
-                width: 20,
-                height: 20,
+                child: SvgPicture.asset(
+                  'assets/icons/arrow-left.svg',
+                  package: 'talq_sdk',
+                  colorFilter: const ColorFilter.mode(
+                    Colors.white,
+                    BlendMode.srcIn,
+                  ),
+                  width: 20,
+                  height: 20,
+                ),
               ),
             ),
           ),
-        ),
-        title: Text(
-          widget.fileName,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
+          title: Text(
+            widget.fileName,
+            style: const TextStyle(
+              fontFamily: 'Inter',
+              package: 'talq_sdk',
+              color: Colors.white,
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
           ),
         ),
+        extendBodyBehindAppBar: true,
+        body: _buildBody(),
       ),
-      extendBodyBehindAppBar: true,
-      body: _buildBody(),
     );
   }
 
@@ -149,7 +154,11 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
               const SizedBox(height: 16),
               Text(
                 'Error: $_error',
-                style: const TextStyle(color: Colors.white70),
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_sdk',
+                  color: Colors.white70,
+                ),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -195,7 +204,11 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
     return const Center(
       child: Text(
         'Format not supported',
-        style: TextStyle(color: Colors.white),
+        style: TextStyle(
+          fontFamily: 'Inter',
+          package: 'talq_sdk',
+          color: Colors.white,
+        ),
       ),
     );
   }

@@ -10,6 +10,8 @@ import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'faq_list_section.dart';
 import 'messages_list_view.dart';
+import 'shared_widgets.dart';
+import 'shimmer_skeleton.dart';
 import 'start_conversation_card.dart';
 
 class RoomsListView extends StatefulWidget {
@@ -60,43 +62,64 @@ class _RoomsListViewState extends State<RoomsListView> {
     final mediaQuery = MediaQuery.of(context);
     final headerHeight = mediaQuery.padding.top + 360;
 
-    return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
-      child: Scaffold(
-        backgroundColor: theme.backgroundColor,
-        body: Stack(
-          children: [
-            _buildAmbientBackground(theme),
-            Positioned(
-              top: 0,
-              left: 0,
-              right: 0,
-              height: headerHeight,
-              child: _buildHeroHeader(context, controller, theme),
-            ),
-            Positioned.fill(
-              top: mediaQuery.padding.top + 238,
-              child: SingleChildScrollView(
-                padding: EdgeInsets.fromLTRB(
-                  18,
-                  14,
-                  18,
-                  mediaQuery.padding.bottom + 34,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const SizedBox(height: 14),
-                    StartConversationCard(theme: theme, controller: controller),
-                    const SizedBox(height: 16),
-                    _buildMessagesSection(context, theme, controller),
-                    const SizedBox(height: 20),
-                    FAQListSection(theme: theme),
-                  ],
-                ),
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: AnnotatedRegion<SystemUiOverlayStyle>(
+        value: SystemUiOverlayStyle.light,
+        child: Scaffold(
+          backgroundColor: theme.backgroundColor,
+          body: Stack(
+            children: [
+              _buildAmbientBackground(theme),
+              Positioned(
+                top: 0,
+                left: 0,
+                right: 0,
+                height: headerHeight,
+                child: _buildHeroHeader(context, controller, theme),
               ),
-            ),
-          ],
+              Positioned.fill(
+                top: mediaQuery.padding.top + 238,
+                child: !controller.isInitialized
+                    ? Padding(
+                        padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            ConversationCardSkeleton(
+                              baseColor: Colors.white.withValues(alpha: 0.18),
+                              highlightColor: Colors.white.withValues(
+                                alpha: 0.32,
+                              ),
+                            ),
+                          ],
+                        ),
+                      )
+                    : SingleChildScrollView(
+                        padding: EdgeInsets.fromLTRB(
+                          18,
+                          14,
+                          18,
+                          mediaQuery.padding.bottom + 34,
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            const SizedBox(height: 14),
+                            StartConversationCard(
+                              theme: theme,
+                              controller: controller,
+                            ),
+                            const SizedBox(height: 16),
+                            _buildMessagesSection(context, theme, controller),
+                            const SizedBox(height: 20),
+                            FAQListSection(theme: theme),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -241,6 +264,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                       ? welcome
                       : 'Hello there! How can we help you today?',
                   style: const TextStyle(
+                    fontFamily: 'Inter',
+                    package: 'talq_sdk',
                     color: Colors.white,
                     fontSize: 35,
                     fontWeight: FontWeight.w800,
@@ -252,6 +277,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Text(
                   'Ask a question, check previous chats, or browse quick answers.',
                   style: TextStyle(
+                    fontFamily: 'Inter',
+                    package: 'talq_sdk',
                     color: Colors.white.withValues(alpha: 0.78),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -292,6 +319,8 @@ class _RoomsListViewState extends State<RoomsListView> {
         Text(
           'Talq',
           style: TextStyle(
+            fontFamily: 'Inter',
+            package: 'talq_sdk',
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.w900,
@@ -338,7 +367,7 @@ class _RoomsListViewState extends State<RoomsListView> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(builder: (_) => const MessagesListView()),
+              TalqPageRoute(builder: (_) => const MessagesListView()),
             );
           },
           borderRadius: BorderRadius.circular(28),
@@ -420,6 +449,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                     child: Text(
                       unreadTotal > 99 ? '99+' : '$unreadTotal',
                       style: TextStyle(
+                        fontFamily: 'Inter',
+                        package: 'talq_sdk',
                         color: theme.unreadTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,

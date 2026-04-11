@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'faq_views.dart';
+import 'shared_widgets.dart';
 
 class FAQListSection extends StatelessWidget {
   final TalqTheme theme;
@@ -62,7 +63,7 @@ class FAQListSection extends StatelessWidget {
                             onPressed: () {
                               Navigator.push(
                                 context,
-                                MaterialPageRoute(
+                                TalqPageRoute(
                                   builder: (_) => FAQListView(theme: theme),
                                 ),
                               );
@@ -77,6 +78,8 @@ class FAQListSection extends StatelessWidget {
                             child: const Text(
                               'See all',
                               style: TextStyle(
+                                fontFamily: 'Inter',
+                                package: 'talq_sdk',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.1,
@@ -112,7 +115,7 @@ class FAQListSection extends StatelessWidget {
                           onTap: () {
                             Navigator.push(
                               context,
-                              MaterialPageRoute(
+                              TalqPageRoute(
                                 builder: (_) =>
                                     FAQDetailView(faq: faq, theme: theme),
                               ),
@@ -135,7 +138,7 @@ class FAQListSection extends StatelessWidget {
                         onTap: () {
                           Navigator.push(
                             context,
-                            MaterialPageRoute(
+                            TalqPageRoute(
                               builder: (_) => FAQListView(theme: theme),
                             ),
                           );
@@ -153,6 +156,8 @@ class FAQListSection extends StatelessWidget {
                               Text(
                                 'Browse all articles',
                                 style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  package: 'talq_sdk',
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,
                                   color: theme.primaryColor,

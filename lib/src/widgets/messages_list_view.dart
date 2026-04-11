@@ -9,6 +9,7 @@ import '../theme/talq_theme.dart';
 import 'chat_view.dart';
 import 'live_pull_to_refresh.dart';
 import 'shared_widgets.dart';
+import 'shimmer_skeleton.dart';
 
 class MessagesListView extends StatefulWidget {
   final TalqTheme? theme;
@@ -69,71 +70,80 @@ class _MessagesListViewState extends State<MessagesListView> {
 
   void _openRoom(TalqController controller, TalqRoom room) {
     controller.fetchMessages(roomId: room.id);
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const TalqView()),
-    );
+    Navigator.push(context, TalqPageRoute(builder: (_) => const TalqView()));
   }
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TalqController>(
-      builder: (context, controller, child) {
-        final activeTheme = widget.theme ?? controller.theme;
-        final isDark = Theme.of(context).brightness == Brightness.dark;
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: Consumer<TalqController>(
+        builder: (context, controller, child) {
+          final activeTheme = widget.theme ?? controller.theme;
+          final isDark = Theme.of(context).brightness == Brightness.dark;
 
-        return Scaffold(
-          backgroundColor: activeTheme.backgroundColor,
-          appBar: AppBar(
-            systemOverlayStyle: SystemUiOverlayStyle.dark,
+          return Scaffold(
             backgroundColor: activeTheme.backgroundColor,
-            elevation: 0,
-            scrolledUnderElevation: 0,
-            leading: BackButton(color: activeTheme.titleStyle.color),
-            centerTitle: true,
-            title: Text(
-              'Messages',
-              style: activeTheme.titleStyle.copyWith(
-                fontSize: 17,
-                fontWeight: FontWeight.w700,
-                letterSpacing: -0.25,
+            appBar: AppBar(
+              systemOverlayStyle: SystemUiOverlayStyle.dark,
+              backgroundColor: activeTheme.backgroundColor,
+              elevation: 0,
+              scrolledUnderElevation: 0,
+              leading: BackButton(color: activeTheme.titleStyle.color),
+              centerTitle: true,
+              title: Text(
+                'Messages',
+                style: activeTheme.titleStyle.copyWith(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.25,
+                ),
               ),
+              actions: [
+                IconButton(
+                  icon: Icon(
+                    Icons.add_rounded,
+                    color: activeTheme.titleStyle.color,
+                  ),
+                  onPressed: () {
+                    controller.prepareNewConversation();
+                    Navigator.push(
+                      context,
+                      TalqPageRoute(builder: (_) => const TalqView()),
+                    );
+                  },
+                ),
+                const SizedBox(width: 8),
+              ],
             ),
-            actions: [
-              IconButton(
-                icon: Icon(
-                  Icons.add_rounded,
-                  color: activeTheme.titleStyle.color,
-                ),
-                onPressed: () {
-                  controller.prepareNewConversation();
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(builder: (_) => const TalqView()),
-                  );
-                },
-              ),
-              const SizedBox(width: 8),
-            ],
-          ),
-          body: Stack(
-            children: [
-              if (controller.isLoading && controller.rooms.isEmpty)
-                const Center(child: CircularProgressIndicator())
-              else if (controller.rooms.isEmpty)
-                _buildEmptyState(activeTheme)
-              else
-                LivePullToRefresh(
-                  isDark: isDark,
-                  isRefreshing: _isRefreshing,
-                  progressColor: activeTheme.primaryColor,
-                  onRefresh: () => _handleRefresh(controller),
-                  child: _buildList(activeTheme, controller),
-                ),
-            ],
-          ),
-        );
-      },
+            body: Stack(
+              children: [
+                if (controller.isLoading && controller.rooms.isEmpty)
+                  Expanded(
+                    child: MessagesListSkeleton(
+                      baseColor: activeTheme.primaryColor.withValues(
+                        alpha: 0.06,
+                      ),
+                      highlightColor: activeTheme.primaryColor.withValues(
+                        alpha: 0.12,
+                      ),
+                    ),
+                  )
+                else if (controller.rooms.isEmpty)
+                  _buildEmptyState(activeTheme)
+                else
+                  LivePullToRefresh(
+                    isDark: isDark,
+                    isRefreshing: _isRefreshing,
+                    progressColor: activeTheme.primaryColor,
+                    onRefresh: () => _handleRefresh(controller),
+                    child: _buildList(activeTheme, controller),
+                  ),
+              ],
+            ),
+          );
+        },
+      ),
     );
   }
 
@@ -386,6 +396,8 @@ class _MessageCard extends StatelessWidget {
       child: Text(
         'Resolved',
         style: TextStyle(
+          fontFamily: 'Inter',
+          package: 'talq_sdk',
           color: theme.resolvedTextColor.withValues(alpha: 0.85),
           fontSize: 10,
           fontWeight: FontWeight.w700,

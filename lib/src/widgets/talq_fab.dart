@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-
 import 'package:provider/provider.dart';
 
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'rooms_list_view.dart';
+import 'shared_widgets.dart';
 
 class TalqFAB extends StatelessWidget {
   final TalqTheme theme;
@@ -30,7 +30,7 @@ class TalqFAB extends StatelessWidget {
     return FloatingActionButton(
       onPressed: () {
         Navigator.of(context).push(
-          MaterialPageRoute(
+          TalqPageRoute(
             builder: (context) => RoomsListView(theme: activeTheme),
           ),
         );

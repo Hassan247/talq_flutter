@@ -178,6 +178,8 @@ class StatusBadge extends StatelessWidget {
       child: Text(
         text,
         style: TextStyle(
+          fontFamily: 'Inter',
+          package: 'talq_sdk',
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: textColor,
@@ -185,4 +187,34 @@ class StatusBadge extends StatelessWidget {
       ),
     );
   }
+}
+
+/// Smooth iOS-style slide transition for page navigation.
+class TalqPageRoute<T> extends PageRouteBuilder<T> {
+  TalqPageRoute({required WidgetBuilder builder})
+    : super(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            builder(context),
+        transitionDuration: const Duration(milliseconds: 300),
+        reverseTransitionDuration: const Duration(milliseconds: 250),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          final tween = Tween<Offset>(
+            begin: const Offset(1.0, 0.0),
+            end: Offset.zero,
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+          final secondaryTween = Tween<Offset>(
+            begin: Offset.zero,
+            end: const Offset(-0.3, 0.0),
+          ).chain(CurveTween(curve: Curves.easeOutCubic));
+
+          return SlideTransition(
+            position: secondaryAnimation.drive(secondaryTween),
+            child: SlideTransition(
+              position: animation.drive(tween),
+              child: child,
+            ),
+          );
+        },
+      );
 }

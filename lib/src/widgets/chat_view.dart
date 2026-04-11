@@ -21,6 +21,8 @@ import 'media_viewer_page.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
 import 'shared_widgets.dart';
+import 'shimmer_skeleton.dart';
+import 'start_conversation_card.dart';
 
 class TalqView extends StatefulWidget {
   final String title;
@@ -107,11 +109,17 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
   String _formatResponseTime(String? time) {
     if (time == null) return 'Usually replies in minutes';
-    if (time.toLowerCase().trim().startsWith('replies') ||
-        time.toLowerCase().trim().startsWith('usually')) {
-      return time;
+    final t = time.trim();
+    if (t.toLowerCase().startsWith('replies') ||
+        t.toLowerCase().startsWith('usually')) {
+      return t;
     }
-    return 'Reply in $time';
+    // Format raw "8483 min" / "45 sec" into human-readable
+    final formatted = StartConversationCard.formatReplyTime(t);
+    if (formatted != t) {
+      return 'Usually replies in ${formatted.toLowerCase()}';
+    }
+    return 'Reply in $t';
   }
 
   List<_MessageGroup> _groupMessages(List<models.TalqMessage> messages) {
@@ -165,373 +173,429 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<TalqController>(
-      builder: (context, controller, child) {
-        if (!controller.isInitialized && controller.isLoading) {
-          return const Scaffold(
-            body: Center(child: CircularProgressIndicator()),
-          );
-        }
-
-        // use controller's theme for reactive updates
-        final theme = controller.theme;
-
-        final hasMessages = controller.messages.isNotEmpty;
-        final shouldRedirect = widget.isNewConversation && hasMessages;
-
-        return PopScope(
-          canPop: !shouldRedirect,
-          onPopInvokedWithResult: (didPop, _) {
-            if (didPop) {
-              context.read<TalqController>().setChatVisible(false);
-              return;
-            }
-
-            if (shouldRedirect) {
-              context.read<TalqController>().setChatVisible(false);
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const MessagesListView()),
-              );
-            }
-          },
-          child: GestureDetector(
-            onTap: () => FocusScope.of(context).unfocus(),
-            child: Scaffold(
-              backgroundColor: theme.backgroundColor,
-              appBar: AppBar(
-                systemOverlayStyle: SystemUiOverlayStyle.dark,
-                elevation: 0,
-                scrolledUnderElevation: 0,
-                surfaceTintColor: Colors.transparent,
-                backgroundColor: theme.backgroundColor,
-                leading: BackButton(color: theme.titleStyle.color),
-                centerTitle: false,
-                titleSpacing: 0,
-                title: Row(
-                  children: [
-                    TalqAvatar(
-                      imageUrl: controller.currentRoom?.assigneeAvatarUrl,
-                      senderType: models.SenderType.agent,
-                      radius: 18,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            controller.currentRoom?.assigneeName ??
-                                controller.workspace?.name ??
-                                widget.title,
-                            style: theme.titleStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w700,
-                              letterSpacing: -0.3,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                          if (controller.workspace?.showResponseTime == true)
-                            Text(
-                              _formatResponseTime(
-                                controller.workspace?.responseTime,
-                              ),
-                              style: theme.subtitleStyle.copyWith(
-                                fontSize: 12,
-                                color: theme.subtitleStyle.color?.withValues(
-                                  alpha: 0.6,
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                    ),
-                  ],
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: Consumer<TalqController>(
+        builder: (context, controller, child) {
+          if (!controller.isInitialized && controller.isLoading) {
+            return Scaffold(
+              backgroundColor: controller.theme.backgroundColor,
+              body: ChatMessagesSkeleton(
+                baseColor: controller.theme.primaryColor.withValues(
+                  alpha: 0.06,
                 ),
-                actions: [
-                  IconButton(
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: theme.titleStyle.color?.withValues(alpha: 0.8),
-                      size: 26,
-                    ),
-                    onPressed: () {
-                      context.read<TalqController>().setChatVisible(false);
-                      Navigator.pop(context);
-                    },
-                  ),
-                  const SizedBox(width: 8),
-                ],
+                highlightColor: controller.theme.primaryColor.withValues(
+                  alpha: 0.12,
+                ),
               ),
-              body: Stack(
-                children: [
-                  Column(
+            );
+          }
+
+          // use controller's theme for reactive updates
+          final theme = controller.theme;
+
+          final hasMessages = controller.messages.isNotEmpty;
+          final shouldRedirect = widget.isNewConversation && hasMessages;
+
+          return PopScope(
+            canPop: !shouldRedirect,
+            onPopInvokedWithResult: (didPop, _) {
+              if (didPop) {
+                context.read<TalqController>().setChatVisible(false);
+                return;
+              }
+
+              if (shouldRedirect) {
+                context.read<TalqController>().setChatVisible(false);
+                Navigator.pushReplacement(
+                  context,
+                  TalqPageRoute(builder: (_) => const MessagesListView()),
+                );
+              }
+            },
+            child: GestureDetector(
+              onTap: () => FocusScope.of(context).unfocus(),
+              child: Scaffold(
+                backgroundColor: theme.backgroundColor,
+                appBar: AppBar(
+                  systemOverlayStyle: SystemUiOverlayStyle.dark,
+                  elevation: 0,
+                  scrolledUnderElevation: 0,
+                  surfaceTintColor: Colors.transparent,
+                  backgroundColor: theme.backgroundColor,
+                  leading: BackButton(color: theme.titleStyle.color),
+                  centerTitle: false,
+                  titleSpacing: 0,
+                  title: Row(
                     children: [
+                      _buildHeaderAvatar(controller, theme),
+                      const SizedBox(width: 12),
                       Expanded(
-                        child:
-                            controller.isRoomLoading &&
-                                controller.roomId != null
-                            ? ListView(
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        0.6,
-                                    child: const Center(
-                                      child: CircularProgressIndicator(),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : controller.messages.isEmpty
-                            ? ListView(
-                                children: [
-                                  SizedBox(
-                                    height:
-                                        MediaQuery.of(context).size.height *
-                                        0.6,
-                                    child: Center(
-                                      child: Padding(
-                                        padding: const EdgeInsets.all(32.0),
-                                        child: controller.roomId != null
-                                            ? Text(
-                                                'No messages yet',
-                                                style: theme.subtitleStyle
-                                                    .copyWith(
-                                                      fontSize: 16,
-                                                      fontWeight:
-                                                          FontWeight.w500,
-                                                    ),
-                                              )
-                                            : Column(
-                                                mainAxisAlignment:
-                                                    MainAxisAlignment.center,
-                                                children: [
-                                                  Container(
-                                                    padding:
-                                                        const EdgeInsets.all(
-                                                          24,
-                                                        ),
-                                                    decoration: BoxDecoration(
-                                                      color: theme.primaryColor
-                                                          .withValues(
-                                                            alpha: 0.04,
-                                                          ),
-                                                      shape: BoxShape.circle,
-                                                    ),
-                                                    child: SvgPicture.asset(
-                                                      'assets/icons/messages.svg',
-                                                      package: 'talq_sdk',
-                                                      colorFilter:
-                                                          ColorFilter.mode(
-                                                            theme.primaryColor
-                                                                .withValues(
-                                                                  alpha: 0.15,
-                                                                ),
-                                                            BlendMode.srcIn,
-                                                          ),
-                                                      width: 56,
-                                                      height: 56,
-                                                    ),
-                                                  ),
-                                                  const SizedBox(height: 32),
-                                                  Text(
-                                                    controller
-                                                            .workspace
-                                                            ?.welcomeMessage ??
-                                                        'Hello there!\nHow can we help today?',
-                                                    textAlign: TextAlign.center,
-                                                    style: theme.titleStyle
-                                                        .copyWith(
-                                                          fontSize: 22,
-                                                          fontWeight:
-                                                              FontWeight.w800,
-                                                          color: theme
-                                                              .titleStyle
-                                                              .color
-                                                              ?.withValues(
-                                                                alpha: 0.8,
-                                                              ),
-                                                          letterSpacing: -0.5,
-                                                          height: 1.2,
-                                                        ),
-                                                  ),
-                                                  const SizedBox(height: 12),
-                                                  Text(
-                                                    'Type a message below to begin.',
-                                                    style: theme.subtitleStyle
-                                                        .copyWith(
-                                                          fontSize: 15,
-                                                          color: theme
-                                                              .subtitleStyle
-                                                              .color
-                                                              ?.withValues(
-                                                                alpha: 0.5,
-                                                              ),
-                                                          letterSpacing: -0.2,
-                                                        ),
-                                                  ),
-                                                ],
-                                              ),
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              )
-                            : Builder(
-                                builder: (context) {
-                                  final groupedMessages = _groupMessages(
-                                    controller.messages,
-                                  );
-                                  return ListView.builder(
-                                    controller: _scrollController,
-                                    padding: const EdgeInsets.only(
-                                      left: 16,
-                                      right: 0,
-                                      top: 16,
-                                      bottom: 16,
-                                    ),
-                                    reverse: true,
-                                    itemCount:
-                                        groupedMessages.length +
-                                        (controller.isFetchingMore ? 1 : 0),
-                                    itemBuilder: (context, index) {
-                                      if (index == groupedMessages.length) {
-                                        return const Padding(
-                                          padding: EdgeInsets.all(16.0),
-                                          child: Center(
-                                            child: CircularProgressIndicator(),
-                                          ),
-                                        );
-                                      }
-
-                                      final group = groupedMessages[index];
-                                      final date = group.date;
-                                      final messages = group.messages;
-
-                                      return StickyHeader(
-                                        header: Container(
-                                          width: double.infinity,
-                                          padding: const EdgeInsets.symmetric(
-                                            vertical: 24,
-                                          ),
-                                          alignment: Alignment.center,
-                                          child: Container(
-                                            padding: const EdgeInsets.symmetric(
-                                              horizontal: 16,
-                                              vertical: 6,
-                                            ),
-                                            decoration: BoxDecoration(
-                                              color: Color.alphaBlend(
-                                                theme.primaryColor.withValues(
-                                                  alpha: 0.1,
-                                                ),
-                                                theme.backgroundColor,
-                                              ),
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
-                                            ),
-                                            child: Text(
-                                              _getDateLabel(date),
-                                              style: TextStyle(
-                                                fontSize: 10,
-                                                fontWeight: FontWeight.w800,
-                                                color: theme.primaryColor,
-                                                letterSpacing: 1.0,
-                                              ),
-                                            ),
-                                          ),
-                                        ),
-                                        content: ListView.builder(
-                                          shrinkWrap: true,
-                                          physics:
-                                              const NeverScrollableScrollPhysics(),
-                                          itemCount: messages.length,
-                                          reverse: true,
-                                          itemBuilder: (context, msgIndex) {
-                                            final message = messages[msgIndex];
-
-                                            final isLastInGroup =
-                                                msgIndex == 0 ||
-                                                messages[msgIndex - 1]
-                                                        .senderType !=
-                                                    message.senderType;
-
-                                            final isFirstInGroup =
-                                                msgIndex ==
-                                                    messages.length - 1 ||
-                                                messages[msgIndex + 1]
-                                                        .senderType !=
-                                                    message.senderType;
-
-                                            return _ChatBubble(
-                                              message: message,
-                                              theme: theme,
-                                              isFirstInGroup: isFirstInGroup,
-                                              isLastInGroup: isLastInGroup,
-                                              onSwipe: () => controller
-                                                  .setReplyingTo(message),
-                                              onLongPress: () => _showReactions(
-                                                context,
-                                                controller,
-                                                message,
-                                                theme,
-                                              ),
-                                            );
-                                          },
-                                        ),
-                                      );
-                                    },
-                                  );
-                                },
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              controller.currentRoom?.assigneeName ??
+                                  controller.workspace?.name ??
+                                  widget.title,
+                              style: theme.titleStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                letterSpacing: -0.3,
                               ),
-                      ),
-                      if (controller.isAgentTyping)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 8,
-                          ),
-                          child: Row(
-                            children: [
-                              const SizedBox(
-                                width: 14,
-                                height: 14,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation(
-                                    Colors.grey,
-                                  ),
-                                ),
-                              ),
-                              const SizedBox(width: 8),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            if (controller.workspace?.showResponseTime == true)
                               Text(
-                                'Support is typing...',
+                                _formatResponseTime(
+                                  controller.workspace?.responseTime,
+                                ),
                                 style: theme.subtitleStyle.copyWith(
                                   fontSize: 12,
-                                  fontStyle: FontStyle.italic,
+                                  color: theme.subtitleStyle.color?.withValues(
+                                    alpha: 0.6,
+                                  ),
                                 ),
                               ),
-                            ],
-                          ),
+                          ],
                         ),
-                      if (controller.replyingTo != null)
-                        _buildReplyOverlay(controller, theme),
-                      _buildInputArea(controller, theme),
+                      ),
                     ],
                   ),
-                  if (controller.showRatingPrompt)
-                    Container(
-                      color: Colors.black.withValues(alpha: 0.5),
-                      child: RatingView(theme: theme),
+                  actions: [
+                    IconButton(
+                      icon: Icon(
+                        Icons.close_rounded,
+                        color: theme.titleStyle.color?.withValues(alpha: 0.8),
+                        size: 26,
+                      ),
+                      onPressed: () {
+                        context.read<TalqController>().setChatVisible(false);
+                        Navigator.pop(context);
+                      },
                     ),
-                ],
+                    const SizedBox(width: 8),
+                  ],
+                ),
+                body: Stack(
+                  children: [
+                    Column(
+                      children: [
+                        Expanded(
+                          child:
+                              controller.isRoomLoading &&
+                                  controller.roomId != null
+                              ? ListView(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                          0.6,
+                                      child: const Center(
+                                        child: CircularProgressIndicator(),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : controller.messages.isEmpty
+                              ? ListView(
+                                  children: [
+                                    SizedBox(
+                                      height:
+                                          MediaQuery.of(context).size.height *
+                                          0.6,
+                                      child: Center(
+                                        child: Padding(
+                                          padding: const EdgeInsets.all(32.0),
+                                          child: controller.roomId != null
+                                              ? Text(
+                                                  'No messages yet',
+                                                  style: theme.subtitleStyle
+                                                      .copyWith(
+                                                        fontSize: 16,
+                                                        fontWeight:
+                                                            FontWeight.w500,
+                                                      ),
+                                                )
+                                              : Column(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment.center,
+                                                  children: [
+                                                    Container(
+                                                      padding:
+                                                          const EdgeInsets.all(
+                                                            24,
+                                                          ),
+                                                      decoration: BoxDecoration(
+                                                        color: theme
+                                                            .primaryColor
+                                                            .withValues(
+                                                              alpha: 0.04,
+                                                            ),
+                                                        shape: BoxShape.circle,
+                                                      ),
+                                                      child: SvgPicture.asset(
+                                                        'assets/icons/messages.svg',
+                                                        package: 'talq_sdk',
+                                                        colorFilter:
+                                                            ColorFilter.mode(
+                                                              theme.primaryColor
+                                                                  .withValues(
+                                                                    alpha: 0.15,
+                                                                  ),
+                                                              BlendMode.srcIn,
+                                                            ),
+                                                        width: 56,
+                                                        height: 56,
+                                                      ),
+                                                    ),
+                                                    const SizedBox(height: 32),
+                                                    Text(
+                                                      controller
+                                                              .workspace
+                                                              ?.welcomeMessage ??
+                                                          'Hello there!\nHow can we help today?',
+                                                      textAlign:
+                                                          TextAlign.center,
+                                                      style: theme.titleStyle
+                                                          .copyWith(
+                                                            fontSize: 22,
+                                                            fontWeight:
+                                                                FontWeight.w800,
+                                                            color: theme
+                                                                .titleStyle
+                                                                .color
+                                                                ?.withValues(
+                                                                  alpha: 0.8,
+                                                                ),
+                                                            letterSpacing: -0.5,
+                                                            height: 1.2,
+                                                          ),
+                                                    ),
+                                                    const SizedBox(height: 12),
+                                                    Text(
+                                                      'Type a message below to begin.',
+                                                      style: theme.subtitleStyle
+                                                          .copyWith(
+                                                            fontSize: 15,
+                                                            color: theme
+                                                                .subtitleStyle
+                                                                .color
+                                                                ?.withValues(
+                                                                  alpha: 0.5,
+                                                                ),
+                                                            letterSpacing: -0.2,
+                                                          ),
+                                                    ),
+                                                  ],
+                                                ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : Builder(
+                                  builder: (context) {
+                                    final groupedMessages = _groupMessages(
+                                      controller.messages,
+                                    );
+                                    return ListView.builder(
+                                      controller: _scrollController,
+                                      padding: const EdgeInsets.only(
+                                        left: 16,
+                                        right: 0,
+                                        top: 16,
+                                        bottom: 16,
+                                      ),
+                                      reverse: true,
+                                      itemCount:
+                                          groupedMessages.length +
+                                          (controller.isFetchingMore ? 1 : 0),
+                                      itemBuilder: (context, index) {
+                                        if (index == groupedMessages.length) {
+                                          return const Padding(
+                                            padding: EdgeInsets.all(16.0),
+                                            child: Center(
+                                              child:
+                                                  CircularProgressIndicator(),
+                                            ),
+                                          );
+                                        }
+
+                                        final group = groupedMessages[index];
+                                        final date = group.date;
+                                        final messages = group.messages;
+
+                                        return StickyHeader(
+                                          header: Container(
+                                            width: double.infinity,
+                                            padding: const EdgeInsets.symmetric(
+                                              vertical: 24,
+                                            ),
+                                            alignment: Alignment.center,
+                                            child: Container(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 16,
+                                                    vertical: 6,
+                                                  ),
+                                              decoration: BoxDecoration(
+                                                color: Color.alphaBlend(
+                                                  theme.primaryColor.withValues(
+                                                    alpha: 0.1,
+                                                  ),
+                                                  theme.backgroundColor,
+                                                ),
+                                                borderRadius:
+                                                    BorderRadius.circular(20),
+                                              ),
+                                              child: Text(
+                                                _getDateLabel(date),
+                                                style: TextStyle(
+                                                  fontFamily: 'Inter',
+                                                  package: 'talq_sdk',
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.w800,
+                                                  color: theme.primaryColor,
+                                                  letterSpacing: 1.0,
+                                                ),
+                                              ),
+                                            ),
+                                          ),
+                                          content: ListView.builder(
+                                            shrinkWrap: true,
+                                            physics:
+                                                const NeverScrollableScrollPhysics(),
+                                            itemCount: messages.length,
+                                            reverse: true,
+                                            itemBuilder: (context, msgIndex) {
+                                              final message =
+                                                  messages[msgIndex];
+
+                                              final isLastInGroup =
+                                                  msgIndex == 0 ||
+                                                  messages[msgIndex - 1]
+                                                          .senderType !=
+                                                      message.senderType;
+
+                                              final isFirstInGroup =
+                                                  msgIndex ==
+                                                      messages.length - 1 ||
+                                                  messages[msgIndex + 1]
+                                                          .senderType !=
+                                                      message.senderType;
+
+                                              return _ChatBubble(
+                                                message: message,
+                                                theme: theme,
+                                                isFirstInGroup: isFirstInGroup,
+                                                isLastInGroup: isLastInGroup,
+                                                onSwipe: () => controller
+                                                    .setReplyingTo(message),
+                                                onLongPress: () =>
+                                                    _showReactions(
+                                                      context,
+                                                      controller,
+                                                      message,
+                                                      theme,
+                                                    ),
+                                              );
+                                            },
+                                          ),
+                                        );
+                                      },
+                                    );
+                                  },
+                                ),
+                        ),
+                        if (controller.isAgentTyping)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            child: Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 14,
+                                    vertical: 10,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: theme.surfaceColor,
+                                    borderRadius: const BorderRadius.only(
+                                      topLeft: Radius.circular(18),
+                                      topRight: Radius.circular(18),
+                                      bottomRight: Radius.circular(18),
+                                      bottomLeft: Radius.circular(4),
+                                    ),
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: theme.cardShadowColor.withValues(
+                                          alpha: 0.06,
+                                        ),
+                                        blurRadius: 8,
+                                        offset: const Offset(0, 2),
+                                      ),
+                                    ],
+                                  ),
+                                  child: TypingIndicatorDots(
+                                    color:
+                                        theme.subtitleStyle.color ??
+                                        Colors.grey,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        if (controller.replyingTo != null)
+                          _buildReplyOverlay(controller, theme),
+                        _buildInputArea(controller, theme),
+                      ],
+                    ),
+                    if (controller.showRatingPrompt)
+                      Container(
+                        color: Colors.black.withValues(alpha: 0.5),
+                        child: RatingView(theme: theme),
+                      ),
+                  ],
+                ),
               ),
             ),
-          ),
-        );
-      },
+          );
+        },
+      ),
+    );
+  }
+
+  Widget _buildHeaderAvatar(TalqController controller, TalqTheme theme) {
+    final imageUrl =
+        controller.currentRoom?.assigneeAvatarUrl ??
+        controller.workspace?.logoUrl;
+    if (imageUrl != null && imageUrl.isNotEmpty) {
+      return TalqAvatar(
+        imageUrl: imageUrl,
+        senderType: models.SenderType.agent,
+        radius: 18,
+      );
+    }
+    // Fallback: workspace initial in a colored circle
+    final name = controller.workspace?.name ?? '';
+    final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
+    return CircleAvatar(
+      radius: 18,
+      backgroundColor: theme.primaryColor,
+      child: Text(
+        initial,
+        style: const TextStyle(
+          fontFamily: 'Inter',
+          package: 'talq_sdk',
+          color: Colors.white,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
+        ),
+      ),
     );
   }
 
@@ -557,6 +621,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
             Text(
               'This conversation is resolved',
               style: TextStyle(
+                fontFamily: 'Inter',
+                package: 'talq_sdk',
                 color: theme.resolvedTextColor,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -566,6 +632,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
             Text(
               'You cannot send new messages',
               style: TextStyle(
+                fontFamily: 'Inter',
+                package: 'talq_sdk',
                 color: theme.resolvedTextColor.withValues(alpha: 0.7),
                 fontSize: 13,
               ),
@@ -713,7 +781,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                   );
                   if (image != null && mounted) {
                     navigator.push(
-                      MaterialPageRoute(
+                      TalqPageRoute(
                         builder: (context) => ChangeNotifierProvider.value(
                           value: controller,
                           child: MediaPreviewPage(
@@ -738,7 +806,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                   );
                   if (image != null && mounted) {
                     navigator.push(
-                      MaterialPageRoute(
+                      TalqPageRoute(
                         builder: (context) => ChangeNotifierProvider.value(
                           value: controller,
                           child: MediaPreviewPage(
@@ -765,7 +833,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                       );
                   if (result != null && mounted) {
                     navigator.push(
-                      MaterialPageRoute(
+                      TalqPageRoute(
                         builder: (context) => ChangeNotifierProvider.value(
                           value: controller,
                           child: MediaPreviewPage(
@@ -949,7 +1017,14 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                     Navigator.pop(context);
                     controller.addReaction(message.id, emoji);
                   },
-                  child: Text(emoji, style: const TextStyle(fontSize: 28)),
+                  child: Text(
+                    emoji,
+                    style: const TextStyle(
+                      fontFamily: 'Inter',
+                      package: 'talq_sdk',
+                      fontSize: 28,
+                    ),
+                  ),
                 ),
               )
               .toList(),
@@ -1180,7 +1255,14 @@ class _ChatBubble extends StatelessWidget {
             .map(
               (emoji) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: Text(emoji, style: const TextStyle(fontSize: 12)),
+                child: Text(
+                  emoji,
+                  style: const TextStyle(
+                    fontFamily: 'Inter',
+                    package: 'talq_sdk',
+                    fontSize: 12,
+                  ),
+                ),
               ),
             )
             .toList(),
@@ -1307,6 +1389,8 @@ class _ChatBubble extends StatelessWidget {
                   Text(
                     message.content,
                     style: TextStyle(
+                      fontFamily: 'Inter',
+                      package: 'talq_sdk',
                       fontSize: 11,
                       color: Colors.grey[700],
                       fontWeight: FontWeight.w600,
@@ -1315,7 +1399,12 @@ class _ChatBubble extends StatelessWidget {
                   const SizedBox(width: 8),
                   Text(
                     '• $timeStr',
-                    style: TextStyle(fontSize: 10, color: Colors.grey[500]),
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      package: 'talq_sdk',
+                      fontSize: 10,
+                      color: Colors.grey[500],
+                    ),
                   ),
                 ],
               ),
@@ -1357,12 +1446,14 @@ class _ChatBubble extends StatelessWidget {
   }
 
   Widget _buildImage(BuildContext context) {
+    const double maxHeight = 280;
+    const double minHeight = 100;
+
     Widget imageWidget;
     if (message.localFilePath != null &&
         File(message.localFilePath!).existsSync()) {
       imageWidget = Image.file(
         File(message.localFilePath!),
-        height: 200,
         width: double.infinity,
         fit: BoxFit.cover,
       );
@@ -1371,16 +1462,15 @@ class _ChatBubble extends StatelessWidget {
         imageUrl: message.fileUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
-        height: 200,
         placeholder: (context, url) => Container(
           width: double.infinity,
-          height: 200,
+          height: 180,
           color: Colors.grey[100],
-          child: const Center(child: CircularProgressIndicator()),
+          child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
         errorWidget: (context, url, error) => Container(
           width: double.infinity,
-          height: 200,
+          height: 140,
           color: Colors.grey[100],
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -1393,7 +1483,12 @@ class _ChatBubble extends StatelessWidget {
               const SizedBox(height: 8),
               Text(
                 'Image unavailable',
-                style: TextStyle(color: Colors.grey[500], fontSize: 12),
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_sdk',
+                  color: Colors.grey[500],
+                  fontSize: 12,
+                ),
               ),
             ],
           ),
@@ -1402,7 +1497,7 @@ class _ChatBubble extends StatelessWidget {
     } else {
       imageWidget = Container(
         width: double.infinity,
-        height: 200,
+        height: 140,
         color: Colors.grey[100],
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -1415,7 +1510,12 @@ class _ChatBubble extends StatelessWidget {
             const SizedBox(height: 6),
             Text(
               'Image unavailable',
-              style: TextStyle(color: Colors.grey[600], fontSize: 12),
+              style: TextStyle(
+                fontFamily: 'Inter',
+                package: 'talq_sdk',
+                color: Colors.grey[600],
+                fontSize: 12,
+              ),
             ),
           ],
         ),
@@ -1430,7 +1530,7 @@ class _ChatBubble extends StatelessWidget {
               (message.fileUrl != null || message.localFilePath != null)) {
             Navigator.push(
               context,
-              MaterialPageRoute(
+              TalqPageRoute(
                 builder: (context) => MediaViewerPage(
                   url: message.fileUrl,
                   localPath: message.localFilePath,
@@ -1441,21 +1541,24 @@ class _ChatBubble extends StatelessWidget {
             );
           }
         },
-        child: SizedBox(
-          width: double.infinity,
-          height: 200,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(
+            maxHeight: maxHeight,
+            minHeight: minHeight,
+          ),
           child: Stack(
-            fit: StackFit.expand,
             alignment: Alignment.center,
             children: [
               imageWidget,
               if (message.isUploading)
-                Container(
-                  color: Colors.black26,
-                  child: const Center(
-                    child: CircularProgressIndicator(
-                      color: Colors.white,
-                      strokeWidth: 2,
+                Positioned.fill(
+                  child: Container(
+                    color: Colors.black26,
+                    child: const Center(
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 2,
+                      ),
                     ),
                   ),
                 ),
@@ -1483,7 +1586,7 @@ class _ChatBubble extends StatelessWidget {
               (message.fileUrl != null || message.localFilePath != null)) {
             Navigator.push(
               context,
-              MaterialPageRoute(
+              TalqPageRoute(
                 builder: (context) => MediaViewerPage(
                   url: message.fileUrl,
                   localPath: message.localFilePath,

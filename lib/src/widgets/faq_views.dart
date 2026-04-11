@@ -8,6 +8,7 @@ import 'package:provider/provider.dart';
 import '../models/models.dart';
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
+import 'shared_widgets.dart';
 
 class FAQListView extends StatefulWidget {
   final TalqTheme theme;
@@ -63,103 +64,105 @@ class _FAQListViewState extends State<FAQListView> {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: () => FocusScope.of(context).unfocus(),
-      child: Scaffold(
-        backgroundColor: widget.theme.backgroundColor,
-        appBar: AppBar(
-          backgroundColor: widget.theme.backgroundColor, // seamless
-          elevation: 0,
-          scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/arrow-left.svg',
-              package: 'talq_sdk',
-              colorFilter: ColorFilter.mode(
-                widget.theme.titleStyle.color!,
-                BlendMode.srcIn,
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: Scaffold(
+          backgroundColor: widget.theme.backgroundColor,
+          appBar: AppBar(
+            backgroundColor: widget.theme.backgroundColor, // seamless
+            elevation: 0,
+            scrolledUnderElevation: 0,
+            leading: IconButton(
+              icon: SvgPicture.asset(
+                'assets/icons/arrow-left.svg',
+                package: 'talq_sdk',
+                colorFilter: ColorFilter.mode(
+                  widget.theme.titleStyle.color!,
+                  BlendMode.srcIn,
+                ),
+                width: 20,
+                height: 20,
               ),
-              width: 20,
-              height: 20,
+              onPressed: () => Navigator.pop(context),
             ),
-            onPressed: () => Navigator.pop(context),
-          ),
-          title: Text(
-            'Help Center',
-            style: widget.theme.titleStyle.copyWith(
-              fontSize: 17,
-              fontWeight: FontWeight.w600,
+            title: Text(
+              'Help Center',
+              style: widget.theme.titleStyle.copyWith(
+                fontSize: 17,
+                fontWeight: FontWeight.w600,
+              ),
             ),
+            centerTitle: true,
           ),
-          centerTitle: true,
-        ),
-        body: Column(
-          children: [
-            _buildSearchBar(),
-            Expanded(
-              child: Consumer<TalqController>(
-                builder: (context, controller, _) {
-                  final faqs = controller.paginatedFaqs;
+          body: Column(
+            children: [
+              _buildSearchBar(),
+              Expanded(
+                child: Consumer<TalqController>(
+                  builder: (context, controller, _) {
+                    final faqs = controller.paginatedFaqs;
 
-                  if (faqs.isEmpty && controller.isFaqLoading) {
-                    return const Center(child: CircularProgressIndicator());
-                  }
+                    if (faqs.isEmpty && controller.isFaqLoading) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
 
-                  if (faqs.isEmpty) {
-                    return Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
-                            Icons.help_outline,
-                            size: 64,
-                            color: widget.theme.subtitleStyle.color?.withValues(
-                              alpha: 0.5,
+                    if (faqs.isEmpty) {
+                      return Center(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.help_outline,
+                              size: 64,
+                              color: widget.theme.subtitleStyle.color
+                                  ?.withValues(alpha: 0.5),
                             ),
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            controller.faqSearchQuery.isEmpty
-                                ? 'No articles found'
-                                : 'No results for "${controller.faqSearchQuery}"',
-                            style: widget.theme.subtitleStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: FontWeight.w500,
+                            const SizedBox(height: 16),
+                            Text(
+                              controller.faqSearchQuery.isEmpty
+                                  ? 'No articles found'
+                                  : 'No results for "${controller.faqSearchQuery}"',
+                              style: widget.theme.subtitleStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
+                      );
+                    }
+
+                    return ListView.separated(
+                      key: const PageStorageKey('faq_list'),
+                      controller: _scrollController,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 12,
                       ),
+                      itemCount:
+                          faqs.length + (controller.faqHasNextPage ? 1 : 0),
+                      separatorBuilder: (context, index) =>
+                          const SizedBox(height: 8),
+                      itemBuilder: (context, index) {
+                        if (index == faqs.length) {
+                          return const Center(
+                            child: Padding(
+                              padding: EdgeInsets.symmetric(vertical: 24),
+                              child: CircularProgressIndicator(strokeWidth: 2),
+                            ),
+                          );
+                        }
+                        final faq = faqs[index];
+                        return _buildFAQCard(context, faq);
+                      },
                     );
-                  }
-
-                  return ListView.separated(
-                    key: const PageStorageKey('faq_list'),
-                    controller: _scrollController,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 12,
-                    ),
-                    itemCount:
-                        faqs.length + (controller.faqHasNextPage ? 1 : 0),
-                    separatorBuilder: (context, index) =>
-                        const SizedBox(height: 8),
-                    itemBuilder: (context, index) {
-                      if (index == faqs.length) {
-                        return const Center(
-                          child: Padding(
-                            padding: EdgeInsets.symmetric(vertical: 24),
-                            child: CircularProgressIndicator(strokeWidth: 2),
-                          ),
-                        );
-                      }
-                      final faq = faqs[index];
-                      return _buildFAQCard(context, faq);
-                    },
-                  );
-                },
+                  },
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -244,7 +247,7 @@ class _FAQListViewState extends State<FAQListView> {
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
+              TalqPageRoute(
                 builder: (_) => FAQDetailView(faq: faq, theme: widget.theme),
               ),
             );
@@ -333,91 +336,101 @@ class _FAQDetailViewState extends State<FAQDetailView> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: widget.theme.backgroundColor,
-      appBar: AppBar(
+    return DefaultTextStyle.merge(
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      child: Scaffold(
         backgroundColor: widget.theme.backgroundColor,
-        elevation: 0,
-        scrolledUnderElevation: 0,
-        leading: IconButton(
-          icon: SvgPicture.asset(
-            'assets/icons/arrow-left.svg',
-            package: 'talq_sdk',
-            colorFilter: ColorFilter.mode(
-              widget.theme.titleStyle.color!,
-              BlendMode.srcIn,
+        appBar: AppBar(
+          backgroundColor: widget.theme.backgroundColor,
+          elevation: 0,
+          scrolledUnderElevation: 0,
+          leading: IconButton(
+            icon: SvgPicture.asset(
+              'assets/icons/arrow-left.svg',
+              package: 'talq_sdk',
+              colorFilter: ColorFilter.mode(
+                widget.theme.titleStyle.color!,
+                BlendMode.srcIn,
+              ),
+              width: 20,
+              height: 20,
             ),
-            width: 20,
-            height: 20,
+            onPressed: () => Navigator.pop(context),
           ),
-          onPressed: () => Navigator.pop(context),
-        ),
-        title: Text(
-          'Article',
-          style: widget.theme.titleStyle.copyWith(
-            fontSize: 17,
-            fontWeight: FontWeight.w600,
+          title: Text(
+            'Article',
+            style: widget.theme.titleStyle.copyWith(
+              fontSize: 17,
+              fontWeight: FontWeight.w600,
+            ),
           ),
+          centerTitle: true,
         ),
-        centerTitle: true,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-              decoration: BoxDecoration(
-                color: widget.theme.primaryColor.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(8),
+        body: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
+                decoration: BoxDecoration(
+                  color: widget.theme.primaryColor.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Text(
+                  'Article',
+                  style: TextStyle(
+                    fontFamily: 'Inter',
+                    package: 'talq_sdk',
+                    color: widget.theme.primaryColor,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.0,
+                  ),
+                ),
               ),
-              child: Text(
-                'Article',
-                style: TextStyle(
-                  color: widget.theme.primaryColor,
-                  fontSize: 11,
+              const SizedBox(height: 12),
+              Text(
+                widget.faq.question,
+                style: widget.theme.titleStyle.copyWith(
+                  fontSize: 32,
                   fontWeight: FontWeight.w800,
-                  letterSpacing: 1.0,
+                  letterSpacing: -1.0,
+                  height: 1.1,
                 ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Text(
-              widget.faq.question,
-              style: widget.theme.titleStyle.copyWith(
-                fontSize: 32,
-                fontWeight: FontWeight.w800,
-                letterSpacing: -1.0,
-                height: 1.1,
+              const SizedBox(height: 28),
+              MarkdownBody(
+                data: widget.faq.answer,
+                styleSheet: MarkdownStyleSheet(
+                  p: widget.theme.bodyStyle.copyWith(
+                    height: 1.7,
+                    fontSize: 16,
+                    color: widget.theme.titleStyle.color?.withValues(
+                      alpha: 0.7,
+                    ),
+                  ),
+                  h1: widget.theme.titleStyle.copyWith(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                  h2: widget.theme.titleStyle.copyWith(
+                    fontSize: 20,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.3,
+                  ),
+                  listBullet: widget.theme.bodyStyle.copyWith(fontSize: 16),
+                ),
               ),
-            ),
-            const SizedBox(height: 28),
-            MarkdownBody(
-              data: widget.faq.answer,
-              styleSheet: MarkdownStyleSheet(
-                p: widget.theme.bodyStyle.copyWith(
-                  height: 1.7,
-                  fontSize: 16,
-                  color: widget.theme.titleStyle.color?.withValues(alpha: 0.7),
-                ),
-                h1: widget.theme.titleStyle.copyWith(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-                h2: widget.theme.titleStyle.copyWith(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.3,
-                ),
-                listBullet: widget.theme.bodyStyle.copyWith(fontSize: 16),
-              ),
-            ),
-            const SizedBox(height: 48),
-            _buildFeedbackSection(),
-            const SizedBox(height: 40),
-          ],
+              const SizedBox(height: 48),
+              _buildFeedbackSection(),
+              const SizedBox(height: 40),
+            ],
+          ),
         ),
       ),
     );
@@ -475,6 +488,8 @@ class _FAQDetailViewState extends State<FAQDetailView> {
               style: TextButton.styleFrom(
                 foregroundColor: widget.theme.primaryColor,
                 textStyle: const TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_sdk',
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                   letterSpacing: -0.2,
@@ -534,6 +549,8 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           ),
           backgroundColor: widget.theme.surfaceColor,
           textStyle: const TextStyle(
+            fontFamily: 'Inter',
+            package: 'talq_sdk',
             fontWeight: FontWeight.w700,
             fontSize: 14,
             letterSpacing: -0.2,

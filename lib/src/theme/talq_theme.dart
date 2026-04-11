@@ -63,21 +63,31 @@ class TalqTheme {
     this.unreadBadgeColor = const Color(0xFFFBECEB),
     this.unreadTextColor = const Color(0xFFD3453D),
     this.titleStyle = const TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
       fontSize: 16,
       fontWeight: FontWeight.bold,
       color: Color(0xFF000000),
     ),
     this.subtitleStyle = const TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
       fontSize: 11,
       fontWeight: FontWeight.normal,
       color: Color(0xFF757575), // Colors.grey[600]
     ),
     this.bodyStyle = const TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
       fontSize: 15,
       height: 1.4,
       color: Color(0xDD000000), // Colors.black87
     ),
-    this.timestampStyle = const TextStyle(fontSize: 10),
+    this.timestampStyle = const TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
+      fontSize: 10,
+    ),
     this.borderRadius = 20.0,
   });
 
@@ -90,11 +100,15 @@ class TalqTheme {
     agentBubbleColor: Color(0xFF2C2C2C),
     agentTextColor: Color(0xFFFFFFFF),
     titleStyle: TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
       fontSize: 16,
       fontWeight: FontWeight.bold,
       color: Color(0xFFFFFFFF),
     ),
     subtitleStyle: TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_sdk',
       fontSize: 11,
       fontWeight: FontWeight.normal,
       color: Color(0xFFAAAAAA),

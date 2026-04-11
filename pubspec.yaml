@@ -47,19 +47,19 @@ flutter:
     - assets/icons/
 
   fonts:
-    - family: BricolageGrotesque
+    - family: Inter
       fonts:
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-ExtraLight.ttf
+        - asset: assets/fonts/inter/Inter-ExtraLight.ttf
           weight: 200
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Light.ttf
+        - asset: assets/fonts/inter/Inter-Light.ttf
           weight: 300
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Regular.ttf
+        - asset: assets/fonts/inter/Inter-Regular.ttf
           weight: 400
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Medium.ttf
+        - asset: assets/fonts/inter/Inter-Medium.ttf
           weight: 500
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-SemiBold.ttf
+        - asset: assets/fonts/inter/Inter-SemiBold.ttf
           weight: 600
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-Bold.ttf
+        - asset: assets/fonts/inter/Inter-Bold.ttf
           weight: 700
-        - asset: assets/fonts/bricolage-grotesque/BricolageGrotesque-ExtraBold.ttf
+        - asset: assets/fonts/inter/Inter-ExtraBold.ttf
           weight: 800

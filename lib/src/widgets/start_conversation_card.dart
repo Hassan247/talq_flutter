@@ -143,7 +143,7 @@ class StartConversationCard extends StatelessWidget {
                               if (context.mounted) {
                                 Navigator.push(
                                   context,
-                                  MaterialPageRoute(
+                                  TalqPageRoute(
                                     builder: (_) => TalqView(
                                       theme: theme,
                                       isNewConversation: true,
@@ -165,6 +165,8 @@ class StartConversationCard extends StatelessWidget {
                             child: Text(
                               'Start new conversation',
                               style: TextStyle(
+                                fontFamily: 'Inter',
+                                package: 'talq_sdk',
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
@@ -238,9 +240,39 @@ class StartConversationCard extends StatelessWidget {
     );
   }
 
+  static String formatReplyTime(String raw) {
+    // Try to parse patterns like "8483 min", "45 sec", "2 min"
+    final minMatch = RegExp(
+      r'^(\d+)\s*min$',
+      caseSensitive: false,
+    ).firstMatch(raw);
+    if (minMatch != null) {
+      final minutes = int.parse(minMatch.group(1)!);
+      if (minutes < 1) return 'A few seconds';
+      if (minutes < 5) return 'A few minutes';
+      if (minutes < 60) return 'Under an hour';
+      if (minutes < 120) return 'About an hour';
+      if (minutes < 360) return 'A few hours';
+      if (minutes < 1440) return 'Under a day';
+      if (minutes < 2880) return 'About a day';
+      return 'A few days';
+    }
+    final secMatch = RegExp(
+      r'^(\d+)\s*sec$',
+      caseSensitive: false,
+    ).firstMatch(raw);
+    if (secMatch != null) {
+      return 'A few minutes';
+    }
+    // Already human-readable or custom text — return as-is
+    return raw;
+  }
+
   Widget _buildSupportTeamSection() {
     final replyTime = (controller.workspace?.responseTime ?? '').trim();
-    final displayReplyTime = replyTime.isNotEmpty ? replyTime : 'A few minutes';
+    final displayReplyTime = replyTime.isNotEmpty
+        ? formatReplyTime(replyTime)
+        : 'A few minutes';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

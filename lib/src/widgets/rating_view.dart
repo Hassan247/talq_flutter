@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
+
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 
@@ -170,6 +171,8 @@ class _RatingViewState extends State<RatingView>
                         child: const Text(
                           'Submit Feedback',
                           style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_sdk',
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),
