@@ -58,10 +58,27 @@ class TalqController extends ChangeNotifier {
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   int _fetchVersion = 0; // used to cancel stale fetchMessages calls
 
+  // In-app notification state
+  TalqMessage? _pendingNotification;
+  Timer? _notificationTimer;
+
   TalqTheme _theme = const TalqTheme();
 
   TalqController(TalqClient client)
-    : _useCases = TalqUseCases.fromClient(client);
+    : _useCases = TalqUseCases.fromClient(client) {
+    _loadCachedTheme();
+  }
+
+  /// Load cached primary color so the FAB shows the correct color immediately
+  Future<void> _loadCachedTheme() async {
+    final cachedHex = await AuthManager.getPrimaryColor();
+    if (cachedHex != null && cachedHex.isNotEmpty) {
+      try {
+        _theme = _theme.copyWith(primaryColor: TalqTheme.fromHex(cachedHex));
+        notifyListeners();
+      } catch (_) {}
+    }
+  }
 
   List<TalqMessage> get messages => _messages;
   List<TalqRoom> get rooms => _rooms;
@@ -172,6 +189,28 @@ class TalqController extends ChangeNotifier {
   TalqMessage? get replyingTo => _replyingTo;
   bool get isChatVisible => _isChatVisible;
   AppLifecycleState get lifecycleState => _lifecycleState;
+
+  TalqMessage? get pendingNotification => _pendingNotification;
+
+  /// Total unread message count across all rooms (for badge display)
+  int get totalUnreadCount =>
+      _rooms.fold(0, (sum, room) => sum + room.visitorUnreadCount);
+
+  void _showInAppNotification(TalqMessage message) {
+    _notificationTimer?.cancel();
+    _pendingNotification = message;
+    notifyListeners();
+    _notificationTimer = Timer(const Duration(seconds: 5), () {
+      dismissNotification();
+    });
+  }
+
+  void dismissNotification() {
+    if (_pendingNotification == null) return;
+    _pendingNotification = null;
+    _notificationTimer?.cancel();
+    notifyListeners();
+  }
 
   void clearError() {
     if (_errorMessage == null) return;
@@ -309,6 +348,8 @@ class TalqController extends ChangeNotifier {
           _theme = _theme.copyWith(
             primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
           );
+          // Cache for instant loading on next app launch
+          AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
           // invalid hex, keep default
         }
@@ -1084,6 +1125,11 @@ class TalqController extends ChangeNotifier {
             await fetchRooms();
           }
 
+          // Show in-app notification for agent/bot messages when chat isn't visible
+          if (newMessage.senderType != SenderType.visitor && !_isChatVisible) {
+            _showInAppNotification(newMessage);
+          }
+
           // 2. Logic for Active Room message list
           if (newMessage.roomId == _roomId) {
             // Check if we already have this message (either as real or optimistic)
@@ -1313,6 +1359,7 @@ class TalqController extends ChangeNotifier {
               _theme = _theme.copyWith(
                 primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
               );
+              AuthManager.savePrimaryColor(_workspace!.primaryColor);
               debugPrint(
                 '[TalqController] Theme updated: primaryColor=${_workspace!.primaryColor}',
               );
@@ -1438,6 +1485,7 @@ class TalqController extends ChangeNotifier {
     _roomSubscription?.cancel();
     _workspaceSubscription?.cancel();
     _typingTimer?.cancel();
+    _notificationTimer?.cancel();
     super.dispose();
   }
 

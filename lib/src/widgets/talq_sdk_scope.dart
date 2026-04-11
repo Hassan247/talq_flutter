@@ -7,6 +7,7 @@ import 'package:provider/provider.dart';
 import '../bloc/talq_bloc.dart';
 import '../core/talq_client.dart';
 import '../state/talq_controller.dart';
+import 'in_app_notification.dart';
 
 class TalqSdkScope extends StatefulWidget {
   final TalqClient client;
@@ -14,12 +15,17 @@ class TalqSdkScope extends StatefulWidget {
   final bool provideBloc;
   final TalqController? controller;
 
+  /// Whether to show in-app notification banners for new messages.
+  /// Defaults to true. Set to false if the host app handles notifications.
+  final bool showInAppNotifications;
+
   const TalqSdkScope({
     super.key,
     required this.client,
     required this.child,
     this.provideBloc = true,
     this.controller,
+    this.showInAppNotifications = true,
   });
 
   @override
@@ -54,9 +60,16 @@ class _TalqSdkScopeState extends State<TalqSdkScope> {
 
   @override
   Widget build(BuildContext context) {
+    Widget innerChild = widget.child;
+
+    // Wrap with in-app notification overlay if enabled
+    if (widget.showInAppNotifications) {
+      innerChild = TalqInAppNotification(child: innerChild);
+    }
+
     final child = ChangeNotifierProvider<TalqController>.value(
       value: _controller,
-      child: widget.child,
+      child: innerChild,
     );
 
     if (_bloc == null) {

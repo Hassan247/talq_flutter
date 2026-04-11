@@ -181,6 +181,7 @@ class TalqGraphqlDocuments {
         fileName
         createdAt
         read
+        delivered
         reactions
         replyTo {
           id

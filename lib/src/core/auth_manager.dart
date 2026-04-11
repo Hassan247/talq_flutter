@@ -11,6 +11,7 @@ class AuthManager {
   );
   static const _tokenKey = 'talq_visitor_token';
   static const _deviceIdKey = 'talq_device_id_v2';
+  static const _primaryColorKey = 'talq_primary_color';
 
   /// Returns the current visitor token or null if not authenticated
   static Future<String?> getToken() async {
@@ -53,5 +54,15 @@ class AuthManager {
     if (defaultTargetPlatform == TargetPlatform.iOS) return 'IOS';
     if (defaultTargetPlatform == TargetPlatform.android) return 'ANDROID';
     return 'WEB';
+  }
+
+  /// Caches the workspace primary color hex for instant theme loading
+  static Future<void> savePrimaryColor(String hex) async {
+    await _storage.write(key: _primaryColorKey, value: hex);
+  }
+
+  /// Returns the cached primary color hex or null
+  static Future<String?> getPrimaryColor() async {
+    return await _storage.read(key: _primaryColorKey);
   }
 }

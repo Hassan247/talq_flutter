@@ -6,6 +6,7 @@ export 'src/models/models.dart';
 export 'src/state/talq_controller.dart';
 export 'src/theme/talq_theme.dart';
 export 'src/widgets/chat_view.dart';
-export 'src/widgets/talq_fab.dart';
+export 'src/widgets/in_app_notification.dart';
 export 'src/widgets/rooms_list_view.dart';
+export 'src/widgets/talq_fab.dart';
 export 'src/widgets/talq_sdk_scope.dart';
