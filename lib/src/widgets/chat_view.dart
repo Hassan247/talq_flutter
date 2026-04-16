@@ -815,6 +815,12 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                             color: theme.inputHintColor,
                           ),
                           border: InputBorder.none,
+                          enabledBorder: InputBorder.none,
+                          focusedBorder: InputBorder.none,
+                          disabledBorder: InputBorder.none,
+                          errorBorder: InputBorder.none,
+                          focusedErrorBorder: InputBorder.none,
+                          filled: false,
                           contentPadding: const EdgeInsets.symmetric(
                             horizontal: 8,
                           ),
