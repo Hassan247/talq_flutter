@@ -252,12 +252,27 @@ class _MessageCard extends StatelessWidget {
     final hasUnread = room.visitorUnreadCount > 0;
     final isMe = lastMsg?.senderType == SenderType.visitor;
     final isBot = lastMsg?.senderType == SenderType.bot;
-    final displayName = isBot
-        ? 'Assistant'
-        : (room.assigneeName ?? workspace?.name ?? 'Support Team');
-    final avatarUrl = isBot
-        ? null
-        : (room.assigneeAvatarUrl ?? workspace?.logoUrl);
+
+    // Avatar priority: last agent who messaged → assigned agent → workspace logo
+    final String displayName;
+    final String? avatarUrl;
+    if (isBot) {
+      displayName = 'Assistant';
+      avatarUrl = null;
+    } else if (lastMsg?.senderType == SenderType.agent) {
+      displayName =
+          lastMsg?.senderName ??
+          room.assigneeName ??
+          workspace?.name ??
+          'Support Team';
+      avatarUrl =
+          lastMsg?.senderAvatarUrl ??
+          room.assigneeAvatarUrl ??
+          workspace?.logoUrl;
+    } else {
+      displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
+      avatarUrl = room.assigneeAvatarUrl ?? workspace?.logoUrl;
+    }
     final timeStr = room.lastMessageAt != null
         ? DateFormat('jm').format(room.lastMessageAt!.toLocal())
         : '';

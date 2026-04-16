@@ -10,7 +10,6 @@ import 'package:flutter_svg/svg.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
-import 'package:sticky_headers/sticky_headers.dart';
 
 import '../core/utils/pdf_thumbnail_helper.dart';
 import '../models/models.dart' as models;
@@ -47,6 +46,12 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   Timer? _typingThrottle;
   TalqController? _controller;
 
+  // Sticky date overlay state
+  String _overlayDateLabel = '';
+  bool _showDateOverlay = false;
+  Timer? _dateOverlayTimer;
+  final Map<int, GlobalKey> _groupKeys = {};
+
   @override
   void initState() {
     super.initState();
@@ -78,8 +83,60 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
           controller.fetchMessages(isLoadMore: true);
         }
       }
+      // Update sticky date overlay
+      _updateVisibleDate();
     }
   }
+
+  void _updateVisibleDate() {
+    // Find the topmost visible date group by checking render positions
+    final listRenderBox =
+        _scrollController.position.context.storageContext.findRenderObject()
+            as RenderBox?;
+    if (listRenderBox == null) return;
+
+    String? topDate;
+    for (final entry in _groupKeys.entries) {
+      final keyContext = entry.value.currentContext;
+      if (keyContext == null) continue;
+      final renderBox = keyContext.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.attached) continue;
+
+      final position = renderBox.localToGlobal(Offset.zero);
+      final size = renderBox.size;
+      // If the bottom of this group is above the top of the viewport, skip it.
+      // If the top of this group is below the viewport, skip it.
+      // We want the group whose content spans the top area of the chat.
+      // In a reversed list, higher index = older = visually higher.
+      // The group is visible at top if its top edge is at or above the chat top area
+      // and its bottom edge is below the chat top area.
+      if (position.dy < 200 && position.dy + size.height > 0) {
+        topDate = _getDateLabel(
+          _lastGroupedMessages != null &&
+                  entry.key < _lastGroupedMessages!.length
+              ? _lastGroupedMessages![entry.key].date
+              : DateTime.now(),
+        );
+      }
+    }
+
+    if (topDate != null && topDate != _overlayDateLabel) {
+      setState(() {
+        _overlayDateLabel = topDate!;
+      });
+    }
+
+    if (!_showDateOverlay) {
+      setState(() => _showDateOverlay = true);
+    }
+
+    _dateOverlayTimer?.cancel();
+    _dateOverlayTimer = Timer(const Duration(milliseconds: 1500), () {
+      if (mounted) setState(() => _showDateOverlay = false);
+    });
+  }
+
+  List<_MessageGroup>? _lastGroupedMessages;
 
   @override
   void dispose() {
@@ -89,6 +146,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     _messageController.dispose();
     _scrollController.dispose();
     _typingThrottle?.cancel();
+    _dateOverlayTimer?.cancel();
     super.dispose();
   }
 
@@ -400,6 +458,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                     final groupedMessages = _groupMessages(
                                       controller.messages,
                                     );
+                                    _lastGroupedMessages = groupedMessages;
+                                    // Clean up stale keys
+                                    _groupKeys.removeWhere(
+                                      (k, _) => k >= groupedMessages.length,
+                                    );
                                     return ListView.builder(
                                       controller: _scrollController,
                                       padding: const EdgeInsets.only(
@@ -411,7 +474,10 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                       reverse: true,
                                       itemCount:
                                           groupedMessages.length +
-                                          (controller.isFetchingMore ? 1 : 0),
+                                          (controller.isFetchingMore &&
+                                                  controller.hasMoreMessages
+                                              ? 1
+                                              : 0),
                                       itemBuilder: (context, index) {
                                         if (index == groupedMessages.length) {
                                           return const Padding(
@@ -426,83 +492,91 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                         final group = groupedMessages[index];
                                         final date = group.date;
                                         final messages = group.messages;
+                                        final groupKey = _groupKeys.putIfAbsent(
+                                          index,
+                                          () => GlobalKey(),
+                                        );
 
-                                        return StickyHeader(
-                                          header: Container(
-                                            width: double.infinity,
-                                            padding: const EdgeInsets.symmetric(
-                                              vertical: 24,
-                                            ),
-                                            alignment: Alignment.center,
-                                            child: Container(
+                                        return Column(
+                                          key: groupKey,
+                                          children: [
+                                            Container(
+                                              width: double.infinity,
                                               padding:
                                                   const EdgeInsets.symmetric(
-                                                    horizontal: 16,
-                                                    vertical: 6,
+                                                    vertical: 24,
                                                   ),
-                                              decoration: BoxDecoration(
-                                                color: Color.alphaBlend(
-                                                  theme.primaryColor.withValues(
-                                                    alpha: 0.1,
+                                              alignment: Alignment.center,
+                                              child: Container(
+                                                padding:
+                                                    const EdgeInsets.symmetric(
+                                                      horizontal: 16,
+                                                      vertical: 6,
+                                                    ),
+                                                decoration: BoxDecoration(
+                                                  color: Color.alphaBlend(
+                                                    theme.primaryColor
+                                                        .withValues(alpha: 0.1),
+                                                    theme.backgroundColor,
                                                   ),
-                                                  theme.backgroundColor,
+                                                  borderRadius:
+                                                      BorderRadius.circular(20),
                                                 ),
-                                                borderRadius:
-                                                    BorderRadius.circular(20),
-                                              ),
-                                              child: Text(
-                                                _getDateLabel(date),
-                                                style: TextStyle(
-                                                  fontFamily: 'Inter',
-                                                  package: 'talq_sdk',
-                                                  fontSize: 10,
-                                                  fontWeight: FontWeight.w800,
-                                                  color: theme.primaryColor,
-                                                  letterSpacing: 1.0,
+                                                child: Text(
+                                                  _getDateLabel(date),
+                                                  style: TextStyle(
+                                                    fontFamily: 'Inter',
+                                                    package: 'talq_sdk',
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.w800,
+                                                    color: theme.primaryColor,
+                                                    letterSpacing: 1.0,
+                                                  ),
                                                 ),
                                               ),
                                             ),
-                                          ),
-                                          content: ListView.builder(
-                                            shrinkWrap: true,
-                                            physics:
-                                                const NeverScrollableScrollPhysics(),
-                                            itemCount: messages.length,
-                                            reverse: true,
-                                            itemBuilder: (context, msgIndex) {
-                                              final message =
-                                                  messages[msgIndex];
+                                            ListView.builder(
+                                              shrinkWrap: true,
+                                              physics:
+                                                  const NeverScrollableScrollPhysics(),
+                                              itemCount: messages.length,
+                                              reverse: true,
+                                              itemBuilder: (context, msgIndex) {
+                                                final message =
+                                                    messages[msgIndex];
 
-                                              final isLastInGroup =
-                                                  msgIndex == 0 ||
-                                                  messages[msgIndex - 1]
-                                                          .senderType !=
-                                                      message.senderType;
+                                                final isLastInGroup =
+                                                    msgIndex == 0 ||
+                                                    messages[msgIndex - 1]
+                                                            .senderType !=
+                                                        message.senderType;
 
-                                              final isFirstInGroup =
-                                                  msgIndex ==
-                                                      messages.length - 1 ||
-                                                  messages[msgIndex + 1]
-                                                          .senderType !=
-                                                      message.senderType;
+                                                final isFirstInGroup =
+                                                    msgIndex ==
+                                                        messages.length - 1 ||
+                                                    messages[msgIndex + 1]
+                                                            .senderType !=
+                                                        message.senderType;
 
-                                              return _ChatBubble(
-                                                message: message,
-                                                theme: theme,
-                                                isFirstInGroup: isFirstInGroup,
-                                                isLastInGroup: isLastInGroup,
-                                                onSwipe: () => controller
-                                                    .setReplyingTo(message),
-                                                onLongPress: () =>
-                                                    _showReactions(
-                                                      context,
-                                                      controller,
-                                                      message,
-                                                      theme,
-                                                    ),
-                                              );
-                                            },
-                                          ),
+                                                return _ChatBubble(
+                                                  message: message,
+                                                  theme: theme,
+                                                  isFirstInGroup:
+                                                      isFirstInGroup,
+                                                  isLastInGroup: isLastInGroup,
+                                                  onSwipe: () => controller
+                                                      .setReplyingTo(message),
+                                                  onLongPress: () =>
+                                                      _showReactions(
+                                                        context,
+                                                        controller,
+                                                        message,
+                                                        theme,
+                                                      ),
+                                                );
+                                              },
+                                            ),
+                                          ],
                                         );
                                       },
                                     );
@@ -554,6 +628,54 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         _buildInputArea(controller, theme),
                       ],
                     ),
+                    // WhatsApp-style sticky date overlay
+                    if (_showDateOverlay && _overlayDateLabel.isNotEmpty)
+                      Positioned(
+                        top: 8,
+                        left: 0,
+                        right: 0,
+                        child: IgnorePointer(
+                          child: Center(
+                            child: AnimatedOpacity(
+                              opacity: _showDateOverlay ? 1.0 : 0.0,
+                              duration: const Duration(milliseconds: 200),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 16,
+                                  vertical: 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Color.alphaBlend(
+                                    theme.primaryColor.withValues(alpha: 0.1),
+                                    theme.backgroundColor,
+                                  ),
+                                  borderRadius: BorderRadius.circular(20),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: Colors.black.withValues(
+                                        alpha: 0.05,
+                                      ),
+                                      blurRadius: 4,
+                                      offset: const Offset(0, 1),
+                                    ),
+                                  ],
+                                ),
+                                child: Text(
+                                  _overlayDateLabel,
+                                  style: TextStyle(
+                                    fontFamily: 'Inter',
+                                    package: 'talq_sdk',
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w800,
+                                    color: theme.primaryColor,
+                                    letterSpacing: 1.0,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
                     if (controller.showRatingPrompt)
                       Container(
                         color: Colors.black.withValues(alpha: 0.5),

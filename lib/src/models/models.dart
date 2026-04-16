@@ -330,6 +330,34 @@ class TalqRoom {
     'lastMessageAt': lastMessageAt?.toIso8601String(),
     'createdAt': createdAt.toIso8601String(),
   };
+
+  TalqRoom copyWith({
+    String? id,
+    RoomStatus? status,
+    int? unreadCount,
+    int? visitorUnreadCount,
+    DateTime? lastMessageAt,
+    TalqMessage? lastMessage,
+    DateTime? createdAt,
+    int? rating,
+    String? ratingComment,
+    String? assigneeName,
+    String? assigneeAvatarUrl,
+  }) {
+    return TalqRoom(
+      id: id ?? this.id,
+      status: status ?? this.status,
+      unreadCount: unreadCount ?? this.unreadCount,
+      visitorUnreadCount: visitorUnreadCount ?? this.visitorUnreadCount,
+      lastMessageAt: lastMessageAt ?? this.lastMessageAt,
+      lastMessage: lastMessage ?? this.lastMessage,
+      createdAt: createdAt ?? this.createdAt,
+      rating: rating ?? this.rating,
+      ratingComment: ratingComment ?? this.ratingComment,
+      assigneeName: assigneeName ?? this.assigneeName,
+      assigneeAvatarUrl: assigneeAvatarUrl ?? this.assigneeAvatarUrl,
+    );
+  }
 }
 
 class TalqWorkspace {

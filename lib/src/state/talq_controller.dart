@@ -57,6 +57,7 @@ class TalqController extends ChangeNotifier {
   bool _isChatVisible = false;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
   int _fetchVersion = 0; // used to cancel stale fetchMessages calls
+  bool _disposed = false;
 
   // In-app notification state
   TalqMessage? _pendingNotification;
@@ -279,7 +280,7 @@ class TalqController extends ChangeNotifier {
     Map<String, dynamic>? metadata,
     String? pushToken,
   }) async {
-    if (_isInitialized) return;
+    if (_isInitialized && _workspace != null) return;
     if (_isLoading) return;
 
     _clearError(notify: true);
@@ -327,6 +328,7 @@ class TalqController extends ChangeNotifier {
         debugPrint(
           '[TalqController] initVisitor exception: ${result.exception}',
         );
+        _isInitialized = true;
         _setError(
           result.exception,
           fallbackMessage: 'Unable to start chat right now.',
@@ -411,6 +413,7 @@ class TalqController extends ChangeNotifier {
       _isInitialized = true;
       _clearError();
     } catch (e) {
+      _isInitialized = true;
       _setError(e, fallbackMessage: 'Unable to start chat right now.');
     } finally {
       _isLoading = false;
@@ -701,6 +704,9 @@ class TalqController extends ChangeNotifier {
 
     // Pagination status
     _hasMoreMessages = pageInfo?['hasNextPage'] ?? false;
+    debugPrint(
+      '[TalqController] fetchMessages: isLoadMore=$isLoadMore, newMessages=${newMessages.length}, hasMoreMessages=$_hasMoreMessages, totalMessages=${_messages.length}, afterCursor=$afterCursor',
+    );
 
     _messages = _mergeMessagesNewestFirst(
       localMessages: _messages,
@@ -1179,6 +1185,14 @@ class TalqController extends ChangeNotifier {
       },
       onError: (error) {
         debugPrint('[TalqController] Message Subscription Error: $error');
+        _setError(
+          error,
+          fallbackMessage: 'Live updates interrupted. Pull to refresh.',
+        );
+        // Attempt to resubscribe after a delay
+        Future.delayed(const Duration(seconds: 5), () {
+          if (!_disposed) _startMessageSubscription();
+        });
       },
     );
 
@@ -1211,22 +1225,13 @@ class TalqController extends ChangeNotifier {
               );
             }
 
-            _rooms[roomIndex] = TalqRoom(
-              id: newRoom.id,
-              status: newRoom.status,
-              unreadCount: newRoom.unreadCount,
-              visitorUnreadCount: newRoom.visitorUnreadCount,
+            _rooms[roomIndex] = newRoom.copyWith(
               lastMessageAt: shouldUpdateLastMsg
                   ? newRoom.lastMessageAt
                   : existingRoom.lastMessageAt,
               lastMessage: shouldUpdateLastMsg
                   ? newRoom.lastMessage
                   : existingRoom.lastMessage,
-              createdAt: newRoom.createdAt,
-              rating: newRoom.rating,
-              ratingComment: newRoom.ratingComment,
-              assigneeName: newRoom.assigneeName,
-              assigneeAvatarUrl: newRoom.assigneeAvatarUrl,
             );
           } else {
             _rooms.add(newRoom);
@@ -1336,6 +1341,9 @@ class TalqController extends ChangeNotifier {
       },
       onError: (error) {
         debugPrint('[TalqController] Room Subscription Error: $error');
+        Future.delayed(const Duration(seconds: 5), () {
+          if (!_disposed) _startRoomSubscription();
+        });
       },
     );
   }
@@ -1373,6 +1381,9 @@ class TalqController extends ChangeNotifier {
       },
       onError: (error) {
         debugPrint('[TalqController] Workspace Subscription Error: $error');
+        Future.delayed(const Duration(seconds: 5), () {
+          if (!_disposed) _startWorkspaceSubscription();
+        });
       },
     );
   }
@@ -1404,6 +1415,9 @@ class TalqController extends ChangeNotifier {
           },
           onError: (error) {
             debugPrint('[TalqController] Typing Subscription Error: $error');
+            Future.delayed(const Duration(seconds: 5), () {
+              if (!_disposed) _startTypingSubscription();
+            });
           },
         );
   }
@@ -1479,7 +1493,13 @@ class TalqController extends ChangeNotifier {
   }
 
   @override
+  void notifyListeners() {
+    if (!_disposed) super.notifyListeners();
+  }
+
+  @override
   void dispose() {
+    _disposed = true;
     _messageSubscription?.cancel();
     _typingSubscription?.cancel();
     _roomSubscription?.cancel();

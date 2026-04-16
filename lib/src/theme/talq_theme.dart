@@ -174,9 +174,13 @@ class TalqTheme {
   }
 
   static Color fromHex(String hexString) {
+    final cleaned = hexString.replaceFirst('#', '').trim();
+    if (cleaned.isEmpty || !RegExp(r'^[0-9a-fA-F]{6,8}$').hasMatch(cleaned)) {
+      throw FormatException('Invalid hex color: "$hexString"');
+    }
     final buffer = StringBuffer();
-    if (hexString.length == 6 || hexString.length == 7) buffer.write('ff');
-    buffer.write(hexString.replaceFirst('#', ''));
+    if (cleaned.length == 6) buffer.write('ff');
+    buffer.write(cleaned);
     return Color(int.parse(buffer.toString(), radix: 16));
   }
 }

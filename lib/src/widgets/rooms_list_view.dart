@@ -299,14 +299,17 @@ class _RoomsListViewState extends State<RoomsListView> {
         controller.workspace?.talqLogoUrl ?? controller.workspace?.logoUrl;
 
     if (logoUrl != null) {
-      return CachedNetworkImage(
-        imageUrl: logoUrl,
-        height: 36,
-        errorWidget: (context, url, error) => SvgPicture.asset(
-          'assets/images/monosend_logo.svg',
-          package: 'talq_sdk',
-          height: 36,
-          colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+      return ConstrainedBox(
+        constraints: const BoxConstraints(maxHeight: 36, maxWidth: 180),
+        child: CachedNetworkImage(
+          imageUrl: logoUrl,
+          fit: BoxFit.contain,
+          errorWidget: (context, url, error) => SvgPicture.asset(
+            'assets/images/monosend_logo.svg',
+            package: 'talq_sdk',
+            height: 36,
+            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+          ),
         ),
       );
     }

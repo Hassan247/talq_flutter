@@ -126,7 +126,7 @@ class TalqGraphqlDocuments {
         status
         unreadCount
         visitorUnreadCount
-        messages(first: 20, after: $after) {
+        messages(first: 15, after: $after) {
           edges {
             node {
               id

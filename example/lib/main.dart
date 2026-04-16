@@ -3,6 +3,9 @@ import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:talq_sdk/talq_sdk.dart';
 
 const _apiKey = String.fromEnvironment('TALQ_API_KEY');
+// Optional: override for local development
+const _httpUrl = String.fromEnvironment('TALQ_HTTP_URL');
+const _wsUrl = String.fromEnvironment('TALQ_WS_URL');
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -22,6 +25,8 @@ class TalqExampleApp extends StatelessWidget {
 
     final client = TalqClient(
       apiKey: _apiKey,
+      httpUrl: _httpUrl.isNotEmpty ? _httpUrl : null,
+      wsUrl: _wsUrl.isNotEmpty ? _wsUrl : null,
     );
 
     return TalqSdkScope(
