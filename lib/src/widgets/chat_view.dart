@@ -778,19 +778,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
             Expanded(
               child: Container(
                 decoration: BoxDecoration(
-                  color: theme.surfaceColor,
+                  color: Colors.white,
                   borderRadius: BorderRadius.circular(28),
-                  border: Border.all(
-                    color: theme.cardShadowColor.withValues(alpha: 0.08),
-                    width: 1,
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: theme.cardShadowColor.withValues(alpha: 0.04),
-                      blurRadius: 10,
-                      offset: const Offset(0, 2),
-                    ),
-                  ],
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
                 child: Row(
@@ -833,7 +822,10 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         ),
                         minLines: 1,
                         maxLines: 5,
-                        style: theme.bodyStyle.copyWith(fontSize: 16),
+                        style: theme.bodyStyle.copyWith(
+                          fontSize: 16,
+                          color: Colors.black87,
+                        ),
                         onChanged: (text) => _onTextChanged(text, controller),
                       ),
                     ),
