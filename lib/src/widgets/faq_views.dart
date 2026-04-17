@@ -74,17 +74,8 @@ class _FAQListViewState extends State<FAQListView> {
             backgroundColor: widget.theme.backgroundColor, // seamless
             elevation: 0,
             scrolledUnderElevation: 0,
-            leading: IconButton(
-              icon: SvgPicture.asset(
-                'assets/icons/arrow-left.svg',
-                package: 'talq_flutter',
-                colorFilter: ColorFilter.mode(
-                  widget.theme.titleStyle.color!,
-                  BlendMode.srcIn,
-                ),
-                width: 20,
-                height: 20,
-              ),
+            leading: BackButton(
+              color: widget.theme.titleStyle.color,
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
@@ -344,17 +335,8 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           backgroundColor: widget.theme.backgroundColor,
           elevation: 0,
           scrolledUnderElevation: 0,
-          leading: IconButton(
-            icon: SvgPicture.asset(
-              'assets/icons/arrow-left.svg',
-              package: 'talq_flutter',
-              colorFilter: ColorFilter.mode(
-                widget.theme.titleStyle.color!,
-                BlendMode.srcIn,
-              ),
-              width: 20,
-              height: 20,
-            ),
+          leading: BackButton(
+            color: widget.theme.titleStyle.color,
             onPressed: () => Navigator.pop(context),
           ),
           title: Text(
