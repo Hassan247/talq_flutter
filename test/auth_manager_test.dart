@@ -51,8 +51,6 @@ void main() {
     });
 
     test('getDeviceId returns a valid UUID/ID', () async {
-      // Note: We are using a real (but test-binded) storage here
-      // In a real CI environment, you'd mock FlutterSecureStorage
       final deviceId = await AuthManager.getDeviceId();
       expect(deviceId, isNotNull);
       expect(deviceId.length, greaterThan(5));
