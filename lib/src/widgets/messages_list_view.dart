@@ -268,10 +268,10 @@ class _MessageCard extends StatelessWidget {
       avatarUrl =
           lastMsg?.senderAvatarUrl ??
           room.assigneeAvatarUrl ??
-          workspace?.logoUrl;
+          workspace?.avatarUrl;
     } else {
       displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
-      avatarUrl = room.assigneeAvatarUrl ?? workspace?.logoUrl;
+      avatarUrl = room.assigneeAvatarUrl ?? workspace?.avatarUrl;
     }
     final timeStr = room.lastMessageAt != null
         ? DateFormat('jm').format(room.lastMessageAt!.toLocal())

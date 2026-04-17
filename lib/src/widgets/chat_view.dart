@@ -694,7 +694,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   Widget _buildHeaderAvatar(TalqController controller, TalqTheme theme) {
     final imageUrl =
         controller.currentRoom?.assigneeAvatarUrl ??
-        controller.workspace?.logoUrl;
+        controller.workspace?.avatarUrl;
     if (imageUrl != null && imageUrl.isNotEmpty) {
       return TalqAvatar(
         imageUrl: imageUrl,

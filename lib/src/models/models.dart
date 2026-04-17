@@ -370,6 +370,7 @@ class TalqWorkspace {
   final List<String> agentAvatars;
   final String? logoUrl;
   final String? talqLogoUrl;
+  final String? avatarUrl;
   final String welcomeMessage;
   final String primaryColor;
 
@@ -383,6 +384,7 @@ class TalqWorkspace {
     this.agentAvatars = const [],
     this.logoUrl,
     this.talqLogoUrl,
+    this.avatarUrl,
     this.welcomeMessage = 'Hello there! How can we help you today?',
     this.primaryColor = '#151515',
   });
@@ -413,6 +415,7 @@ class TalqWorkspace {
       // For now, default to empty.
       logoUrl: json['logoUrl'],
       talqLogoUrl: json['talqLogoUrl'],
+      avatarUrl: json['avatarUrl'],
       welcomeMessage:
           json['welcomeMessage'] ?? 'Hello there! How can we help you today?',
       primaryColor: json['primaryColor'] ?? '#151515',
@@ -429,6 +432,7 @@ class TalqWorkspace {
     List<String>? agentAvatars,
     String? logoUrl,
     String? talqLogoUrl,
+    String? avatarUrl,
     String? welcomeMessage,
     String? primaryColor,
   }) {
@@ -442,6 +446,7 @@ class TalqWorkspace {
       agentAvatars: agentAvatars ?? this.agentAvatars,
       logoUrl: logoUrl ?? this.logoUrl,
       talqLogoUrl: talqLogoUrl ?? this.talqLogoUrl,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
       welcomeMessage: welcomeMessage ?? this.welcomeMessage,
       primaryColor: primaryColor ?? this.primaryColor,
     );

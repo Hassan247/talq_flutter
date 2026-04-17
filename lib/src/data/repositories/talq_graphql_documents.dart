@@ -42,6 +42,7 @@ class TalqGraphqlDocuments {
           name
           logoUrl
           talqLogoUrl
+          avatarUrl
           showResponseTime
           responseTimeType
           customResponseTime
@@ -299,6 +300,7 @@ class TalqGraphqlDocuments {
         name
         logoUrl
         talqLogoUrl
+        avatarUrl
         showResponseTime
         responseTimeType
         customResponseTime
