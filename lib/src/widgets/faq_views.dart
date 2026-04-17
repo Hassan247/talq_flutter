@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
@@ -74,6 +75,7 @@ class _FAQListViewState extends State<FAQListView> {
             backgroundColor: widget.theme.backgroundColor, // seamless
             elevation: 0,
             scrolledUnderElevation: 0,
+            systemOverlayStyle: SystemUiOverlayStyle.dark,
             leading: BackButton(
               color: widget.theme.titleStyle.color,
               onPressed: () => Navigator.pop(context),
@@ -335,6 +337,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           backgroundColor: widget.theme.backgroundColor,
           elevation: 0,
           scrolledUnderElevation: 0,
+          systemOverlayStyle: SystemUiOverlayStyle.dark,
           leading: BackButton(
             color: widget.theme.titleStyle.color,
             onPressed: () => Navigator.pop(context),

@@ -249,9 +249,9 @@ class _RoomsListViewState extends State<RoomsListView> {
                         child: const Padding(
                           padding: EdgeInsets.all(10),
                           child: Icon(
-                            Icons.arrow_back_ios_new_rounded,
+                            Icons.close_rounded,
                             color: Colors.white,
-                            size: 20,
+                            size: 22,
                           ),
                         ),
                       ),
