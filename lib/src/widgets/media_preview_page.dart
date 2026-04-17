@@ -57,7 +57,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
     final fileName = p.basename(widget.file.path);
 
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -75,7 +75,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                 ),
                 child: SvgPicture.asset(
                   'assets/icons/arrow-left.svg',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -90,7 +90,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
             fileName,
             style: const TextStyle(
               fontFamily: 'Inter',
-              package: 'talq_sdk',
+              package: 'talq_flutter',
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -145,7 +145,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                   ),
                                   child: SvgPicture.asset(
                                     'assets/icons/pdf.svg',
-                                    package: 'talq_sdk',
+                                    package: 'talq_flutter',
                                     width: 64,
                                     height: 64,
                                     colorFilter: const ColorFilter.mode(
@@ -169,7 +169,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                   children: [
                                     SvgPicture.asset(
                                       'assets/icons/pdf.svg',
-                                      package: 'talq_sdk',
+                                      package: 'talq_flutter',
                                       width: 20,
                                       height: 20,
                                       colorFilter: const ColorFilter.mode(
@@ -182,7 +182,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                                       '$pagesStr • $sizeStr',
                                       style: const TextStyle(
                                         fontFamily: 'Inter',
-                                        package: 'talq_sdk',
+                                        package: 'talq_flutter',
                                         color: Colors.white,
                                         fontSize: 14,
                                         fontWeight: FontWeight.w500,
@@ -230,7 +230,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                         focusNode: _focusNode,
                         style: const TextStyle(
                           fontFamily: 'Inter',
-                          package: 'talq_sdk',
+                          package: 'talq_flutter',
                           color: Colors.white,
                           fontSize: 16,
                         ),
@@ -238,7 +238,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                           hintText: 'Add a caption...',
                           hintStyle: TextStyle(
                             fontFamily: 'Inter',
-                            package: 'talq_sdk',
+                            package: 'talq_flutter',
                             color: Colors.white54,
                           ),
                           border: InputBorder.none,
@@ -272,7 +272,7 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                       child: Center(
                         child: SvgPicture.asset(
                           'assets/icons/send-message.svg',
-                          package: 'talq_sdk',
+                          package: 'talq_flutter',
                           colorFilter: const ColorFilter.mode(
                             Colors.white,
                             BlendMode.srcIn,

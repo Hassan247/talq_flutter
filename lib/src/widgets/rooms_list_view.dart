@@ -63,7 +63,7 @@ class _RoomsListViewState extends State<RoomsListView> {
     final headerHeight = mediaQuery.padding.top + 360;
 
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: AnnotatedRegion<SystemUiOverlayStyle>(
         value: SystemUiOverlayStyle.light,
         child: Scaffold(
@@ -265,7 +265,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                       : 'Hello there! How can we help you today?',
                   style: const TextStyle(
                     fontFamily: 'Inter',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     color: Colors.white,
                     fontSize: 35,
                     fontWeight: FontWeight.w800,
@@ -278,7 +278,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   'Ask a question, check previous chats, or browse quick answers.',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     color: Colors.white.withValues(alpha: 0.78),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -306,7 +306,7 @@ class _RoomsListViewState extends State<RoomsListView> {
           fit: BoxFit.contain,
           errorWidget: (context, url, error) => SvgPicture.asset(
             'assets/images/monosend_logo.svg',
-            package: 'talq_sdk',
+            package: 'talq_flutter',
             height: 36,
             colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
           ),
@@ -323,7 +323,7 @@ class _RoomsListViewState extends State<RoomsListView> {
           'Talq',
           style: TextStyle(
             fontFamily: 'Inter',
-            package: 'talq_sdk',
+            package: 'talq_flutter',
             color: Colors.white,
             fontSize: 24,
             fontWeight: FontWeight.w900,
@@ -402,7 +402,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   child: Center(
                     child: SvgPicture.asset(
                       'assets/icons/messages.svg',
-                      package: 'talq_sdk',
+                      package: 'talq_flutter',
                       colorFilter: const ColorFilter.mode(
                         Colors.white,
                         BlendMode.srcIn,
@@ -453,7 +453,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                       unreadTotal > 99 ? '99+' : '$unreadTotal',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        package: 'talq_sdk',
+                        package: 'talq_flutter',
                         color: theme.unreadTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w800,

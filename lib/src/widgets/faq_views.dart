@@ -65,7 +65,7 @@ class _FAQListViewState extends State<FAQListView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: GestureDetector(
         onTap: () => FocusScope.of(context).unfocus(),
         child: Scaffold(
@@ -77,7 +77,7 @@ class _FAQListViewState extends State<FAQListView> {
             leading: IconButton(
               icon: SvgPicture.asset(
                 'assets/icons/arrow-left.svg',
-                package: 'talq_sdk',
+                package: 'talq_flutter',
                 colorFilter: ColorFilter.mode(
                   widget.theme.titleStyle.color!,
                   BlendMode.srcIn,
@@ -265,7 +265,7 @@ class _FAQListViewState extends State<FAQListView> {
                   ),
                   child: SvgPicture.asset(
                     'assets/icons/article.svg',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     colorFilter: ColorFilter.mode(
                       widget.theme.primaryColor, // Use primary color for icon
                       BlendMode.srcIn,
@@ -287,7 +287,7 @@ class _FAQListViewState extends State<FAQListView> {
                 const SizedBox(width: 10),
                 SvgPicture.asset(
                   'assets/icons/arrow-right.svg',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   colorFilter: ColorFilter.mode(
                     widget.theme.subtitleStyle.color!.withValues(alpha: 0.5),
                     BlendMode.srcIn,
@@ -337,7 +337,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: Scaffold(
         backgroundColor: widget.theme.backgroundColor,
         appBar: AppBar(
@@ -347,7 +347,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           leading: IconButton(
             icon: SvgPicture.asset(
               'assets/icons/arrow-left.svg',
-              package: 'talq_sdk',
+              package: 'talq_flutter',
               colorFilter: ColorFilter.mode(
                 widget.theme.titleStyle.color!,
                 BlendMode.srcIn,
@@ -384,7 +384,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
                   'Article',
                   style: TextStyle(
                     fontFamily: 'Inter',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     color: widget.theme.primaryColor,
                     fontSize: 11,
                     fontWeight: FontWeight.w800,
@@ -489,7 +489,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
                 foregroundColor: widget.theme.primaryColor,
                 textStyle: const TextStyle(
                   fontFamily: 'Inter',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   fontWeight: FontWeight.w800,
                   fontSize: 14,
                   letterSpacing: -0.2,
@@ -550,7 +550,7 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           backgroundColor: widget.theme.surfaceColor,
           textStyle: const TextStyle(
             fontFamily: 'Inter',
-            package: 'talq_sdk',
+            package: 'talq_flutter',
             fontWeight: FontWeight.w700,
             fontSize: 14,
             letterSpacing: -0.2,

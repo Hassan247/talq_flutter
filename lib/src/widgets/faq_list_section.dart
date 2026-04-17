@@ -79,7 +79,7 @@ class FAQListSection extends StatelessWidget {
                               'See all',
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                package: 'talq_sdk',
+                                package: 'talq_flutter',
                                 fontSize: 13,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.1,
@@ -157,7 +157,7 @@ class FAQListSection extends StatelessWidget {
                                 'Browse all articles',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
-                                  package: 'talq_sdk',
+                                  package: 'talq_flutter',
                                   fontWeight: FontWeight.w800,
                                   fontSize: 15,
                                   color: theme.primaryColor,
@@ -214,7 +214,7 @@ class FAQListSection extends StatelessWidget {
                 child: Center(
                   child: SvgPicture.asset(
                     'assets/icons/article.svg',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     colorFilter: ColorFilter.mode(
                       titleColor.withValues(alpha: 0.72),
                       BlendMode.srcIn,

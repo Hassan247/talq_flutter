@@ -1,4 +1,4 @@
-# talq_sdk_example
+# talq_flutter_example
 
 A new Flutter project.
 

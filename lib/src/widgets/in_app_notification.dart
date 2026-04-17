@@ -202,7 +202,7 @@ class _NotificationBanner extends StatelessWidget {
                       senderName ?? 'Support',
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        package: 'talq_sdk',
+                        package: 'talq_flutter',
                         fontSize: 13,
                         fontWeight: FontWeight.w600,
                         color: theme.titleStyle.color,
@@ -215,7 +215,7 @@ class _NotificationBanner extends StatelessWidget {
                       overflow: TextOverflow.ellipsis,
                       style: TextStyle(
                         fontFamily: 'Inter',
-                        package: 'talq_sdk',
+                        package: 'talq_flutter',
                         fontSize: 13,
                         color: theme.subtitleStyle.color,
                         height: 1.3,

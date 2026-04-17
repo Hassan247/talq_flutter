@@ -116,7 +116,7 @@ class _TalqFABState extends State<TalqFAB> with SingleTickerProviderStateMixin {
                 child:
                     widget.icon ??
                     SvgPicture.asset(
-                      'packages/talq_sdk/assets/icons/messages.svg',
+                      'packages/talq_flutter/assets/icons/messages.svg',
                       width: 26,
                       height: 26,
                       colorFilter: const ColorFilter.mode(

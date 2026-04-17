@@ -166,7 +166,7 @@ class StartConversationCard extends StatelessWidget {
                               'Start new conversation',
                               style: TextStyle(
                                 fontFamily: 'Inter',
-                                package: 'talq_sdk',
+                                package: 'talq_flutter',
                                 color: Colors.white,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,

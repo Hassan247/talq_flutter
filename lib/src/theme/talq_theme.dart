@@ -64,28 +64,28 @@ class TalqTheme {
     this.unreadTextColor = const Color(0xFFD3453D),
     this.titleStyle = const TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 16,
       fontWeight: FontWeight.bold,
       color: Color(0xFF000000),
     ),
     this.subtitleStyle = const TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 11,
       fontWeight: FontWeight.normal,
       color: Color(0xFF757575), // Colors.grey[600]
     ),
     this.bodyStyle = const TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 15,
       height: 1.4,
       color: Color(0xDD000000), // Colors.black87
     ),
     this.timestampStyle = const TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 10,
     ),
     this.borderRadius = 20.0,
@@ -101,14 +101,14 @@ class TalqTheme {
     agentTextColor: Color(0xFFFFFFFF),
     titleStyle: TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 16,
       fontWeight: FontWeight.bold,
       color: Color(0xFFFFFFFF),
     ),
     subtitleStyle: TextStyle(
       fontFamily: 'Inter',
-      package: 'talq_sdk',
+      package: 'talq_flutter',
       fontSize: 11,
       fontWeight: FontWeight.normal,
       color: Color(0xFFAAAAAA),

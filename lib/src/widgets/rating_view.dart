@@ -172,7 +172,7 @@ class _RatingViewState extends State<RatingView>
                           'Submit Feedback',
                           style: TextStyle(
                             fontFamily: 'Inter',
-                            package: 'talq_sdk',
+                            package: 'talq_flutter',
                             fontSize: 16,
                             fontWeight: FontWeight.bold,
                           ),

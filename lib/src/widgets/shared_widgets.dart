@@ -40,7 +40,7 @@ class TalqAvatar extends StatelessWidget {
           clipBehavior: Clip.antiAlias,
           child: SvgPicture.asset(
             'assets/icons/bot-avatar.svg',
-            package: 'talq_sdk',
+            package: 'talq_flutter',
             width: radius * 2,
             height: radius * 2,
             fit: BoxFit.cover,
@@ -81,7 +81,7 @@ class TalqAvatar extends StatelessWidget {
               child: senderType == SenderType.bot
                   ? SvgPicture.asset(
                       'assets/icons/bot-avatar.svg',
-                      package: 'talq_sdk',
+                      package: 'talq_flutter',
                       width: radius * 2,
                       height: radius * 2,
                       fit: BoxFit.cover,
@@ -100,7 +100,7 @@ class TalqAvatar extends StatelessWidget {
                 child: senderType == SenderType.bot
                     ? SvgPicture.asset(
                         'assets/icons/bot-avatar.svg',
-                        package: 'talq_sdk',
+                        package: 'talq_flutter',
                         width: radius * 2,
                         height: radius * 2,
                         fit: BoxFit.cover,
@@ -179,7 +179,7 @@ class StatusBadge extends StatelessWidget {
         text,
         style: TextStyle(
           fontFamily: 'Inter',
-          package: 'talq_sdk',
+          package: 'talq_flutter',
           fontSize: 11,
           fontWeight: FontWeight.w500,
           color: textColor,

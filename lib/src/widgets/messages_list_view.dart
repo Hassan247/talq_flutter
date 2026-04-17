@@ -76,7 +76,7 @@ class _MessagesListViewState extends State<MessagesListView> {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: Consumer<TalqController>(
         builder: (context, controller, child) {
           final activeTheme = widget.theme ?? controller.theme;
@@ -412,7 +412,7 @@ class _MessageCard extends StatelessWidget {
         'Resolved',
         style: TextStyle(
           fontFamily: 'Inter',
-          package: 'talq_sdk',
+          package: 'talq_flutter',
           color: theme.resolvedTextColor.withValues(alpha: 0.85),
           fontSize: 10,
           fontWeight: FontWeight.w700,

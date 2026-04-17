@@ -1,4 +1,4 @@
-package com.example.talq_sdk_example
+package com.example.talq_flutter_example
 
 import io.flutter.embedding.android.FlutterActivity
 

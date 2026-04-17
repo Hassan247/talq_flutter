@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
-import 'package:talq_sdk/talq_sdk.dart';
+import 'package:talq_flutter/talq_flutter.dart';
 
 const _apiKey = String.fromEnvironment('TALQ_API_KEY');
 // Optional: override for local development
@@ -36,7 +36,7 @@ class TalqExampleApp extends StatelessWidget {
         theme: ThemeData(
           primarySwatch: Colors.blue,
           useMaterial3: true,
-          fontFamily: 'packages/talq_sdk/BricolageGrotesque',
+          fontFamily: 'packages/talq_flutter/BricolageGrotesque',
         ),
         home: const MyHomePage(),
       ),

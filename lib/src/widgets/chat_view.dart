@@ -232,7 +232,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: Consumer<TalqController>(
         builder: (context, controller, child) {
           if (!controller.isInitialized && controller.isLoading) {
@@ -395,7 +395,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                       ),
                                                       child: SvgPicture.asset(
                                                         'assets/icons/messages.svg',
-                                                        package: 'talq_sdk',
+                                                        package: 'talq_flutter',
                                                         colorFilter:
                                                             ColorFilter.mode(
                                                               theme.primaryColor
@@ -526,7 +526,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                   _getDateLabel(date),
                                                   style: TextStyle(
                                                     fontFamily: 'Inter',
-                                                    package: 'talq_sdk',
+                                                    package: 'talq_flutter',
                                                     fontSize: 10,
                                                     fontWeight: FontWeight.w800,
                                                     color: theme.primaryColor,
@@ -664,7 +664,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                   _overlayDateLabel,
                                   style: TextStyle(
                                     fontFamily: 'Inter',
-                                    package: 'talq_sdk',
+                                    package: 'talq_flutter',
                                     fontSize: 10,
                                     fontWeight: FontWeight.w800,
                                     color: theme.primaryColor,
@@ -712,7 +712,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         initial,
         style: const TextStyle(
           fontFamily: 'Inter',
-          package: 'talq_sdk',
+          package: 'talq_flutter',
           color: Colors.white,
           fontSize: 16,
           fontWeight: FontWeight.w700,
@@ -744,7 +744,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
               'This conversation is resolved',
               style: TextStyle(
                 fontFamily: 'Inter',
-                package: 'talq_sdk',
+                package: 'talq_flutter',
                 color: theme.resolvedTextColor,
                 fontSize: 15,
                 fontWeight: FontWeight.w700,
@@ -755,7 +755,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
               'You cannot send new messages',
               style: TextStyle(
                 fontFamily: 'Inter',
-                package: 'talq_sdk',
+                package: 'talq_flutter',
                 color: theme.resolvedTextColor.withValues(alpha: 0.7),
                 fontSize: 13,
               ),
@@ -789,7 +789,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                           _showAttachmentOptions(context, controller, theme),
                       icon: SvgPicture.asset(
                         'assets/icons/plus.svg',
-                        package: 'talq_sdk',
+                        package: 'talq_flutter',
                         colorFilter: ColorFilter.mode(
                           theme.primaryColor,
                           BlendMode.srcIn,
@@ -856,7 +856,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                 onPressed: () => _handleSend(controller),
                 icon: SvgPicture.asset(
                   'assets/icons/send-message.svg',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -992,7 +992,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
             ),
             child: SvgPicture.asset(
               iconPath,
-              package: 'talq_sdk',
+              package: 'talq_flutter',
               width: 24,
               height: 24,
               colorFilter: ColorFilter.mode(
@@ -1141,7 +1141,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                     emoji,
                     style: const TextStyle(
                       fontFamily: 'Inter',
-                      package: 'talq_sdk',
+                      package: 'talq_flutter',
                       fontSize: 28,
                     ),
                   ),
@@ -1379,7 +1379,7 @@ class _ChatBubble extends StatelessWidget {
                   emoji,
                   style: const TextStyle(
                     fontFamily: 'Inter',
-                    package: 'talq_sdk',
+                    package: 'talq_flutter',
                     fontSize: 12,
                   ),
                 ),
@@ -1510,7 +1510,7 @@ class _ChatBubble extends StatelessWidget {
                     message.content,
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      package: 'talq_sdk',
+                      package: 'talq_flutter',
                       fontSize: 11,
                       color: Colors.grey[700],
                       fontWeight: FontWeight.w600,
@@ -1521,7 +1521,7 @@ class _ChatBubble extends StatelessWidget {
                     '• $timeStr',
                     style: TextStyle(
                       fontFamily: 'Inter',
-                      package: 'talq_sdk',
+                      package: 'talq_flutter',
                       fontSize: 10,
                       color: Colors.grey[500],
                     ),
@@ -1605,7 +1605,7 @@ class _ChatBubble extends StatelessWidget {
                 'Image unavailable',
                 style: TextStyle(
                   fontFamily: 'Inter',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   color: Colors.grey[500],
                   fontSize: 12,
                 ),
@@ -1632,7 +1632,7 @@ class _ChatBubble extends StatelessWidget {
               'Image unavailable',
               style: TextStyle(
                 fontFamily: 'Inter',
-                package: 'talq_sdk',
+                package: 'talq_flutter',
                 color: Colors.grey[600],
                 fontSize: 12,
               ),

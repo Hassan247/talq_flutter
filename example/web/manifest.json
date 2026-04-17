@@ -1,6 +1,6 @@
 {
-    "name": "talq_sdk_example",
-    "short_name": "talq_sdk_example",
+    "name": "talq_flutter_example",
+    "short_name": "talq_flutter_example",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:talq_sdk_example/main.dart';
+import 'package:talq_flutter_example/main.dart';
 
 void main() {
   testWidgets('Shows configuration guidance when dart defines are missing', (

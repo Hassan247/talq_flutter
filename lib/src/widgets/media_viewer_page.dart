@@ -90,7 +90,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
   @override
   Widget build(BuildContext context) {
     return DefaultTextStyle.merge(
-      style: const TextStyle(fontFamily: 'Inter', package: 'talq_sdk'),
+      style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
       child: Scaffold(
         backgroundColor: Colors.black,
         appBar: AppBar(
@@ -108,7 +108,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
                 ),
                 child: SvgPicture.asset(
                   'assets/icons/arrow-left.svg',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
@@ -123,7 +123,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
             widget.fileName,
             style: const TextStyle(
               fontFamily: 'Inter',
-              package: 'talq_sdk',
+              package: 'talq_flutter',
               color: Colors.white,
               fontSize: 16,
               fontWeight: FontWeight.w600,
@@ -156,7 +156,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
                 'Error: $_error',
                 style: const TextStyle(
                   fontFamily: 'Inter',
-                  package: 'talq_sdk',
+                  package: 'talq_flutter',
                   color: Colors.white70,
                 ),
                 textAlign: TextAlign.center,
@@ -206,7 +206,7 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
         'Format not supported',
         style: TextStyle(
           fontFamily: 'Inter',
-          package: 'talq_sdk',
+          package: 'talq_flutter',
           color: Colors.white,
         ),
       ),
