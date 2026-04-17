@@ -135,7 +135,12 @@ class TalqController extends ChangeNotifier {
       return;
     }
 
-    _visibleRoomCount = math.min(_visibleRoomCount, _rooms.length);
+    // Ensure we always show at least one chunk worth of rooms,
+    // so newly added rooms don't get cut off.
+    _visibleRoomCount = math.max(
+      _visibleRoomCount,
+      math.min(_roomListChunkSize, _rooms.length),
+    );
   }
 
   List<TalqMessage> _mergeMessagesNewestFirst({

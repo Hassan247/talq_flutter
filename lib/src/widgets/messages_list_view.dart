@@ -70,7 +70,10 @@ class _MessagesListViewState extends State<MessagesListView> {
 
   void _openRoom(TalqController controller, TalqRoom room) {
     controller.fetchMessages(roomId: room.id);
-    Navigator.push(context, TalqPageRoute(builder: (_) => const TalqView())).then((_) {
+    Navigator.push(
+      context,
+      TalqPageRoute(builder: (_) => const TalqView()),
+    ).then((_) {
       if (mounted) controller.fetchRooms();
     });
   }
