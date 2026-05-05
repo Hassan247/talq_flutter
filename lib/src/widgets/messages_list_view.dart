@@ -480,6 +480,19 @@ class _MessageCard extends StatelessWidget {
       );
     }
 
+    if (msg.contentType == ContentType.audio) {
+      return Row(
+        children: [
+          Icon(Icons.mic_none_rounded, size: 16, color: theme.primaryColor),
+          const SizedBox(width: 5),
+          Text(
+            'Voice message',
+            style: baseStyle.copyWith(fontStyle: FontStyle.italic),
+          ),
+        ],
+      );
+    }
+
     return Text(
       msg.content,
       maxLines: 1,

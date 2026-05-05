@@ -251,6 +251,7 @@ class _NotificationBanner extends StatelessWidget {
   String _previewText() {
     if (message.contentType == ContentType.image) return '📷 Photo';
     if (message.contentType == ContentType.pdf) return '📎 Document';
+    if (message.contentType == ContentType.audio) return '🎤 Voice message';
     return message.content;
   }
 }

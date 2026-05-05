@@ -1248,8 +1248,7 @@ class TalqController extends ChangeNotifier {
             }
 
             // update lastMessage in rooms list when applicable
-            final roomIdx =
-                _rooms.indexWhere((r) => r.id == updated.roomId);
+            final roomIdx = _rooms.indexWhere((r) => r.id == updated.roomId);
             if (roomIdx != -1) {
               final room = _rooms[roomIdx];
               if (room.lastMessage?.id == updated.id) {

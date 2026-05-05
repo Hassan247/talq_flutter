@@ -22,6 +22,7 @@ import 'rating_view.dart';
 import 'shared_widgets.dart';
 import 'shimmer_skeleton.dart';
 import 'start_conversation_card.dart';
+import 'talq_audio_player.dart';
 
 class TalqView extends StatefulWidget {
   final String title;
@@ -1180,6 +1181,7 @@ class _ChatBubble extends StatelessWidget {
     final hasAttachment =
         message.fileUrl != null || message.localFilePath != null;
     final isImage = _isImageMessage(message, hasAttachment);
+    final isAudio = _isAudioMessage(message, hasAttachment);
     final isDocument = _isDocumentMessage(message, hasAttachment, isImage);
     final attachmentCaption = _attachmentCaption(message);
     final timeStr = DateFormat('jm').format(message.createdAt.toLocal());
@@ -1295,10 +1297,11 @@ class _ChatBubble extends StatelessWidget {
                                     Icon(
                                       Icons.do_not_disturb_on_outlined,
                                       size: 14,
-                                      color: (isMe
-                                              ? theme.userTextColor
-                                              : theme.agentTextColor)
-                                          .withValues(alpha: 0.7),
+                                      color:
+                                          (isMe
+                                                  ? theme.userTextColor
+                                                  : theme.agentTextColor)
+                                              .withValues(alpha: 0.7),
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(
@@ -1318,6 +1321,8 @@ class _ChatBubble extends StatelessWidget {
                                 )
                               else if (isImage)
                                 _buildImage(context)
+                              else if (isAudio)
+                                _buildAudio(context, isMe)
                               else if (isDocument)
                                 _buildPdf(context)
                               else
@@ -1718,6 +1723,43 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
+  Widget _buildAudio(BuildContext context, bool isMe) {
+    final url = message.fileUrl ?? message.localFilePath;
+    if (url == null || url.isEmpty || message.isUploading) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  isMe ? theme.userTextColor : theme.primaryColor,
+                ),
+              ),
+            ),
+            const SizedBox(width: 12),
+            Text(
+              'Voice message',
+              style: theme.bodyStyle.copyWith(
+                color: isMe ? theme.userTextColor : theme.agentTextColor,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+    return TalqAudioPlayer(
+      key: ValueKey('audio-${message.id}'),
+      url: url,
+      theme: theme,
+      isMine: isMe,
+    );
+  }
+
   Widget _buildPdf(BuildContext context) {
     final isMe = message.senderType == models.SenderType.visitor;
 
@@ -1880,7 +1922,32 @@ class _ChatBubble extends StatelessWidget {
     if (target.contentType == models.ContentType.pdf) {
       return true;
     }
+    if (_isAudioMessage(target, hasAttachment)) {
+      return false;
+    }
     return hasAttachment && !isImage;
+  }
+
+  bool _isAudioMessage(models.TalqMessage target, bool hasAttachment) {
+    if (target.contentType == models.ContentType.audio) {
+      return true;
+    }
+    if (!hasAttachment) {
+      return false;
+    }
+    final source =
+        (target.fileName ?? target.fileUrl ?? target.localFilePath)
+            ?.toLowerCase() ??
+        '';
+    final normalized = source.split('?').first.split('#').first;
+    return normalized.endsWith('.m4a') ||
+        normalized.endsWith('.mp3') ||
+        normalized.endsWith('.aac') ||
+        normalized.endsWith('.wav') ||
+        normalized.endsWith('.ogg') ||
+        normalized.endsWith('.opus') ||
+        normalized.endsWith('.webm') ||
+        normalized.contains('/audio/');
   }
 
   String _attachmentCaption(models.TalqMessage target) {

@@ -28,7 +28,8 @@ enum SenderType {
 enum ContentType {
   text,
   image,
-  pdf;
+  pdf,
+  audio;
 
   static ContentType fromString(String? type) {
     switch (type) {
@@ -36,6 +37,8 @@ enum ContentType {
         return ContentType.image;
       case 'PDF':
         return ContentType.pdf;
+      case 'AUDIO':
+        return ContentType.audio;
       default:
         return ContentType.text;
     }
@@ -169,6 +172,7 @@ class TalqMessage {
   String get previewText {
     if (contentType == ContentType.image) return 'Photo';
     if (contentType == ContentType.pdf) return 'Document';
+    if (contentType == ContentType.audio) return 'Voice message';
     return content;
   }
 

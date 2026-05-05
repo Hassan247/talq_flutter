@@ -42,9 +42,7 @@ class TalqRepository {
   }
 
   Future<QueryResult> startNewConversation() {
-    return _remote.mutate(
-      TalqGraphqlDocuments.startNewConversationMutation,
-    );
+    return _remote.mutate(TalqGraphqlDocuments.startNewConversationMutation);
   }
 
   Future<QueryResult> fetchRooms() {
@@ -208,6 +206,8 @@ class TalqRepository {
         return 'IMAGE';
       case ContentType.pdf:
         return 'PDF';
+      case ContentType.audio:
+        return 'AUDIO';
       case ContentType.text:
         return 'TEXT';
     }
