@@ -99,6 +99,10 @@ class TalqUseCases {
     return _repository.subscribeVisitorNewMessage();
   }
 
+  Stream<QueryResult> subscribeVisitorMessageUpdated() {
+    return _repository.subscribeVisitorMessageUpdated();
+  }
+
   Stream<QueryResult> subscribeVisitorRoomUpdated() {
     return _repository.subscribeVisitorRoomUpdated();
   }

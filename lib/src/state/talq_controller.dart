@@ -49,6 +49,7 @@ class TalqController extends ChangeNotifier {
   bool _showRatingPrompt = false;
   bool _isAgentTyping = false;
   StreamSubscription? _messageSubscription;
+  StreamSubscription? _messageUpdatedSubscription;
   StreamSubscription? _typingSubscription;
   StreamSubscription? _roomSubscription;
   StreamSubscription? _workspaceSubscription;
@@ -537,6 +538,7 @@ class TalqController extends ChangeNotifier {
     _isRoomLoading = false;
     _isLoading = false;
     _messageSubscription?.cancel();
+    _messageUpdatedSubscription?.cancel();
     _typingSubscription?.cancel();
     _roomSubscription?.cancel();
     _workspaceSubscription?.cancel();
@@ -1202,6 +1204,81 @@ class TalqController extends ChangeNotifier {
     );
 
     _startRoomSubscription();
+    _startMessageUpdatedSubscription();
+  }
+
+  void _startMessageUpdatedSubscription() {
+    _messageUpdatedSubscription?.cancel();
+    _messageUpdatedSubscription = _useCases
+        .subscribeVisitorMessageUpdated()
+        .listen(
+          (result) {
+            if (result.data == null) return;
+            final raw = result.data!['visitorMessageUpdated'];
+            if (raw == null) return;
+            final updated = TalqMessage.fromJson(raw);
+
+            // update active message list
+            if (updated.roomId == _roomId) {
+              final idx = _messages.indexWhere((m) => m.id == updated.id);
+              if (idx != -1) {
+                final old = _messages[idx];
+                _messages[idx] = TalqMessage(
+                  id: updated.id,
+                  roomId: updated.roomId ?? old.roomId,
+                  content: updated.content,
+                  senderType: updated.senderType,
+                  senderName: updated.senderName ?? old.senderName,
+                  senderAvatarUrl:
+                      updated.senderAvatarUrl ?? old.senderAvatarUrl,
+                  contentType: updated.contentType,
+                  fileUrl: updated.fileUrl,
+                  fileName: updated.fileName,
+                  createdAt: old.createdAt,
+                  isRead: updated.isRead || old.isRead,
+                  isDelivered: updated.isDelivered || old.isDelivered,
+                  replyTo: updated.replyTo ?? old.replyTo,
+                  reactions: updated.reactions,
+                  deletedAt: updated.deletedAt,
+                  deletedBy: updated.deletedBy,
+                );
+                _cacheCurrentRoomMessages();
+                notifyListeners();
+              }
+            }
+
+            // update lastMessage in rooms list when applicable
+            final roomIdx =
+                _rooms.indexWhere((r) => r.id == updated.roomId);
+            if (roomIdx != -1) {
+              final room = _rooms[roomIdx];
+              if (room.lastMessage?.id == updated.id) {
+                _rooms[roomIdx] = TalqRoom(
+                  id: room.id,
+                  status: room.status,
+                  unreadCount: room.unreadCount,
+                  visitorUnreadCount: room.visitorUnreadCount,
+                  lastMessageAt: room.lastMessageAt,
+                  lastMessage: updated,
+                  createdAt: room.createdAt,
+                  rating: room.rating,
+                  ratingComment: room.ratingComment,
+                  assigneeName: room.assigneeName,
+                  assigneeAvatarUrl: room.assigneeAvatarUrl,
+                );
+                notifyListeners();
+              }
+            }
+          },
+          onError: (error) {
+            debugPrint(
+              '[TalqController] Message Updated Subscription Error: $error',
+            );
+            Future.delayed(const Duration(seconds: 5), () {
+              if (!_disposed) _startMessageUpdatedSubscription();
+            });
+          },
+        );
   }
 
   void _startRoomSubscription() {
@@ -1506,6 +1583,7 @@ class TalqController extends ChangeNotifier {
   void dispose() {
     _disposed = true;
     _messageSubscription?.cancel();
+    _messageUpdatedSubscription?.cancel();
     _typingSubscription?.cancel();
     _roomSubscription?.cancel();
     _workspaceSubscription?.cancel();

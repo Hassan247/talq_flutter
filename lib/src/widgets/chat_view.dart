@@ -1288,7 +1288,35 @@ class _ChatBubble extends StatelessWidget {
                               if (message.replyTo != null)
                                 _buildQuote(context, isMe),
 
-                              if (isImage)
+                              if (message.isDeleted)
+                                Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.do_not_disturb_on_outlined,
+                                      size: 14,
+                                      color: (isMe
+                                              ? theme.userTextColor
+                                              : theme.agentTextColor)
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    Flexible(
+                                      child: Text(
+                                        'This message was deleted',
+                                        style: theme.bodyStyle.copyWith(
+                                          color:
+                                              (isMe
+                                                      ? theme.userTextColor
+                                                      : theme.agentTextColor)
+                                                  .withValues(alpha: 0.75),
+                                          fontStyle: FontStyle.italic,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              else if (isImage)
                                 _buildImage(context)
                               else if (isDocument)
                                 _buildPdf(context)
@@ -1301,7 +1329,8 @@ class _ChatBubble extends StatelessWidget {
                                         : theme.agentTextColor,
                                   ),
                                 ),
-                              if ((isImage || isDocument) &&
+                              if (!message.isDeleted &&
+                                  (isImage || isDocument) &&
                                   attachmentCaption.isNotEmpty) ...[
                                 const SizedBox(height: 8),
                                 Text(

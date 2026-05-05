@@ -121,6 +121,12 @@ class TalqRepository {
     );
   }
 
+  Stream<QueryResult> subscribeVisitorMessageUpdated() {
+    return _remote.subscribe(
+      TalqGraphqlDocuments.visitorMessageUpdatedSubscription,
+    );
+  }
+
   Stream<QueryResult> subscribeVisitorRoomUpdated() {
     return _remote.subscribe(
       TalqGraphqlDocuments.visitorRoomUpdatedSubscription,

@@ -142,6 +142,8 @@ class TalqGraphqlDocuments {
               read
               delivered
               reactions
+              deletedAt
+              deletedBy
               replyTo {
                 id
                 content
@@ -184,6 +186,8 @@ class TalqGraphqlDocuments {
         read
         delivered
         reactions
+        deletedAt
+        deletedBy
         replyTo {
           id
           content
@@ -228,6 +232,30 @@ class TalqGraphqlDocuments {
     }
   ''';
 
+  static const String visitorMessageUpdatedSubscription = r'''
+    subscription {
+      visitorMessageUpdated {
+        id
+        content
+        senderType
+        senderName
+        senderAvatarUrl
+        contentType
+        fileUrl
+        fileName
+        createdAt
+        read
+        delivered
+        reactions
+        deletedAt
+        deletedBy
+        room {
+          id
+        }
+      }
+    }
+  ''';
+
   static const String visitorNewMessageSubscription = r'''
     subscription {
       visitorNewMessage {
@@ -242,6 +270,8 @@ class TalqGraphqlDocuments {
         createdAt
         read
         reactions
+        deletedAt
+        deletedBy
         replyTo {
           id
           content

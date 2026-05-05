@@ -85,6 +85,8 @@ class TalqMessage {
   final Map<String, dynamic> reactions;
   final String? localFilePath;
   final bool isUploading;
+  final DateTime? deletedAt;
+  final String? deletedBy;
 
   TalqMessage({
     required this.id,
@@ -103,6 +105,8 @@ class TalqMessage {
     this.reactions = const {},
     this.localFilePath,
     this.isUploading = false,
+    this.deletedAt,
+    this.deletedBy,
   });
 
   factory TalqMessage.fromJson(Map<String, dynamic> json) {
@@ -134,6 +138,10 @@ class TalqMessage {
             : {},
         localFilePath: json['localFilePath'],
         isUploading: json['isUploading'] ?? false,
+        deletedAt: json['deletedAt'] != null
+            ? DateTime.tryParse(json['deletedAt'])
+            : null,
+        deletedBy: json['deletedBy'],
       );
     } catch (e) {
       if (kDebugMode) {
@@ -151,6 +159,7 @@ class TalqMessage {
   bool get isMe => senderType == SenderType.visitor;
   bool get isSystem => senderType == SenderType.system;
   bool get isBot => senderType == SenderType.bot;
+  bool get isDeleted => deletedAt != null;
 
   String get displaySenderName {
     if (isMe) return 'You';
@@ -197,6 +206,8 @@ class TalqMessage {
     String? localFilePath,
     bool? isUploading,
     Map<String, dynamic>? reactions,
+    DateTime? deletedAt,
+    String? deletedBy,
   }) {
     return TalqMessage(
       id: id ?? this.id,
@@ -215,6 +226,8 @@ class TalqMessage {
       reactions: reactions ?? this.reactions,
       localFilePath: localFilePath ?? this.localFilePath,
       isUploading: isUploading ?? this.isUploading,
+      deletedAt: deletedAt ?? this.deletedAt,
+      deletedBy: deletedBy ?? this.deletedBy,
     );
   }
 }
