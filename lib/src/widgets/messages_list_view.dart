@@ -162,20 +162,19 @@ class _MessagesListViewState extends State<MessagesListView> {
     return ListView.builder(
       controller: _scrollController,
       physics: LivePullToRefresh.cappedScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
+      padding: const EdgeInsets.fromLTRB(0, 4, 0, 28),
       itemCount: totalItems,
       itemBuilder: (context, index) {
         final roomIndex = index;
         if (roomIndex < rooms.length) {
           final room = rooms[roomIndex];
-          return Padding(
-            padding: const EdgeInsets.only(bottom: 10),
-            child: _MessageCard(
-              room: room,
-              workspace: controller.workspace,
-              theme: theme,
-              onTap: () => _openRoom(controller, room),
-            ),
+          final isLast = roomIndex == rooms.length - 1;
+          return _MessageCard(
+            room: room,
+            workspace: controller.workspace,
+            theme: theme,
+            showDivider: !isLast,
+            onTap: () => _openRoom(controller, room),
           );
         }
 
@@ -244,6 +243,7 @@ class _MessageCard extends StatelessWidget {
   final TalqRoom room;
   final TalqWorkspace? workspace;
   final TalqTheme theme;
+  final bool showDivider;
   final VoidCallback onTap;
 
   const _MessageCard({
@@ -251,6 +251,7 @@ class _MessageCard extends StatelessWidget {
     this.workspace,
     required this.theme,
     required this.onTap,
+    this.showDivider = true,
   });
 
   @override
@@ -259,8 +260,9 @@ class _MessageCard extends StatelessWidget {
     final hasUnread = room.visitorUnreadCount > 0;
     final isMe = lastMsg?.senderType == SenderType.visitor;
     final isBot = lastMsg?.senderType == SenderType.bot;
+    final isResolved = room.status == RoomStatus.resolved;
 
-    // Avatar priority: last agent who messaged → assigned agent → workspace logo
+    // Avatar/name priority: last agent who messaged → assigned agent → workspace
     final String displayName;
     final String? avatarUrl;
     if (isBot) {
@@ -280,128 +282,286 @@ class _MessageCard extends StatelessWidget {
       displayName = room.assigneeName ?? workspace?.name ?? 'Support Team';
       avatarUrl = room.assigneeAvatarUrl ?? workspace?.avatarUrl;
     }
-    final timeStr = room.lastMessageAt != null
-        ? DateFormat('jm').format(room.lastMessageAt!.toLocal())
-        : '';
 
-    return Container(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            theme.surfaceColor,
-            Color.lerp(theme.surfaceColor, theme.primaryColor, 0.035)!,
-          ],
-        ),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(
-          color: theme.cardShadowColor.withValues(alpha: 0.1),
-          width: 1,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: theme.cardShadowColor.withValues(alpha: 0.06),
-            blurRadius: 14,
-            offset: const Offset(0, 6),
+    final timeStr = _formatRelativeTime(room.lastMessageAt);
+
+    final titleColor = theme.titleStyle.color ?? Colors.black87;
+    final subtitleColor =
+        theme.subtitleStyle.color?.withValues(alpha: 0.78) ??
+        Colors.grey.shade600;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
+          decoration: BoxDecoration(
+            border: showDivider
+                ? Border(
+                    bottom: BorderSide(
+                      color: titleColor.withValues(alpha: 0.06),
+                      width: 1,
+                    ),
+                  )
+                : null,
           ),
-        ],
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(24),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                _buildAvatar(avatarUrl, hasUnread),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _buildMessageTitle(lastMsg, hasUnread),
-                          ),
-                          if (room.status == RoomStatus.resolved)
-                            _buildResolvedChip(),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
-                      Row(
-                        children: [
-                          Flexible(
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(
-                                    '${isMe ? 'You' : displayName}${timeStr.isNotEmpty ? ' • $timeStr' : ''}',
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: theme.subtitleStyle.copyWith(
-                                      fontSize: 13,
-                                      fontWeight: hasUnread
-                                          ? FontWeight.w700
-                                          : FontWeight.w500,
-                                      color: hasUnread
-                                          ? theme.primaryColor
-                                          : theme.subtitleStyle.color
-                                                ?.withValues(alpha: 0.85),
-                                    ),
-                                  ),
-                                ),
-                                if (isMe && lastMsg != null) ...[
-                                  const SizedBox(width: 4),
-                                  _buildTicks(lastMsg),
-                                ],
-                              ],
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
+            children: [
+              TalqAvatar(
+                imageUrl: avatarUrl,
+                senderType: SenderType.agent,
+                radius: 26,
+                theme: theme,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    // Top row: name + time
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            isMe ? 'You' : displayName,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.titleStyle.copyWith(
+                              fontSize: 16,
+                              fontWeight: hasUnread
+                                  ? FontWeight.w800
+                                  : FontWeight.w700,
+                              letterSpacing: -0.3,
+                              color: titleColor,
                             ),
                           ),
-                        ],
-                      ),
-                    ],
-                  ),
+                        ),
+                        const SizedBox(width: 8),
+                        if (timeStr.isNotEmpty)
+                          Text(
+                            timeStr,
+                            style: TextStyle(
+                              fontFamily: 'Inter',
+                              package: 'talq_flutter',
+                              fontSize: 12,
+                              fontWeight: hasUnread
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              color: hasUnread
+                                  ? theme.primaryColor
+                                  : subtitleColor,
+                            ),
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    // Bottom row: preview (with optional ticks/icon prefix) + trailing badge
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: _buildPreview(
+                            lastMsg,
+                            isMe,
+                            hasUnread,
+                            subtitleColor,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        _buildTrailingBadge(
+                          hasUnread: hasUnread,
+                          isResolved: isResolved,
+                          unreadCount: room.visitorUnreadCount,
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _buildAvatar(String? url, bool hasUnread) {
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        TalqAvatar(
-          imageUrl: url,
-          senderType: SenderType.agent,
-          radius: 25,
-          theme: theme,
-        ),
-        if (hasUnread)
-          Positioned(
-            top: -2,
-            right: -2,
-            child: Container(
-              width: 11,
-              height: 11,
-              decoration: BoxDecoration(
-                color: theme.primaryColor,
-                shape: BoxShape.circle,
-                border: Border.all(color: theme.surfaceColor, width: 2),
+  /// WhatsApp-style relative time:
+  /// - today → "10:17 PM"
+  /// - yesterday → "Yesterday"
+  /// - this week → "Monday"
+  /// - older → "06/05/26"
+  String _formatRelativeTime(DateTime? dt) {
+    if (dt == null) return '';
+    final local = dt.toLocal();
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final that = DateTime(local.year, local.month, local.day);
+    final diffDays = today.difference(that).inDays;
+
+    if (diffDays == 0) return DateFormat('jm').format(local);
+    if (diffDays == 1) return 'Yesterday';
+    if (diffDays < 7) return DateFormat('EEEE').format(local);
+    return DateFormat('dd/MM/yy').format(local);
+  }
+
+  /// Builds the message preview line. For attachments, shows an icon + label.
+  /// Voice and photos color the icon based on read state (WhatsApp style:
+  /// unread/un-played voice notes use the accent colour; opened ones use
+  /// the muted subtitle colour).
+  Widget _buildPreview(
+    TalqMessage? msg,
+    bool isMe,
+    bool hasUnread,
+    Color subtitleColor,
+  ) {
+    final baseStyle = TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_flutter',
+      fontSize: 14,
+      height: 1.3,
+      fontWeight: hasUnread ? FontWeight.w600 : FontWeight.w500,
+      color: hasUnread
+          ? (theme.titleStyle.color ?? Colors.black87).withValues(alpha: 0.92)
+          : subtitleColor,
+    );
+
+    if (msg == null) {
+      return Text(
+        'New conversation',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: baseStyle.copyWith(fontStyle: FontStyle.italic),
+      );
+    }
+
+    // Tinted icons: highlight unread; mute when read.
+    final accent = hasUnread ? theme.primaryColor : subtitleColor;
+
+    Widget? leadingIcon;
+    String? attachmentLabel;
+    bool italic = false;
+
+    switch (msg.contentType) {
+      case ContentType.image:
+        leadingIcon = Icon(
+          Icons.photo_camera_rounded,
+          size: 16,
+          color: accent,
+        );
+        attachmentLabel = msg.content.trim().isNotEmpty
+            ? msg.content
+            : 'Photo';
+        break;
+      case ContentType.audio:
+        leadingIcon = Icon(Icons.mic_rounded, size: 16, color: accent);
+        attachmentLabel = 'Voice message';
+        italic = true;
+        break;
+      case ContentType.pdf:
+        leadingIcon = Icon(
+          Icons.insert_drive_file_rounded,
+          size: 16,
+          color: accent,
+        );
+        attachmentLabel = msg.fileName ?? 'Document';
+        break;
+      default:
+        break;
+    }
+
+    // Sender ticks (only when the visitor sent the last message and it's text)
+    Widget? ticks;
+    if (isMe && msg.contentType == ContentType.text) {
+      ticks = _buildTicks(msg);
+    }
+
+    if (leadingIcon != null && attachmentLabel != null) {
+      // Single-line attachment row with icon prefix.
+      return Row(
+        children: [
+          if (isMe) ...[
+            _buildTicks(msg),
+            const SizedBox(width: 4),
+          ],
+          leadingIcon,
+          const SizedBox(width: 5),
+          Expanded(
+            child: Text(
+              attachmentLabel,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: baseStyle.copyWith(
+                fontStyle: italic ? FontStyle.italic : FontStyle.normal,
+                color: hasUnread ? accent : subtitleColor,
+                fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w500,
               ),
             ),
           ),
+        ],
+      );
+    }
+
+    // Plain text preview — up to 2 lines, WhatsApp-style.
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (ticks != null) ...[
+          Padding(
+            padding: const EdgeInsets.only(top: 2),
+            child: ticks,
+          ),
+          const SizedBox(width: 4),
+        ],
+        Expanded(
+          child: Text(
+            msg.content,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: baseStyle,
+          ),
+        ),
       ],
     );
+  }
+
+  /// Right-side trailing badge:
+  /// - Resolved chip when the room is resolved.
+  /// - Green unread count bubble when there are unread messages.
+  /// - Empty otherwise.
+  Widget _buildTrailingBadge({
+    required bool hasUnread,
+    required bool isResolved,
+    required int unreadCount,
+  }) {
+    if (isResolved) {
+      return _buildResolvedChip();
+    }
+    if (hasUnread) {
+      return Container(
+        constraints: const BoxConstraints(minWidth: 22, minHeight: 22),
+        padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+        decoration: BoxDecoration(
+          color: theme.primaryColor,
+          borderRadius: BorderRadius.circular(999),
+        ),
+        alignment: Alignment.center,
+        child: Text(
+          unreadCount > 99 ? '99+' : '$unreadCount',
+          style: const TextStyle(
+            fontFamily: 'Inter',
+            package: 'talq_flutter',
+            color: Colors.white,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            height: 1.1,
+          ),
+        ),
+      );
+    }
+    return const SizedBox(width: 0, height: 22);
   }
 
   Widget _buildResolvedChip() {
@@ -426,78 +586,6 @@ class _MessageCard extends StatelessWidget {
           letterSpacing: 0.2,
         ),
       ),
-    );
-  }
-
-  Widget _buildMessageTitle(TalqMessage? msg, bool hasUnread) {
-    if (msg == null) {
-      return Text(
-        'New Conversation',
-        maxLines: 1,
-        overflow: TextOverflow.ellipsis,
-        style: theme.titleStyle.copyWith(
-          fontSize: 18,
-          fontWeight: FontWeight.w700,
-          letterSpacing: -0.45,
-        ),
-      );
-    }
-
-    final baseStyle = theme.titleStyle.copyWith(
-      fontSize: 17,
-      fontWeight: hasUnread ? FontWeight.w800 : FontWeight.w700,
-      color: hasUnread
-          ? theme.titleStyle.color
-          : theme.titleStyle.color?.withValues(alpha: 0.88),
-      letterSpacing: -0.45,
-      height: 1.2,
-    );
-
-    if (msg.contentType == ContentType.image) {
-      return Row(
-        children: [
-          Icon(
-            Icons.photo_camera_outlined,
-            size: 16,
-            color: theme.primaryColor,
-          ),
-          const SizedBox(width: 5),
-          Text('Photo', style: baseStyle.copyWith(fontStyle: FontStyle.italic)),
-        ],
-      );
-    }
-
-    if (msg.contentType == ContentType.pdf) {
-      return Row(
-        children: [
-          Icon(Icons.description_outlined, size: 16, color: theme.primaryColor),
-          const SizedBox(width: 5),
-          Text(
-            'Document',
-            style: baseStyle.copyWith(fontStyle: FontStyle.italic),
-          ),
-        ],
-      );
-    }
-
-    if (msg.contentType == ContentType.audio) {
-      return Row(
-        children: [
-          Icon(Icons.mic_none_rounded, size: 16, color: theme.primaryColor),
-          const SizedBox(width: 5),
-          Text(
-            'Voice message',
-            style: baseStyle.copyWith(fontStyle: FontStyle.italic),
-          ),
-        ],
-      );
-    }
-
-    return Text(
-      msg.content,
-      maxLines: 1,
-      overflow: TextOverflow.ellipsis,
-      style: baseStyle,
     );
   }
 
