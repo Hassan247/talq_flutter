@@ -706,10 +706,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         ),
                       ),
                     if (controller.showRatingPrompt)
-                      Container(
-                        color: Colors.black.withValues(alpha: 0.5),
-                        child: RatingView(theme: theme),
-                      ),
+                      Positioned.fill(child: RatingView(theme: theme)),
                   ],
                 ),
               ),
@@ -752,44 +749,104 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
   Widget _buildInputArea(TalqController controller, TalqTheme theme) {
     if (controller.roomStatus == models.RoomStatus.resolved) {
-      return Container(
-        width: double.infinity,
-        margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-        padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 24),
-        decoration: BoxDecoration(
-          color: theme.resolvedBackgroundColor,
-          borderRadius: BorderRadius.circular(24),
-          border: Border.all(
-            color: theme.resolvedTextColor.withValues(alpha: 0.1),
-            width: 1,
+      final canRate = !controller.isRatingSubmitted;
+      return Padding(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+        child: SafeArea(
+          top: false,
+          minimum: const EdgeInsets.only(bottom: 4),
+          child: Container(
+            decoration: BoxDecoration(
+              color: theme.resolvedBackgroundColor,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.resolvedTextColor.withValues(alpha: 0.12),
+                width: 1,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.lock_rounded,
+                    color: theme.resolvedTextColor,
+                    size: 18,
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Conversation resolved',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            color: theme.resolvedTextColor,
+                            fontSize: 13.5,
+                            fontWeight: FontWeight.w700,
+                            height: 1.2,
+                          ),
+                        ),
+                        Text(
+                          canRate
+                              ? 'Tap rate to share your feedback'
+                              : 'Thanks for your feedback',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            color: theme.resolvedTextColor.withValues(
+                              alpha: 0.75,
+                            ),
+                            fontSize: 11.5,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  if (canRate)
+                    Material(
+                      color: theme.resolvedTextColor.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(999),
+                      child: InkWell(
+                        onTap: controller.requestRatingPrompt,
+                        borderRadius: BorderRadius.circular(999),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 14,
+                            vertical: 7,
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(
+                                Icons.star_rounded,
+                                size: 14,
+                                color: theme.resolvedTextColor,
+                              ),
+                              const SizedBox(width: 5),
+                              Text(
+                                'Rate',
+                                style: TextStyle(
+                                  fontFamily: 'Inter',
+                                  package: 'talq_flutter',
+                                  color: theme.resolvedTextColor,
+                                  fontSize: 12.5,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
           ),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.lock_rounded, color: theme.resolvedTextColor, size: 24),
-            const SizedBox(height: 10),
-            Text(
-              'This conversation is resolved',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                package: 'talq_flutter',
-                color: theme.resolvedTextColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'You cannot send new messages',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                package: 'talq_flutter',
-                color: theme.resolvedTextColor.withValues(alpha: 0.7),
-                fontSize: 13,
-              ),
-            ),
-          ],
         ),
       );
     }

@@ -1530,6 +1530,26 @@ class TalqController extends ChangeNotifier {
         );
   }
 
+  /// Hides the rating prompt without submitting. The visitor can reopen
+  /// it from the resolved banner — this is purely a UX convenience so the
+  /// rating sheet doesn't block reading the conversation history.
+  void dismissRatingPrompt() {
+    if (!_showRatingPrompt) return;
+    _showRatingPrompt = false;
+    notifyListeners();
+  }
+
+  /// Re-opens the rating prompt (e.g. when the visitor taps "Rate" in the
+  /// resolved banner after dismissing it earlier). No-op if the room is
+  /// already rated.
+  void requestRatingPrompt() {
+    if (_isRatingSubmitted) return;
+    if (_roomStatus != RoomStatus.resolved) return;
+    if (_showRatingPrompt) return;
+    _showRatingPrompt = true;
+    notifyListeners();
+  }
+
   /// Submits a rating for the current room
   Future<void> rateRoom(int rating, {String? comment}) async {
     if (_roomId == null) return;
