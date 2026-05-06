@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
-import 'package:path/path.dart' as p;
 import 'package:provider/provider.dart';
 
 import '../core/utils/pdf_thumbnail_helper.dart';
@@ -54,7 +53,10 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
   Widget build(BuildContext context) {
     final controller = context.watch<TalqController>();
     final theme = controller.theme;
-    final fileName = p.basename(widget.file.path);
+    // Replace ugly raw filenames like "image_picker_3A926B94-…" with a
+    // friendly title based on what the user is actually previewing.
+    final isImage = widget.contentType == models.ContentType.image;
+    final title = isImage ? 'Photo' : 'Document';
 
     return DefaultTextStyle.merge(
       style: const TextStyle(fontFamily: 'Inter', package: 'talq_flutter'),
@@ -63,31 +65,10 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
         appBar: AppBar(
           backgroundColor: Colors.black,
           elevation: 0,
-          leadingWidth: 70,
-          leading: Center(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: SvgPicture.asset(
-                  'assets/icons/arrow-left.svg',
-                  package: 'talq_flutter',
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                  width: 20,
-                  height: 20,
-                ),
-              ),
-            ),
-          ),
+          // Use the same back arrow as the chat screen for consistency.
+          leading: BackButton(color: Colors.white),
           title: Text(
-            fileName,
+            title,
             style: const TextStyle(
               fontFamily: 'Inter',
               package: 'talq_flutter',
@@ -218,12 +199,8 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
                   Expanded(
                     child: Container(
                       decoration: BoxDecoration(
-                        color: Colors.white.withValues(alpha: 0.15),
+                        color: Colors.white.withValues(alpha: 0.08),
                         borderRadius: BorderRadius.circular(28),
-                        border: Border.all(
-                          color: Colors.white.withValues(alpha: 0.1),
-                          width: 1,
-                        ),
                       ),
                       child: TextField(
                         controller: _captionController,

@@ -2,7 +2,6 @@ import 'dart:io';
 
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
@@ -96,29 +95,8 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
         appBar: AppBar(
           backgroundColor: Colors.black.withValues(alpha: 0.5),
           elevation: 0,
-          leadingWidth: 70,
-          leading: Center(
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: SvgPicture.asset(
-                  'assets/icons/arrow-left.svg',
-                  package: 'talq_flutter',
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
-                    BlendMode.srcIn,
-                  ),
-                  width: 20,
-                  height: 20,
-                ),
-              ),
-            ),
-          ),
+          // Use the same back arrow as the chat screen for consistency.
+          leading: const BackButton(color: Colors.white),
           title: Text(
             widget.fileName,
             style: const TextStyle(
