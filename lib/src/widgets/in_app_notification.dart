@@ -35,14 +35,14 @@ class _TalqInAppNotificationState extends State<TalqInAppNotification>
       duration: const Duration(milliseconds: 300),
       reverseDuration: const Duration(milliseconds: 200),
     );
-    _slideAnimation = Tween<Offset>(
-      begin: const Offset(0, -1),
-      end: Offset.zero,
-    ).animate(CurvedAnimation(
-      parent: _animController,
-      curve: Curves.easeOutCubic,
-      reverseCurve: Curves.easeIn,
-    ));
+    _slideAnimation =
+        Tween<Offset>(begin: const Offset(0, -1), end: Offset.zero).animate(
+          CurvedAnimation(
+            parent: _animController,
+            curve: Curves.easeOutCubic,
+            reverseCurve: Curves.easeIn,
+          ),
+        );
   }
 
   @override
@@ -66,9 +66,7 @@ class _TalqInAppNotificationState extends State<TalqInAppNotification>
     final navigator = Navigator.maybeOf(context);
     if (navigator != null) {
       navigator.push(
-        TalqPageRoute(
-          builder: (context) => RoomsListView(theme: theme),
-        ),
+        TalqPageRoute(builder: (context) => RoomsListView(theme: theme)),
       );
     }
   }

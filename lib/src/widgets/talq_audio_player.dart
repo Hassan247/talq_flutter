@@ -111,9 +111,7 @@ class _TalqAudioPlayerState extends State<TalqAudioPlayer> {
   Widget build(BuildContext context) {
     final theme = widget.theme;
     final fg = widget.isMine ? theme.userTextColor : theme.agentTextColor;
-    final accent = widget.isMine
-        ? theme.userTextColor
-        : theme.primaryColor;
+    final accent = widget.isMine ? theme.userTextColor : theme.primaryColor;
     final track = fg.withValues(alpha: 0.18);
 
     final total = _duration.inMilliseconds == 0
@@ -124,9 +122,7 @@ class _TalqAudioPlayerState extends State<TalqAudioPlayer> {
         .toDouble();
 
     final isPlaying = _state == PlayerState.playing;
-    final remaining = _duration > _position
-        ? _duration - _position
-        : _duration;
+    final remaining = _duration > _position ? _duration - _position : _duration;
 
     return SizedBox(
       width: 240,
@@ -166,9 +162,7 @@ class _TalqAudioPlayerState extends State<TalqAudioPlayer> {
                     onChanged: _hasError
                         ? null
                         : (v) {
-                            _player.seek(
-                              Duration(milliseconds: v.toInt()),
-                            );
+                            _player.seek(Duration(milliseconds: v.toInt()));
                           },
                   ),
                 ),
