@@ -11,7 +11,8 @@ class TalqRepository {
 
   Future<void> initializeClient() => _remote.initializeClient();
 
-  Future<String> uploadFile(String filePath) => _remote.uploadFile(filePath);
+  Future<String> uploadFile(String filePath, {String? overrideFileName}) =>
+      _remote.uploadFile(filePath, overrideFileName: overrideFileName);
 
   Future<QueryResult> initVisitor({
     required String deviceId,

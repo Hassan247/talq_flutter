@@ -176,7 +176,7 @@ class TalqClient {
     );
   }
 
-  Future<String> uploadFile(String filePath) async {
+  Future<String> uploadFile(String filePath, {String? overrideFileName}) async {
     final uploadUrl = Uri.parse(
       httpUrl,
     ).replace(path: '/upload', query: null).toString();
@@ -186,7 +186,7 @@ class TalqClient {
       data: FormData.fromMap({
         'file': await MultipartFile.fromFile(
           filePath,
-          filename: path.basename(filePath),
+          filename: overrideFileName ?? path.basename(filePath),
         ),
       }),
       options: Options(

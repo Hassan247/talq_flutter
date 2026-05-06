@@ -18,8 +18,8 @@ class TalqUseCases {
 
   Future<void> initializeClient() => _repository.initializeClient();
 
-  Future<String> uploadFile(String filePath) =>
-      _repository.uploadFile(filePath);
+  Future<String> uploadFile(String filePath, {String? overrideFileName}) =>
+      _repository.uploadFile(filePath, overrideFileName: overrideFileName);
 
   Future<QueryResult> initVisitor({
     required String deviceId,

@@ -30,5 +30,6 @@ class TalqRemoteDataSource {
     return _client.subscribe(document, variables: variables);
   }
 
-  Future<String> uploadFile(String filePath) => _client.uploadFile(filePath);
+  Future<String> uploadFile(String filePath, {String? overrideFileName}) =>
+      _client.uploadFile(filePath, overrideFileName: overrideFileName);
 }

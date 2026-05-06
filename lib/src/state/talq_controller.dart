@@ -963,7 +963,7 @@ class TalqController extends ChangeNotifier {
 
   /// Picks and sends a file (image or PDF)
   Future<void> sendFile(String filePath, {String? caption}) async {
-    final fileName = path.basename(filePath);
+    final rawFileName = path.basename(filePath);
     final extension = path.extension(filePath).toLowerCase();
 
     ContentType contentType = ContentType.text;
@@ -971,6 +971,28 @@ class TalqController extends ChangeNotifier {
       contentType = ContentType.image;
     } else if (extension == '.pdf') {
       contentType = ContentType.pdf;
+    }
+
+    // The iOS image_picker / camera plugins hand us temp filenames like
+    // "image_picker_3A926B94-42B5-46AA-...jpg" and Android's are similarly
+    // ugly. Rename them to a clean timestamp-based name so the server (and
+    // any downstream client) sees a friendly filename. Documents picked via
+    // FilePicker keep their original name.
+    String fileName = rawFileName;
+    final lower = rawFileName.toLowerCase();
+    final isPickerJunk =
+        lower.startsWith('image_picker_') ||
+        lower.startsWith('scaled_') ||
+        lower.startsWith('tmp_') ||
+        lower.startsWith('temp_');
+    if (contentType == ContentType.image && isPickerJunk) {
+      final now = DateTime.now();
+      String two(int n) => n.toString().padLeft(2, '0');
+      final stamp =
+          '${now.year}${two(now.month)}${two(now.day)}_'
+          '${two(now.hour)}${two(now.minute)}${two(now.second)}';
+      final ext = extension.isEmpty ? '.jpg' : extension;
+      fileName = 'IMG_$stamp$ext';
     }
 
     // 1. Create optimistic message
@@ -999,7 +1021,10 @@ class TalqController extends ChangeNotifier {
 
     try {
       // 2. Upload file through centralized Dio client
-      final fileUrl = await _useCases.uploadFile(filePath);
+      final fileUrl = await _useCases.uploadFile(
+        filePath,
+        overrideFileName: fileName,
+      );
 
       // 3. Send message with detected type
       await sendMessage(
