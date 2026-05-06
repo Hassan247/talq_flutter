@@ -625,7 +625,9 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                   },
                                 ),
                         ),
-                        if (controller.isAgentTyping)
+                        if (controller.isAgentTyping &&
+                            !widget.isNewConversation &&
+                            controller.roomId != null)
                           Padding(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,

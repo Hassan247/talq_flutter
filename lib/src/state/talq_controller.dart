@@ -602,6 +602,14 @@ class TalqController extends ChangeNotifier {
         _showRatingPrompt = false;
         _replyingTo = null;
 
+        // Room changed: drop any "agent typing" state inherited from the
+        // previous room and (re-)subscribe scoped to the new room. Without
+        // this, an agent typing in room A would still flip the indicator
+        // for room B if the visitor switched rooms.
+        _isAgentTyping = false;
+        _typingTimer?.cancel();
+        _startTypingSubscription();
+
         final cachedMessages = _messageCache[targetRoomId];
         if (cachedMessages != null) {
           _messages = List<TalqMessage>.from(cachedMessages);
