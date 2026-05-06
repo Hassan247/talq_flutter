@@ -1504,24 +1504,28 @@ class _ChatBubble extends StatelessWidget {
     ).format(message.createdAt.toLocal());
 
     if (isReassignment) {
-      // Friendly, modern handoff pill. Reframes the dry "Reassigned to X"
-      // server message into a visitor-facing "You're now chatting with X"
-      // card with a gradient avatar, soft accent shadow and time meta.
+      // Friendly handoff banner. Renders the server-side "Reassigned to X"
+      // as a visitor-facing "You're now chatting with X" card with the
+      // agent's actual avatar (when available), the name on its own line,
+      // and the time on a soft second line so nothing wraps awkwardly.
       final agentName = message.content
           .replaceFirst('Reassigned to', '')
           .trim();
       final accent = theme.primaryColor;
+      final hasAvatar =
+          message.senderAvatarUrl != null &&
+          message.senderAvatarUrl!.isNotEmpty;
 
       return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+        padding: const EdgeInsets.fromLTRB(24, 18, 24, 18),
         child: Center(
           child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 360),
+            constraints: const BoxConstraints(maxWidth: 320),
             child: Container(
-              padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
+              padding: const EdgeInsets.fromLTRB(10, 10, 16, 10),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(999),
+                borderRadius: BorderRadius.circular(20),
                 border: Border.all(
                   color: accent.withValues(alpha: 0.18),
                   width: 1,
@@ -1536,72 +1540,96 @@ class _ChatBubble extends StatelessWidget {
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
+                  // Agent avatar (real photo if we have one, otherwise a soft
+                  // gradient circle with a friendly "wave" icon).
                   Container(
-                    width: 26,
-                    height: 26,
+                    width: 32,
+                    height: 32,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
-                      gradient: LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [
-                          accent.withValues(alpha: 0.95),
-                          accent.withValues(alpha: 0.65),
-                        ],
-                      ),
+                      gradient: hasAvatar
+                          ? null
+                          : LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                accent.withValues(alpha: 0.95),
+                                accent.withValues(alpha: 0.65),
+                              ],
+                            ),
                       boxShadow: [
                         BoxShadow(
-                          color: accent.withValues(alpha: 0.35),
+                          color: accent.withValues(alpha: 0.25),
                           blurRadius: 6,
                           offset: const Offset(0, 2),
                         ),
                       ],
                     ),
-                    child: const Icon(
-                      Icons.support_agent_rounded,
-                      size: 15,
-                      color: Colors.white,
-                    ),
+                    child: hasAvatar
+                        ? ClipOval(
+                            child: TalqAvatar(
+                              imageUrl: message.senderAvatarUrl,
+                              senderType: models.SenderType.agent,
+                              radius: 16,
+                            ),
+                          )
+                        : const Icon(
+                            Icons.waving_hand_rounded,
+                            size: 16,
+                            color: Colors.white,
+                          ),
                   ),
-                  const SizedBox(width: 8),
+                  const SizedBox(width: 10),
                   Flexible(
-                    child: Text.rich(
-                      TextSpan(
-                        style: const TextStyle(
-                          fontFamily: 'Inter',
-                          package: 'talq_flutter',
-                          fontSize: 11.5,
-                          height: 1.25,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text.rich(
+                          TextSpan(
+                            style: const TextStyle(
+                              fontFamily: 'Inter',
+                              package: 'talq_flutter',
+                              fontSize: 12,
+                              height: 1.25,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'You\u2019re now chatting with ',
+                                style: TextStyle(
+                                  color: Colors.grey[600],
+                                  fontWeight: FontWeight.w500,
+                                ),
+                              ),
+                              TextSpan(
+                                text: agentName.isEmpty
+                                    ? 'a new agent'
+                                    : agentName,
+                                style: TextStyle(
+                                  color: accent,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          softWrap: true,
                         ),
-                        children: [
-                          TextSpan(
-                            text: 'You\u2019re now chatting with ',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontWeight: FontWeight.w500,
-                            ),
+                        const SizedBox(height: 2),
+                        Text(
+                          timeStr,
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            fontSize: 10.5,
+                            color: Colors.grey[400],
+                            fontWeight: FontWeight.w500,
                           ),
-                          TextSpan(
-                            text: agentName.isEmpty ? 'a new agent' : agentName,
-                            style: TextStyle(
-                              color: accent,
-                              fontWeight: FontWeight.w700,
-                            ),
-                          ),
-                          TextSpan(
-                            text: '  ·  $timeStr',
-                            style: TextStyle(
-                              color: Colors.grey[400],
-                              fontWeight: FontWeight.w500,
-                              fontSize: 10.5,
-                            ),
-                          ),
-                        ],
-                      ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      softWrap: true,
+                        ),
+                      ],
                     ),
                   ),
                 ],
