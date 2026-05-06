@@ -97,6 +97,10 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     if (listRenderBox == null) return;
 
     String? topDate;
+    // WhatsApp-style: if any group's inline date pill is visible near the top
+    // of the viewport, suppress the sticky overlay so we don't render two
+    // identical "TODAY/YESTERDAY" pills at once.
+    bool inlinePillVisible = false;
     for (final entry in _groupKeys.entries) {
       final keyContext = entry.value.currentContext;
       if (keyContext == null) continue;
@@ -119,12 +123,27 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
               : DateTime.now(),
         );
       }
+      // The inline date pill sits at the very top of each group (the first
+      // ~60px). If that band is currently within the visible viewport area
+      // near the top of the chat, the inline pill is doing the job already.
+      if (position.dy >= 0 && position.dy < 80) {
+        inlinePillVisible = true;
+      }
     }
 
     if (topDate != null && topDate != _overlayDateLabel) {
       setState(() {
         _overlayDateLabel = topDate!;
       });
+    }
+
+    if (inlinePillVisible) {
+      // Inline pill already showing — hide overlay immediately, WhatsApp-style.
+      _dateOverlayTimer?.cancel();
+      if (_showDateOverlay) {
+        setState(() => _showDateOverlay = false);
+      }
+      return;
     }
 
     if (!_showDateOverlay) {
@@ -503,9 +522,18 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                           children: [
                                             Container(
                                               width: double.infinity,
+                                              // Compensate for the asymmetric
+                                              // ListView padding (left:16,
+                                              // right:0) so the pill is
+                                              // centered relative to the
+                                              // actual screen, not the list's
+                                              // content area.
                                               padding:
-                                                  const EdgeInsets.symmetric(
-                                                    vertical: 24,
+                                                  const EdgeInsets.fromLTRB(
+                                                    0,
+                                                    24,
+                                                    16,
+                                                    24,
                                                   ),
                                               alignment: Alignment.center,
                                               child: Container(
