@@ -313,7 +313,9 @@ class TalqController extends ChangeNotifier {
               'os': deviceInfo['os'],
             }
           : null;
-      debugPrint('[TalqController] Starting initVisitor...');
+      debugPrint(
+        '[TalqController] Starting initVisitor (email: ${email ?? "<null>"}, deviceId: $deviceId)...',
+      );
 
       final result = await _useCases.initVisitor(
         deviceId: deviceId,
