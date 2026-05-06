@@ -162,19 +162,20 @@ class _MessagesListViewState extends State<MessagesListView> {
     return ListView.builder(
       controller: _scrollController,
       physics: LivePullToRefresh.cappedScrollPhysics(),
-      padding: const EdgeInsets.fromLTRB(0, 4, 0, 28),
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       itemCount: totalItems,
       itemBuilder: (context, index) {
         final roomIndex = index;
         if (roomIndex < rooms.length) {
           final room = rooms[roomIndex];
-          final isLast = roomIndex == rooms.length - 1;
-          return _MessageCard(
-            room: room,
-            workspace: controller.workspace,
-            theme: theme,
-            showDivider: !isLast,
-            onTap: () => _openRoom(controller, room),
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 10),
+            child: _MessageCard(
+              room: room,
+              workspace: controller.workspace,
+              theme: theme,
+              onTap: () => _openRoom(controller, room),
+            ),
           );
         }
 
@@ -243,7 +244,6 @@ class _MessageCard extends StatelessWidget {
   final TalqRoom room;
   final TalqWorkspace? workspace;
   final TalqTheme theme;
-  final bool showDivider;
   final VoidCallback onTap;
 
   const _MessageCard({
@@ -251,7 +251,6 @@ class _MessageCard extends StatelessWidget {
     this.workspace,
     required this.theme,
     required this.onTap,
-    this.showDivider = true,
   });
 
   @override
@@ -290,23 +289,30 @@ class _MessageCard extends StatelessWidget {
         theme.subtitleStyle.color?.withValues(alpha: 0.78) ??
         Colors.grey.shade600;
 
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-          decoration: BoxDecoration(
-            border: showDivider
-                ? Border(
-                    bottom: BorderSide(
-                      color: titleColor.withValues(alpha: 0.06),
-                      width: 1,
-                    ),
-                  )
-                : null,
+    return Container(
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: theme.cardShadowColor.withValues(alpha: 0.08),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.cardShadowColor.withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
-          child: Row(
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(20),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
+            child: Row(
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               TalqAvatar(
@@ -383,6 +389,7 @@ class _MessageCard extends StatelessWidget {
               ),
             ],
           ),
+          ),
         ),
       ),
     );
@@ -433,7 +440,7 @@ class _MessageCard extends StatelessWidget {
         'New conversation',
         maxLines: 2,
         overflow: TextOverflow.ellipsis,
-        style: baseStyle.copyWith(fontStyle: FontStyle.italic),
+        style: baseStyle,
       );
     }
 
@@ -442,7 +449,6 @@ class _MessageCard extends StatelessWidget {
 
     Widget? leadingIcon;
     String? attachmentLabel;
-    bool italic = false;
 
     switch (msg.contentType) {
       case ContentType.image:
@@ -458,7 +464,6 @@ class _MessageCard extends StatelessWidget {
       case ContentType.audio:
         leadingIcon = Icon(Icons.mic_rounded, size: 16, color: accent);
         attachmentLabel = 'Voice message';
-        italic = true;
         break;
       case ContentType.pdf:
         leadingIcon = Icon(
@@ -494,7 +499,6 @@ class _MessageCard extends StatelessWidget {
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: baseStyle.copyWith(
-                fontStyle: italic ? FontStyle.italic : FontStyle.normal,
                 color: hasUnread ? accent : subtitleColor,
                 fontWeight: hasUnread ? FontWeight.w700 : FontWeight.w500,
               ),
