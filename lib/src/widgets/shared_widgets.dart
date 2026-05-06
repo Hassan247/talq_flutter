@@ -189,32 +189,21 @@ class StatusBadge extends StatelessWidget {
   }
 }
 
-/// Smooth iOS-style slide transition for page navigation.
-class TalqPageRoute<T> extends PageRouteBuilder<T> {
+/// iOS-style slide transition for page navigation, with built-in
+/// interactive swipe-back gesture on iOS (left-edge drag pops the route).
+///
+/// We extend [MaterialPageRoute] so the framework's
+/// `CupertinoPageTransitionsBuilder` is used on iOS — which renders the
+/// familiar slide animation _and_ wires up the back-swipe gesture for free.
+/// On Android the default fade-up transition is used, where the system
+/// back button (or back gesture) handles popping.
+class TalqPageRoute<T> extends MaterialPageRoute<T> {
   TalqPageRoute({required WidgetBuilder builder})
-    : super(
-        pageBuilder: (context, animation, secondaryAnimation) =>
-            builder(context),
-        transitionDuration: const Duration(milliseconds: 300),
-        reverseTransitionDuration: const Duration(milliseconds: 250),
-        transitionsBuilder: (context, animation, secondaryAnimation, child) {
-          final tween = Tween<Offset>(
-            begin: const Offset(1.0, 0.0),
-            end: Offset.zero,
-          ).chain(CurveTween(curve: Curves.easeOutCubic));
+    : super(builder: builder, fullscreenDialog: false);
 
-          final secondaryTween = Tween<Offset>(
-            begin: Offset.zero,
-            end: const Offset(-0.3, 0.0),
-          ).chain(CurveTween(curve: Curves.easeOutCubic));
+  @override
+  Duration get transitionDuration => const Duration(milliseconds: 300);
 
-          return SlideTransition(
-            position: secondaryAnimation.drive(secondaryTween),
-            child: SlideTransition(
-              position: animation.drive(tween),
-              child: child,
-            ),
-          );
-        },
-      );
+  @override
+  Duration get reverseTransitionDuration => const Duration(milliseconds: 250);
 }
