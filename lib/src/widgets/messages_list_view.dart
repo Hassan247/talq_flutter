@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -47,13 +48,23 @@ class _MessagesListViewState extends State<MessagesListView> {
 
   void _onScroll() {
     if (!_scrollController.hasClients) return;
-    final threshold = _scrollController.position.maxScrollExtent - 240;
-    if (_scrollController.position.pixels < threshold) return;
+    final position = _scrollController.position;
+
+    // Don't trigger load-more when the list is too short to scroll. Without
+    // this guard, `pixels (0) >= maxScrollExtent (0) - 240` is always true,
+    // so a single touch would fire pagination on a 1-room list.
+    if (position.maxScrollExtent <= 0) return;
+
+    // Only react to user-initiated scrolls (drags + ballistic flings), not
+    // synthetic notifications from a stationary touch.
+    if (position.userScrollDirection == ScrollDirection.idle) return;
+
+    if (position.pixels < position.maxScrollExtent - 240) return;
 
     final controller = context.read<TalqController>();
-    if (!controller.isFetchingMoreRooms) {
-      controller.fetchMoreRooms();
-    }
+    if (controller.isFetchingMoreRooms) return;
+
+    controller.fetchMoreRooms();
   }
 
   Future<void> _handleRefresh(TalqController controller) async {
