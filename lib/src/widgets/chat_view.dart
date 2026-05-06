@@ -1504,9 +1504,16 @@ class _ChatBubble extends StatelessWidget {
     ).format(message.createdAt.toLocal());
 
     if (isReassignment) {
-      // Beautiful divider with horizontal lines for reassignment events
+      // Friendly, modern handoff card. Reframes the dry "Reassigned to X"
+      // server message into a visitor-facing "You're now chatting with X" pill
+      // with an avatar, accent gradient and soft shadow.
+      final agentName = message.content
+          .replaceFirst('Reassigned to', '')
+          .trim();
+      final accent = theme.primaryColor;
+
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 16),
+        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
         child: Row(
           children: [
             Expanded(
@@ -1516,48 +1523,95 @@ class _ChatBubble extends StatelessWidget {
                   gradient: LinearGradient(
                     colors: [
                       Colors.transparent,
-                      Colors.grey[300]!,
-                      Colors.transparent,
+                      accent.withValues(alpha: 0.18),
                     ],
                   ),
                 ),
               ),
             ),
             Container(
-              margin: const EdgeInsets.symmetric(horizontal: 12),
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+              margin: const EdgeInsets.symmetric(horizontal: 10),
+              padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
               decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: Colors.grey[300]!, width: 1),
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(999),
+                border: Border.all(
+                  color: accent.withValues(alpha: 0.18),
+                  width: 1,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: accent.withValues(alpha: 0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
               child: Row(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(
-                    Icons.swap_horiz_rounded,
-                    size: 14,
-                    color: Colors.grey[600],
-                  ),
-                  const SizedBox(width: 6),
-                  Text(
-                    message.content,
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      package: 'talq_flutter',
-                      fontSize: 11,
-                      color: Colors.grey[700],
-                      fontWeight: FontWeight.w600,
+                  Container(
+                    width: 26,
+                    height: 26,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: LinearGradient(
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                        colors: [
+                          accent.withValues(alpha: 0.95),
+                          accent.withValues(alpha: 0.65),
+                        ],
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: accent.withValues(alpha: 0.35),
+                          blurRadius: 6,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                      Icons.support_agent_rounded,
+                      size: 15,
+                      color: Colors.white,
                     ),
                   ),
                   const SizedBox(width: 8),
-                  Text(
-                    '• $timeStr',
-                    style: TextStyle(
-                      fontFamily: 'Inter',
-                      package: 'talq_flutter',
-                      fontSize: 10,
-                      color: Colors.grey[500],
+                  Flexible(
+                    child: RichText(
+                      text: TextSpan(
+                        style: const TextStyle(
+                          fontFamily: 'Inter',
+                          package: 'talq_flutter',
+                          fontSize: 11.5,
+                          height: 1.25,
+                        ),
+                        children: [
+                          TextSpan(
+                            text: 'You\u2019re now chatting with ',
+                            style: TextStyle(
+                              color: Colors.grey[600],
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                          TextSpan(
+                            text: agentName.isEmpty ? 'a new agent' : agentName,
+                            style: TextStyle(
+                              color: accent,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          TextSpan(
+                            text: '  ·  $timeStr',
+                            style: TextStyle(
+                              color: Colors.grey[400],
+                              fontWeight: FontWeight.w500,
+                              fontSize: 10.5,
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ],
@@ -1569,8 +1623,7 @@ class _ChatBubble extends StatelessWidget {
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     colors: [
-                      Colors.transparent,
-                      Colors.grey[300]!,
+                      accent.withValues(alpha: 0.18),
                       Colors.transparent,
                     ],
                   ),
