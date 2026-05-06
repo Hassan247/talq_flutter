@@ -53,6 +53,12 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   Timer? _dateOverlayTimer;
   final Map<int, GlobalKey> _groupKeys = {};
 
+  // Rating prompt dialog state. We render the rating sheet via
+  // showGeneralDialog (root navigator) so its dark scrim covers the
+  // entire screen including the AppBar — instead of being clipped to
+  // the Scaffold body.
+  bool _ratingDialogOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -271,6 +277,13 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
           // use controller's theme for reactive updates
           final theme = controller.theme;
+
+          // Drive the root-navigator rating dialog after this frame so the
+          // scrim covers the AppBar (it can't be hosted in the body Stack).
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (!mounted) return;
+            _syncRatingDialog(controller, theme);
+          });
 
           final hasMessages = controller.messages.isNotEmpty;
           final shouldRedirect = widget.isNewConversation && hasMessages;
@@ -705,8 +718,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                           ),
                         ),
                       ),
-                    if (controller.showRatingPrompt)
-                      Positioned.fill(child: RatingView(theme: theme)),
                   ],
                 ),
               ),
@@ -715,6 +726,42 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         },
       ),
     );
+  }
+
+  /// Opens or closes the rating sheet as a root-navigator dialog so its
+  /// scrim spans the entire screen (including AppBar). Idempotent — safe
+  /// to invoke from a Consumer rebuild.
+  void _syncRatingDialog(TalqController controller, TalqTheme theme) {
+    final shouldShow = controller.showRatingPrompt;
+    if (shouldShow && !_ratingDialogOpen) {
+      _ratingDialogOpen = true;
+      // Use the root navigator so the dialog overlays the AppBar.
+      showGeneralDialog<void>(
+        context: context,
+        useRootNavigator: true,
+        barrierDismissible: false,
+        // RatingView renders its own animated scrim; keep barrier transparent.
+        barrierColor: Colors.transparent,
+        barrierLabel: 'Rating',
+        transitionDuration: Duration.zero,
+        pageBuilder: (_, __, ___) => RatingView(theme: theme),
+      ).whenComplete(() {
+        _ratingDialogOpen = false;
+        // If the dialog was popped while the controller still wants the
+        // prompt visible (e.g. user used a system back gesture), align
+        // the controller state by dismissing.
+        if (mounted && controller.showRatingPrompt) {
+          controller.dismissRatingPrompt();
+        }
+      });
+    } else if (!shouldShow && _ratingDialogOpen) {
+      // Controller closed the prompt (submit success / dismiss / resolve);
+      // pop the dialog if it's still on top.
+      final nav = Navigator.of(context, rootNavigator: true);
+      if (nav.canPop()) {
+        nav.pop();
+      }
+    }
   }
 
   Widget _buildHeaderAvatar(TalqController controller, TalqTheme theme) {
