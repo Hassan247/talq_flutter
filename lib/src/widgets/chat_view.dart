@@ -1504,33 +1504,20 @@ class _ChatBubble extends StatelessWidget {
     ).format(message.createdAt.toLocal());
 
     if (isReassignment) {
-      // Friendly, modern handoff card. Reframes the dry "Reassigned to X"
-      // server message into a visitor-facing "You're now chatting with X" pill
-      // with an avatar, accent gradient and soft shadow.
+      // Friendly, modern handoff pill. Reframes the dry "Reassigned to X"
+      // server message into a visitor-facing "You're now chatting with X"
+      // card with a gradient avatar, soft accent shadow and time meta.
       final agentName = message.content
           .replaceFirst('Reassigned to', '')
           .trim();
       final accent = theme.primaryColor;
 
       return Padding(
-        padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 4),
-        child: Row(
-          children: [
-            Expanded(
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      Colors.transparent,
-                      accent.withValues(alpha: 0.18),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-            Container(
-              margin: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.fromLTRB(16, 18, 16, 18),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 360),
+            child: Container(
               padding: const EdgeInsets.fromLTRB(6, 6, 14, 6),
               decoration: BoxDecoration(
                 color: Colors.white,
@@ -1579,8 +1566,8 @@ class _ChatBubble extends StatelessWidget {
                   ),
                   const SizedBox(width: 8),
                   Flexible(
-                    child: RichText(
-                      text: TextSpan(
+                    child: Text.rich(
+                      TextSpan(
                         style: const TextStyle(
                           fontFamily: 'Inter',
                           package: 'talq_flutter',
@@ -1612,25 +1599,15 @@ class _ChatBubble extends StatelessWidget {
                           ),
                         ],
                       ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      softWrap: true,
                     ),
                   ),
                 ],
               ),
             ),
-            Expanded(
-              child: Container(
-                height: 1,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      accent.withValues(alpha: 0.18),
-                      Colors.transparent,
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       );
     }
