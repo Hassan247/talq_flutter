@@ -313,82 +313,82 @@ class _MessageCard extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.fromLTRB(14, 12, 14, 12),
             child: Row(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              TalqAvatar(
-                imageUrl: avatarUrl,
-                senderType: SenderType.agent,
-                radius: 26,
-                theme: theme,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    // Top row: name + time
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            isMe ? 'You' : displayName,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.titleStyle.copyWith(
-                              fontSize: 16,
-                              fontWeight: hasUnread
-                                  ? FontWeight.w800
-                                  : FontWeight.w700,
-                              letterSpacing: -0.3,
-                              color: titleColor,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        if (timeStr.isNotEmpty)
-                          Text(
-                            timeStr,
-                            style: TextStyle(
-                              fontFamily: 'Inter',
-                              package: 'talq_flutter',
-                              fontSize: 12,
-                              fontWeight: hasUnread
-                                  ? FontWeight.w700
-                                  : FontWeight.w500,
-                              color: hasUnread
-                                  ? theme.primaryColor
-                                  : subtitleColor,
-                            ),
-                          ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Bottom row: preview (with optional ticks/icon prefix) + trailing badge
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Expanded(
-                          child: _buildPreview(
-                            lastMsg,
-                            isMe,
-                            hasUnread,
-                            subtitleColor,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        _buildTrailingBadge(
-                          hasUnread: hasUnread,
-                          isResolved: isResolved,
-                          unreadCount: room.visitorUnreadCount,
-                        ),
-                      ],
-                    ),
-                  ],
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                TalqAvatar(
+                  imageUrl: avatarUrl,
+                  senderType: SenderType.agent,
+                  radius: 26,
+                  theme: theme,
                 ),
-              ),
-            ],
-          ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Top row: name + time
+                      Row(
+                        children: [
+                          Expanded(
+                            child: Text(
+                              displayName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: theme.titleStyle.copyWith(
+                                fontSize: 16,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w800
+                                    : FontWeight.w700,
+                                letterSpacing: -0.3,
+                                color: titleColor,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          if (timeStr.isNotEmpty)
+                            Text(
+                              timeStr,
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                package: 'talq_flutter',
+                                fontSize: 12,
+                                fontWeight: hasUnread
+                                    ? FontWeight.w700
+                                    : FontWeight.w500,
+                                color: hasUnread
+                                    ? theme.primaryColor
+                                    : subtitleColor,
+                              ),
+                            ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      // Bottom row: preview (with optional ticks/icon prefix) + trailing badge
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Expanded(
+                            child: _buildPreview(
+                              lastMsg,
+                              isMe,
+                              hasUnread,
+                              subtitleColor,
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          _buildTrailingBadge(
+                            hasUnread: hasUnread,
+                            isResolved: isResolved,
+                            unreadCount: room.visitorUnreadCount,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -452,14 +452,8 @@ class _MessageCard extends StatelessWidget {
 
     switch (msg.contentType) {
       case ContentType.image:
-        leadingIcon = Icon(
-          Icons.photo_camera_rounded,
-          size: 16,
-          color: accent,
-        );
-        attachmentLabel = msg.content.trim().isNotEmpty
-            ? msg.content
-            : 'Photo';
+        leadingIcon = Icon(Icons.photo_camera_rounded, size: 16, color: accent);
+        attachmentLabel = msg.content.trim().isNotEmpty ? msg.content : 'Photo';
         break;
       case ContentType.audio:
         leadingIcon = Icon(Icons.mic_rounded, size: 16, color: accent);
@@ -487,10 +481,7 @@ class _MessageCard extends StatelessWidget {
       // Single-line attachment row with icon prefix.
       return Row(
         children: [
-          if (isMe) ...[
-            _buildTicks(msg),
-            const SizedBox(width: 4),
-          ],
+          if (isMe) ...[_buildTicks(msg), const SizedBox(width: 4)],
           leadingIcon,
           const SizedBox(width: 5),
           Expanded(
@@ -513,10 +504,7 @@ class _MessageCard extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (ticks != null) ...[
-          Padding(
-            padding: const EdgeInsets.only(top: 2),
-            child: ticks,
-          ),
+          Padding(padding: const EdgeInsets.only(top: 2), child: ticks),
           const SizedBox(width: 4),
         ],
         Expanded(
