@@ -511,22 +511,32 @@ class _MessageCard extends StatelessWidget {
     }
 
     // Plain text preview — up to 2 lines, WhatsApp-style.
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (ticks != null) ...[
-          Padding(padding: const EdgeInsets.only(top: 2), child: ticks),
-          const SizedBox(width: 4),
-        ],
-        Expanded(
-          child: Text(
-            msg.content,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: baseStyle,
-          ),
+    // Embed the tick inline as a WidgetSpan so wrapped lines flow under
+    // the tick (rather than being indented by a separate leading column).
+    if (ticks != null) {
+      return Text.rich(
+        TextSpan(
+          children: [
+            WidgetSpan(
+              alignment: PlaceholderAlignment.middle,
+              child: Padding(
+                padding: const EdgeInsets.only(right: 4),
+                child: ticks,
+              ),
+            ),
+            TextSpan(text: msg.content),
+          ],
         ),
-      ],
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+        style: baseStyle,
+      );
+    }
+    return Text(
+      msg.content,
+      maxLines: 2,
+      overflow: TextOverflow.ellipsis,
+      style: baseStyle,
     );
   }
 
