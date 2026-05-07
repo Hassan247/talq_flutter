@@ -802,167 +802,115 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       final stars = controller.rating ?? 0;
       final accent = theme.resolvedTextColor;
       final softBg = theme.resolvedBackgroundColor;
-      return Padding(
-        padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
-        child: SafeArea(
-          top: false,
-          minimum: const EdgeInsets.only(bottom: 4),
-          child: AnimatedSize(
-            duration: const Duration(milliseconds: 280),
-            curve: Curves.easeOutCubic,
-            child: Container(
-              width: double.infinity,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: [
-                    softBg,
-                    Color.alphaBlend(accent.withValues(alpha: 0.10), softBg),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(22),
-                border: Border.all(
-                  color: accent.withValues(alpha: 0.20),
-                  width: 1,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: accent.withValues(alpha: 0.10),
-                    blurRadius: 20,
-                    offset: const Offset(0, 6),
-                  ),
-                ],
-              ),
-              child: Padding(
-                padding: const EdgeInsets.fromLTRB(16, 16, 16, 16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    // Centered icon badge.
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: accent.withValues(alpha: 0.14),
-                        shape: BoxShape.circle,
-                        border: Border.all(
-                          color: accent.withValues(alpha: 0.20),
-                          width: 1,
+      // Duolingo-style edge-to-edge footer: no side/bottom margins, no
+      // rounded corners. Title on the left, stars (rated) or icon (unrated)
+      // on the right, full-width primary action below when ratable.
+      return AnimatedSize(
+        duration: const Duration(milliseconds: 280),
+        curve: Curves.easeOutCubic,
+        child: Container(
+          width: double.infinity,
+          color: softBg,
+          child: SafeArea(
+            top: false,
+            minimum: const EdgeInsets.only(bottom: 8),
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Text(
+                          'Conversation is closed',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            color: accent,
+                            fontSize: 19,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.3,
+                            height: 1.15,
+                          ),
                         ),
                       ),
-                      alignment: Alignment.center,
-                      child: Icon(
-                        Icons.task_alt_rounded,
-                        color: accent,
-                        size: 24,
-                      ),
-                    ),
-                    const SizedBox(height: 10),
-                    // Title.
-                    Text(
-                      'Conversation closed',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        fontFamily: 'Inter',
-                        package: 'talq_flutter',
-                        color: accent,
-                        fontSize: 15,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.3,
-                        height: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    // Subtitle / stars.
-                    if (!canRate && stars > 0) ...[
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        mainAxisSize: MainAxisSize.min,
-                        children: List.generate(5, (i) {
-                          final on = i < stars;
-                          return Padding(
-                            padding: const EdgeInsets.symmetric(horizontal: 1.5),
-                            child: Icon(
-                              on
-                                  ? Icons.star_rounded
-                                  : Icons.star_outline_rounded,
-                              size: 16,
-                              color: on
-                                  ? const Color(0xFFFFB300)
-                                  : accent.withValues(alpha: 0.30),
-                            ),
-                          );
-                        }),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Thanks for your feedback',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          package: 'talq_flutter',
-                          color: accent.withValues(alpha: 0.80),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
-                        ),
-                      ),
-                    ] else
-                      Text(
-                        canRate
-                            ? 'How was your experience with us?'
-                            : 'Thanks for chatting with us.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          fontFamily: 'Inter',
-                          package: 'talq_flutter',
-                          color: accent.withValues(alpha: 0.80),
-                          fontSize: 12.5,
-                          fontWeight: FontWeight.w500,
-                          height: 1.3,
-                        ),
-                      ),
-                    if (canRate) ...[
-                      const SizedBox(height: 14),
-                      SizedBox(
-                        width: double.infinity,
-                        height: 46,
-                        child: Material(
+                      const SizedBox(width: 12),
+                      // Right cluster: stars (when rated) or task-complete
+                      // icon (when not yet rated).
+                      if (!canRate && stars > 0)
+                        Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: List.generate(5, (i) {
+                            final on = i < stars;
+                            return Padding(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 1.5,
+                              ),
+                              child: Icon(
+                                on
+                                    ? Icons.star_rounded
+                                    : Icons.star_outline_rounded,
+                                size: 18,
+                                color: on
+                                    ? accent
+                                    : accent.withValues(alpha: 0.30),
+                              ),
+                            );
+                          }),
+                        )
+                      else
+                        Icon(
+                          Icons.task_alt_rounded,
                           color: accent,
-                          borderRadius: BorderRadius.circular(14),
-                          clipBehavior: Clip.antiAlias,
-                          child: InkWell(
-                            onTap: controller.requestRatingPrompt,
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: const [
-                                Icon(
-                                  Icons.star_rounded,
-                                  size: 18,
-                                  color: Colors.white,
-                                ),
-                                SizedBox(width: 8),
-                                Text(
-                                  'Rate your experience',
-                                  style: TextStyle(
-                                    fontFamily: 'Inter',
-                                    package: 'talq_flutter',
-                                    color: Colors.white,
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w700,
-                                    letterSpacing: -0.1,
-                                  ),
-                                ),
-                              ],
+                          size: 22,
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    canRate
+                        ? 'How was your experience?'
+                        : 'Thanks for your feedback',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      package: 'talq_flutter',
+                      color: accent.withValues(alpha: 0.78),
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                      height: 1.3,
+                    ),
+                  ),
+                  if (canRate) ...[
+                    const SizedBox(height: 14),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: Material(
+                        color: accent,
+                        borderRadius: BorderRadius.circular(14),
+                        clipBehavior: Clip.antiAlias,
+                        child: InkWell(
+                          onTap: controller.requestRatingPrompt,
+                          child: const Center(
+                            child: Text(
+                              'RATE YOUR EXPERIENCE',
+                              style: TextStyle(
+                                fontFamily: 'Inter',
+                                package: 'talq_flutter',
+                                color: Colors.white,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0.6,
+                              ),
                             ),
                           ),
                         ),
                       ),
-                    ],
+                    ),
                   ],
-                ),
+                ],
               ),
             ),
           ),
