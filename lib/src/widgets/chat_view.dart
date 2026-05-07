@@ -268,6 +268,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
+            if (controller.isRoomLoading && controller.roomId != null) return;
             _syncRatingDialog(controller, theme);
           });
 
@@ -658,9 +659,13 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                               ],
                             ),
                           ),
-                        if (controller.replyingTo != null)
+                        if (controller.replyingTo != null &&
+                            !(controller.isRoomLoading &&
+                                controller.roomId != null))
                           _buildReplyOverlay(controller, theme),
-                        _buildInputArea(controller, theme),
+                        if (!(controller.isRoomLoading &&
+                            controller.roomId != null))
+                          _buildInputArea(controller, theme),
                       ],
                     ),
                     if (_showDateOverlay && _overlayDateLabel.isNotEmpty)
