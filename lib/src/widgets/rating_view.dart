@@ -206,59 +206,65 @@ class _Sheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                // Stars — centered, intrinsic-width (NOT full width).
-                Center(
-                  child: _StarRow(
-                    rating: rating,
-                    hover: hover,
-                    onTap: onStar,
-                    onHover: onHover,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                // Status label below stars: "Tap to rate" before any pick,
-                // otherwise the contextual subtitle for the current rating.
-                Center(
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 200),
-                    child: Text(
-                      rating == 0 ? 'Tap a star to rate' : _subtitleFor(rating),
-                      key: ValueKey<int>(rating),
-                      textAlign: TextAlign.center,
-                      style: theme.subtitleStyle.copyWith(
-                        fontSize: 13,
-                        height: 1.3,
-                        fontWeight: rating == 0
-                            ? FontWeight.w500
-                            : FontWeight.w600,
-                      ),
-                    ),
-                  ),
-                ),
+                // Once the user has rated, hide the stars and the prompt and
+                // collapse straight into the comment + submit area. While
+                // unrated, show the centered intrinsic-width star row plus a
+                // helper label below it.
                 AnimatedSize(
-                  duration: const Duration(milliseconds: 220),
+                  duration: const Duration(milliseconds: 240),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
                   child: rating == 0
-                      ? const SizedBox(width: double.infinity)
-                      : Padding(
-                          padding: const EdgeInsets.only(top: 18),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _CommentField(
-                                theme: theme,
-                                controller: commentController,
-                                isDark: isDark,
+                      ? Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Center(
+                              child: _StarRow(
+                                rating: rating,
+                                hover: hover,
+                                onTap: onStar,
+                                onHover: onHover,
                               ),
-                              const SizedBox(height: 14),
-                              _SubmitButton(
-                                theme: theme,
-                                submitting: submitting,
-                                onPressed: onSubmit,
+                            ),
+                            const SizedBox(height: 10),
+                            Text(
+                              'Tap a star to rate',
+                              textAlign: TextAlign.center,
+                              style: theme.subtitleStyle.copyWith(
+                                fontSize: 13,
+                                height: 1.3,
+                                fontWeight: FontWeight.w500,
                               ),
-                            ],
-                          ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Center(
+                              child: Text(
+                                _subtitleFor(rating),
+                                textAlign: TextAlign.center,
+                                style: theme.subtitleStyle.copyWith(
+                                  fontSize: 13,
+                                  height: 1.3,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 14),
+                            _CommentField(
+                              theme: theme,
+                              controller: commentController,
+                              isDark: isDark,
+                            ),
+                            const SizedBox(height: 14),
+                            _SubmitButton(
+                              theme: theme,
+                              submitting: submitting,
+                              onPressed: onSubmit,
+                            ),
+                          ],
                         ),
                 ),
               ],
@@ -298,9 +304,7 @@ class _CloseButton extends StatelessWidget {
     final iconColor = (theme.titleStyle.color ?? Colors.black).withValues(
       alpha: 0.65,
     );
-    final bg = (theme.titleStyle.color ?? Colors.black).withValues(
-      alpha: 0.06,
-    );
+    final bg = (theme.titleStyle.color ?? Colors.black).withValues(alpha: 0.06);
     return Material(
       color: bg,
       shape: const CircleBorder(),
@@ -358,9 +362,7 @@ class _StarRow extends StatelessWidget {
               child: Icon(
                 active ? Icons.star_rounded : Icons.star_outline_rounded,
                 size: 38,
-                color: active
-                    ? const Color(0xFFFFB300)
-                    : Colors.grey.shade300,
+                color: active ? const Color(0xFFFFB300) : Colors.grey.shade300,
               ),
             ),
           ),
