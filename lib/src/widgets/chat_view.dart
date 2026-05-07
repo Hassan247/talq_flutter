@@ -485,6 +485,10 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                     );
                                     return ListView.builder(
                                       controller: _scrollController,
+                                      physics:
+                                          const AlwaysScrollableScrollPhysics(
+                                            parent: BouncingScrollPhysics(),
+                                          ),
                                       padding: const EdgeInsets.only(
                                         left: 16,
                                         right: 0,
