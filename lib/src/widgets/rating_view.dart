@@ -46,10 +46,14 @@ class _RatingViewState extends State<RatingView>
     _scrimAnim = CurvedAnimation(parent: _slide, curve: Curves.easeOut);
 
     final controller = Provider.of<TalqController>(context, listen: false);
+    // If a rating was already submitted, never show this sheet — the
+    // resolved banner is the single source of truth for confirmation.
     if (controller.rating != null) {
-      _rating = controller.rating!;
-      _commentController.text = controller.ratingComment ?? '';
-      _submitted = true;
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (!mounted) return;
+        controller.dismissRatingPrompt();
+      });
+      return;
     }
     _slide.forward();
   }
@@ -78,10 +82,7 @@ class _RatingViewState extends State<RatingView>
         comment: comment.isEmpty ? null : comment,
       );
       if (!mounted) return;
-      setState(() {
-        _submitting = false;
-        _submitted = true;
-      });
+      _submitted = true;
       // Dismiss the sheet — confirmation lives on the resolved banner.
       await _close(controller);
     } catch (_) {
@@ -183,7 +184,6 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final showThanks = submitted;
     return Material(
       color: theme.surfaceColor,
       elevation: 24,
@@ -216,28 +216,12 @@ class _Sheet extends StatelessWidget {
               Row(
                 children: [
                   Expanded(
-                    child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 260),
-                      transitionBuilder: (child, anim) => FadeTransition(
-                        opacity: anim,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.15),
-                            end: Offset.zero,
-                          ).animate(anim),
-                          child: child,
-                        ),
-                      ),
-                      child: Text(
-                        showThanks
-                            ? 'Thanks for rating'
-                            : 'Rate your experience',
-                        key: ValueKey<bool>(showThanks),
-                        style: theme.titleStyle.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
-                        ),
+                    child: Text(
+                      'Rate your experience',
+                      style: theme.titleStyle.copyWith(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: -0.4,
                       ),
                     ),
                   ),
@@ -245,41 +229,16 @@ class _Sheet extends StatelessWidget {
                 ],
               ),
               const SizedBox(height: 18),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 280),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 280),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
-                  transitionBuilder: (child, anim) => FadeTransition(
-                    opacity: anim,
-                    child: ScaleTransition(
-                      scale: Tween<double>(begin: 0.97, end: 1.0).animate(anim),
-                      child: child,
-                    ),
-                  ),
-                  child: showThanks
-                      ? _ThanksView(
-                          key: const ValueKey('thanks'),
-                          theme: theme,
-                          rating: rating,
-                          onDone: onClose,
-                        )
-                      : _RateForm(
-                          key: const ValueKey('form'),
-                          theme: theme,
-                          isDark: isDark,
-                          rating: rating,
-                          hover: hover,
-                          submitting: submitting,
-                          commentController: commentController,
-                          onStar: onStar,
-                          onHover: onHover,
-                          onSubmit: onSubmit,
-                        ),
-                ),
+              _RateForm(
+                theme: theme,
+                isDark: isDark,
+                rating: rating,
+                hover: hover,
+                submitting: submitting,
+                commentController: commentController,
+                onStar: onStar,
+                onHover: onHover,
+                onSubmit: onSubmit,
               ),
             ],
           ),
@@ -301,7 +260,6 @@ class _RateForm extends StatelessWidget {
   final VoidCallback onSubmit;
 
   const _RateForm({
-    super.key,
     required this.theme,
     required this.isDark,
     required this.rating,
@@ -390,102 +348,6 @@ class _RateForm extends StatelessWidget {
       default:
         return 'Tap to Rate';
     }
-  }
-}
-
-class _ThanksView extends StatelessWidget {
-  final TalqTheme theme;
-  final int rating;
-  final VoidCallback onDone;
-
-  const _ThanksView({
-    super.key,
-    required this.theme,
-    required this.rating,
-    required this.onDone,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // Animated check-circle in primary tint.
-        Center(
-          child: TweenAnimationBuilder<double>(
-            duration: const Duration(milliseconds: 420),
-            curve: Curves.easeOutBack,
-            tween: Tween(begin: 0.6, end: 1.0),
-            builder: (context, scale, child) =>
-                Transform.scale(scale: scale, child: child),
-            child: Container(
-              width: 64,
-              height: 64,
-              decoration: BoxDecoration(
-                color: theme.primaryColor.withValues(alpha: 0.12),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(
-                Icons.check_rounded,
-                size: 36,
-                color: theme.primaryColor,
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              5,
-              (i) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 2),
-                child: Icon(
-                  i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
-                  size: 18,
-                  color: i < rating
-                      ? const Color(0xFFFFB300)
-                      : Colors.grey.shade300,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 10),
-        Text(
-          rating >= 4
-              ? 'Your feedback helps us improve. Thanks for taking the time!'
-              : 'Thanks — your feedback helps us do better.',
-          textAlign: TextAlign.center,
-          style: theme.subtitleStyle.copyWith(fontSize: 13, height: 1.35),
-        ),
-        const SizedBox(height: 18),
-        SizedBox(
-          height: 50,
-          child: ElevatedButton(
-            onPressed: onDone,
-            style: ElevatedButton.styleFrom(
-              backgroundColor: theme.primaryColor,
-              foregroundColor: Colors.white,
-              elevation: 0,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-            ),
-            child: const Text(
-              'Done',
-              style: TextStyle(
-                fontFamily: 'Inter',
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-          ),
-        ),
-      ],
-    );
   }
 }
 
