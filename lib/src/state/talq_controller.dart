@@ -1127,6 +1127,16 @@ class TalqController extends ChangeNotifier {
             }
             _cacheCurrentRoomMessages();
             notifyListeners();
+          } else {
+            // Keep cached history for inactive rooms in sync so reopening
+            // the chat shows the latest message without waiting for a refetch.
+            final cached = _messageCache[newMessage.roomId];
+            if (cached != null) {
+              final alreadyCached = cached.any((m) => m.id == newMessage.id);
+              if (!alreadyCached) {
+                cached.insert(0, newMessage);
+              }
+            }
           }
         }
       },
