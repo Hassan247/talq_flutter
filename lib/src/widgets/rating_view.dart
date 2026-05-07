@@ -170,85 +170,99 @@ class _Sheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: theme.surfaceColor,
-      elevation: 24,
-      shadowColor: Colors.black.withValues(alpha: 0.25),
-      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.fromLTRB(20, 12, 20, 20 + bottomInset),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              // Drag handle
-              Container(
-                width: 40,
-                height: 4,
-                margin: const EdgeInsets.only(bottom: 14),
-                decoration: BoxDecoration(
-                  color: (theme.titleStyle.color ?? Colors.black).withValues(
-                    alpha: 0.12,
-                  ),
-                  borderRadius: BorderRadius.circular(999),
+    // Inset from screen edges so the sheet floats as a card above the device
+    // chrome (visible scrim on all four sides) instead of bleeding to the
+    // bottom/left/right.
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
+      child: Material(
+        color: theme.surfaceColor,
+        elevation: 24,
+        shadowColor: Colors.black.withValues(alpha: 0.25),
+        borderRadius: BorderRadius.circular(28),
+        clipBehavior: Clip.antiAlias,
+        child: SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.fromLTRB(22, 22, 22, 22 + bottomInset),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // Header row: title left (bold), circular close button right.
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        'Rate your conversation',
+                        style: theme.titleStyle.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                    ),
+                    _CloseButton(theme: theme, onTap: onClose),
+                  ],
                 ),
-              ),
-              // Top row: title + close
-              Row(
-                children: [
-                  Expanded(
+                const SizedBox(height: 18),
+                // Stars — centered, intrinsic-width (NOT full width).
+                Center(
+                  child: _StarRow(
+                    rating: rating,
+                    hover: hover,
+                    onTap: onStar,
+                    onHover: onHover,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                // Status label below stars: "Tap to rate" before any pick,
+                // otherwise the contextual subtitle for the current rating.
+                Center(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 200),
                     child: Text(
-                      'Rate your conversation',
-                      style: theme.titleStyle.copyWith(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w800,
-                        letterSpacing: -0.4,
+                      rating == 0 ? 'Tap a star to rate' : _subtitleFor(rating),
+                      key: ValueKey<int>(rating),
+                      textAlign: TextAlign.center,
+                      style: theme.subtitleStyle.copyWith(
+                        fontSize: 13,
+                        height: 1.3,
+                        fontWeight: rating == 0
+                            ? FontWeight.w500
+                            : FontWeight.w600,
                       ),
                     ),
                   ),
-                  _CloseButton(theme: theme, onTap: onClose),
-                ],
-              ),
-              const SizedBox(height: 6),
-              Text(
-                _subtitleFor(rating),
-                style: theme.subtitleStyle.copyWith(fontSize: 13, height: 1.3),
-              ),
-              const SizedBox(height: 18),
-              _StarRow(
-                rating: rating,
-                hover: hover,
-                onTap: onStar,
-                onHover: onHover,
-              ),
-              AnimatedSize(
-                duration: const Duration(milliseconds: 220),
-                curve: Curves.easeOutCubic,
-                alignment: Alignment.topCenter,
-                child: rating == 0
-                    ? const SizedBox(width: double.infinity)
-                    : Padding(
-                        padding: const EdgeInsets.only(top: 18),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _CommentField(
-                              theme: theme,
-                              controller: commentController,
-                              isDark: isDark,
-                            ),
-                            const SizedBox(height: 14),
-                            _SubmitButton(
-                              theme: theme,
-                              submitting: submitting,
-                              onPressed: onSubmit,
-                            ),
-                          ],
+                ),
+                AnimatedSize(
+                  duration: const Duration(milliseconds: 220),
+                  curve: Curves.easeOutCubic,
+                  alignment: Alignment.topCenter,
+                  child: rating == 0
+                      ? const SizedBox(width: double.infinity)
+                      : Padding(
+                          padding: const EdgeInsets.only(top: 18),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _CommentField(
+                                theme: theme,
+                                controller: commentController,
+                                isDark: isDark,
+                              ),
+                              const SizedBox(height: 14),
+                              _SubmitButton(
+                                theme: theme,
+                                submitting: submitting,
+                                onPressed: onSubmit,
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-              ),
-            ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -281,20 +295,23 @@ class _CloseButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final iconColor = (theme.titleStyle.color ?? Colors.black).withValues(
+      alpha: 0.65,
+    );
+    final bg = (theme.titleStyle.color ?? Colors.black).withValues(
+      alpha: 0.06,
+    );
     return Material(
-      color: Colors.transparent,
+      color: bg,
+      shape: const CircleBorder(),
+      clipBehavior: Clip.antiAlias,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(999),
-        child: Padding(
-          padding: const EdgeInsets.all(6),
-          child: Icon(
-            Icons.close_rounded,
-            size: 22,
-            color: (theme.titleStyle.color ?? Colors.black).withValues(
-              alpha: 0.55,
-            ),
-          ),
+        customBorder: const CircleBorder(),
+        child: SizedBox(
+          width: 34,
+          height: 34,
+          child: Icon(Icons.close_rounded, size: 18, color: iconColor),
         ),
       ),
     );
@@ -317,34 +334,33 @@ class _StarRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
+      mainAxisSize: MainAxisSize.min,
       mainAxisAlignment: MainAxisAlignment.center,
       children: List.generate(5, (i) {
         final active = i < (hover > 0 ? hover : rating);
-        return Expanded(
-          child: GestureDetector(
-            behavior: HitTestBehavior.opaque,
-            onTapDown: (_) => onHover(i + 1),
-            onTapCancel: () => onHover(0),
-            onTap: () {
-              onHover(0);
-              onTap(i);
-            },
-            child: Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 2),
-              child: TweenAnimationBuilder<double>(
-                duration: const Duration(milliseconds: 240),
-                curve: Curves.easeOutBack,
-                tween: Tween(begin: 1, end: active ? 1.15 : 1.0),
-                builder: (context, scale, child) {
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Icon(
-                  active ? Icons.star_rounded : Icons.star_outline_rounded,
-                  size: 42,
-                  color: active
-                      ? const Color(0xFFFFB300)
-                      : Colors.grey.shade300,
-                ),
+        return GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTapDown: (_) => onHover(i + 1),
+          onTapCancel: () => onHover(0),
+          onTap: () {
+            onHover(0);
+            onTap(i);
+          },
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 6, horizontal: 6),
+            child: TweenAnimationBuilder<double>(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutBack,
+              tween: Tween(begin: 1, end: active ? 1.15 : 1.0),
+              builder: (context, scale, child) {
+                return Transform.scale(scale: scale, child: child);
+              },
+              child: Icon(
+                active ? Icons.star_rounded : Icons.star_outline_rounded,
+                size: 38,
+                color: active
+                    ? const Color(0xFFFFB300)
+                    : Colors.grey.shade300,
               ),
             ),
           ),
