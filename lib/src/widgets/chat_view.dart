@@ -861,11 +861,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                           }),
                         )
                       else
-                        Icon(
-                          Icons.task_alt_rounded,
-                          color: accent,
-                          size: 22,
-                        ),
+                        Icon(Icons.lock_rounded, color: accent, size: 22),
                     ],
                   ),
                   const SizedBox(height: 4),
