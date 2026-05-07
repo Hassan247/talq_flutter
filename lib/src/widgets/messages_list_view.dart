@@ -583,10 +583,6 @@ class _MessageCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: theme.resolvedBackgroundColor.withValues(alpha: 0.6),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: theme.resolvedTextColor.withValues(alpha: 0.2),
-          width: 1,
-        ),
       ),
       child: Text(
         'Resolved',
