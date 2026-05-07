@@ -1446,36 +1446,48 @@ class _ChatBubble extends StatelessWidget {
                                   (isImage || isDocument) &&
                                   attachmentCaption.isNotEmpty) ...[
                                 const SizedBox(height: 8),
-                                Text(
-                                  attachmentCaption,
-                                  style: theme.bodyStyle.copyWith(
-                                    color: isMe
-                                        ? theme.userTextColor
-                                        : theme.agentTextColor,
+                                Padding(
+                                  // Images have 4px outer padding; add 12px
+                                  // to each side so caption matches the 16px
+                                  // horizontal padding of a plain text bubble.
+                                  padding: isImage
+                                      ? const EdgeInsets.fromLTRB(12, 0, 12, 0)
+                                      : EdgeInsets.zero,
+                                  child: Text(
+                                    attachmentCaption,
+                                    style: theme.bodyStyle.copyWith(
+                                      color: isMe
+                                          ? theme.userTextColor
+                                          : theme.agentTextColor,
+                                    ),
                                   ),
                                 ),
                               ],
-                              const SizedBox(height: 4),
-                              Align(
-                                alignment: Alignment.bottomRight,
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Text(
-                                      timeStr,
-                                      style: theme.timestampStyle.copyWith(
-                                        color: isMe
-                                            ? theme.userTextColor.withValues(
-                                                alpha: 0.7,
-                                              )
-                                            : theme.subtitleStyle.color,
+                              Padding(
+                                padding: isImage
+                                    ? const EdgeInsets.fromLTRB(12, 4, 12, 0)
+                                    : const EdgeInsets.only(top: 4),
+                                child: Align(
+                                  alignment: Alignment.bottomRight,
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Text(
+                                        timeStr,
+                                        style: theme.timestampStyle.copyWith(
+                                          color: isMe
+                                              ? theme.userTextColor.withValues(
+                                                  alpha: 0.7,
+                                                )
+                                              : theme.subtitleStyle.color,
+                                        ),
                                       ),
-                                    ),
-                                    if (isMe) ...[
-                                      const SizedBox(width: 4),
-                                      _buildStatusTicks(),
+                                      if (isMe) ...[
+                                        const SizedBox(width: 4),
+                                        _buildStatusTicks(),
+                                      ],
                                     ],
-                                  ],
+                                  ),
                                 ),
                               ),
                             ],
