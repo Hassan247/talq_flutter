@@ -77,13 +77,15 @@ class _RatingViewState extends State<RatingView>
         _rating,
         comment: comment.isEmpty ? null : comment,
       );
-    } finally {
-      if (mounted) {
-        setState(() {
-          _submitting = false;
-          _submitted = true;
-        });
-      }
+      if (!mounted) return;
+      setState(() {
+        _submitting = false;
+        _submitted = true;
+      });
+      // Dismiss the sheet — confirmation lives on the resolved banner.
+      await _close(controller);
+    } catch (_) {
+      if (mounted) setState(() => _submitting = false);
     }
   }
 
@@ -254,10 +256,7 @@ class _Sheet extends StatelessWidget {
                   transitionBuilder: (child, anim) => FadeTransition(
                     opacity: anim,
                     child: ScaleTransition(
-                      scale: Tween<double>(
-                        begin: 0.97,
-                        end: 1.0,
-                      ).animate(anim),
+                      scale: Tween<double>(begin: 0.97, end: 1.0).animate(anim),
                       child: child,
                     ),
                   ),
