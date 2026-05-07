@@ -113,8 +113,9 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       }
     }
 
-    // Hide the floating sticky as soon as any inline date pill enters the
-    // top portion of the screen so the two pills never coexist.
+    // Hide the floating sticky if any inline date pill is visible anywhere
+    // on screen so the two pills never coexist.
+    final screenHeight = MediaQuery.of(context).size.height;
     for (final entry in _pillKeys.entries) {
       final keyContext = entry.value.currentContext;
       if (keyContext == null) continue;
@@ -122,7 +123,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       if (renderBox == null || !renderBox.attached) continue;
       final pillPos = renderBox.localToGlobal(Offset.zero);
       final pillBottom = pillPos.dy + renderBox.size.height;
-      if (pillBottom > 0 && pillPos.dy < 260) {
+      if (pillBottom > 0 && pillPos.dy < screenHeight) {
         inlinePillVisible = true;
         break;
       }
