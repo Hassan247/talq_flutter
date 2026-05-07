@@ -51,6 +51,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   bool _showDateOverlay = false;
   Timer? _dateOverlayTimer;
   final Map<int, GlobalKey> _groupKeys = {};
+  final Map<int, GlobalKey> _pillKeys = {};
 
   bool _ratingDialogOpen = false;
 
@@ -110,13 +111,20 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
               : DateTime.now(),
         );
       }
-      // The inline pill sits ~24px below the group top and is ~32px tall.
-      // Hide the floating sticky as soon as that inline pill enters or
-      // overlaps the sticky's region (top ~80px) so we never show two pills.
-      final pillTop = position.dy + 24;
-      final pillBottom = position.dy + 56;
-      if (pillBottom >= 0 && pillTop <= 80) {
+    }
+
+    // Hide the floating sticky as soon as any inline date pill enters the
+    // top portion of the screen so the two pills never coexist.
+    for (final entry in _pillKeys.entries) {
+      final keyContext = entry.value.currentContext;
+      if (keyContext == null) continue;
+      final renderBox = keyContext.findRenderObject() as RenderBox?;
+      if (renderBox == null || !renderBox.attached) continue;
+      final pillPos = renderBox.localToGlobal(Offset.zero);
+      final pillBottom = pillPos.dy + renderBox.size.height;
+      if (pillBottom > 0 && pillPos.dy < 260) {
         inlinePillVisible = true;
+        break;
       }
     }
 
@@ -472,6 +480,9 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                     _groupKeys.removeWhere(
                                       (k, _) => k >= groupedMessages.length,
                                     );
+                                    _pillKeys.removeWhere(
+                                      (k, _) => k >= groupedMessages.length,
+                                    );
                                     return ListView.builder(
                                       controller: _scrollController,
                                       padding: const EdgeInsets.only(
@@ -505,11 +516,16 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                           index,
                                           () => GlobalKey(),
                                         );
+                                        final pillKey = _pillKeys.putIfAbsent(
+                                          index,
+                                          () => GlobalKey(),
+                                        );
 
                                         return Column(
                                           key: groupKey,
                                           children: [
                                             Container(
+                                              key: pillKey,
                                               width: double.infinity,
                                               padding:
                                                   const EdgeInsets.fromLTRB(
