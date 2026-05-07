@@ -799,6 +799,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   Widget _buildInputArea(TalqController controller, TalqTheme theme) {
     if (controller.roomStatus == models.RoomStatus.resolved) {
       final canRate = !controller.isRatingSubmitted;
+      final accent = theme.resolvedTextColor;
+      final softBg = theme.resolvedBackgroundColor;
       return Padding(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
         child: SafeArea(
@@ -806,85 +808,116 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
           minimum: const EdgeInsets.only(bottom: 4),
           child: Container(
             decoration: BoxDecoration(
-              color: theme.resolvedBackgroundColor,
-              borderRadius: BorderRadius.circular(16),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  softBg,
+                  Color.alphaBlend(accent.withValues(alpha: 0.08), softBg),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(
-                color: theme.resolvedTextColor.withValues(alpha: 0.12),
+                color: accent.withValues(alpha: 0.18),
                 width: 1,
               ),
+              boxShadow: [
+                BoxShadow(
+                  color: accent.withValues(alpha: 0.08),
+                  blurRadius: 16,
+                  offset: const Offset(0, 4),
+                ),
+              ],
             ),
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 12),
               child: Row(
                 children: [
-                  Icon(
-                    Icons.lock_rounded,
-                    color: theme.resolvedTextColor,
-                    size: 18,
+                  // Leading icon badge.
+                  Container(
+                    width: 38,
+                    height: 38,
+                    decoration: BoxDecoration(
+                      color: accent.withValues(alpha: 0.14),
+                      shape: BoxShape.circle,
+                    ),
+                    alignment: Alignment.center,
+                    child: Icon(
+                      canRate
+                          ? Icons.check_circle_rounded
+                          : Icons.verified_rounded,
+                      color: accent,
+                      size: 22,
+                    ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       mainAxisSize: MainAxisSize.min,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Conversation resolved',
-                          style: TextStyle(
-                            fontFamily: 'Inter',
-                            package: 'talq_flutter',
-                            color: theme.resolvedTextColor,
-                            fontSize: 13.5,
-                            fontWeight: FontWeight.w700,
-                            height: 1.2,
-                          ),
-                        ),
-                        Text(
                           canRate
-                              ? 'Tap rate to share your feedback'
+                              ? 'Conversation resolved'
                               : 'Thanks for your feedback',
                           style: TextStyle(
                             fontFamily: 'Inter',
                             package: 'talq_flutter',
-                            color: theme.resolvedTextColor.withValues(
-                              alpha: 0.75,
-                            ),
-                            fontSize: 11.5,
+                            color: accent,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.2,
                             height: 1.2,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          canRate
+                              ? 'How would you rate this chat?'
+                              : 'Your rating helps us improve.',
+                          style: TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            color: accent.withValues(alpha: 0.78),
+                            fontSize: 12,
+                            fontWeight: FontWeight.w500,
+                            height: 1.25,
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (canRate)
+                  if (canRate) ...[
+                    const SizedBox(width: 8),
                     Material(
-                      color: theme.resolvedTextColor.withValues(alpha: 0.12),
+                      color: accent,
                       borderRadius: BorderRadius.circular(999),
+                      clipBehavior: Clip.antiAlias,
                       child: InkWell(
                         onTap: controller.requestRatingPrompt,
-                        borderRadius: BorderRadius.circular(999),
                         child: Padding(
                           padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 7,
+                            horizontal: 16,
+                            vertical: 10,
                           ),
                           child: Row(
                             mainAxisSize: MainAxisSize.min,
-                            children: [
+                            children: const [
                               Icon(
                                 Icons.star_rounded,
-                                size: 14,
-                                color: theme.resolvedTextColor,
+                                size: 16,
+                                color: Colors.white,
                               ),
-                              const SizedBox(width: 5),
+                              SizedBox(width: 6),
                               Text(
                                 'Rate',
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   package: 'talq_flutter',
-                                  color: theme.resolvedTextColor,
-                                  fontSize: 12.5,
+                                  color: Colors.white,
+                                  fontSize: 13,
                                   fontWeight: FontWeight.w700,
+                                  letterSpacing: 0.1,
                                 ),
                               ),
                             ],
@@ -892,6 +925,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         ),
                       ),
                     ),
+                  ],
                 ],
               ),
             ),

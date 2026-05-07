@@ -28,6 +28,7 @@ class _RatingViewState extends State<RatingView>
   int _hover = 0;
   bool _submitting = false;
   bool _submitted = false;
+  final TextEditingController _commentController = TextEditingController();
 
   late final AnimationController _slide;
   late final Animation<double> _slideAnim;
@@ -46,8 +47,8 @@ class _RatingViewState extends State<RatingView>
 
     final controller = Provider.of<TalqController>(context, listen: false);
     if (controller.rating != null) {
-      // Already rated — jump straight to the thank-you state.
       _rating = controller.rating!;
+      _commentController.text = controller.ratingComment ?? '';
       _submitted = true;
     }
     _slide.forward();
@@ -55,22 +56,29 @@ class _RatingViewState extends State<RatingView>
 
   @override
   void dispose() {
+    _commentController.dispose();
     _slide.dispose();
     super.dispose();
   }
 
-  Future<void> _onStarTap(TalqController controller, int index) async {
+  void _onStarTap(int index) {
     if (_submitting || _submitted) return;
     HapticFeedback.selectionClick();
-    setState(() {
-      _rating = index + 1;
-      _submitting = true;
-    });
+    setState(() => _rating = index + 1);
+  }
+
+  Future<void> _submit(TalqController controller) async {
+    if (_rating == 0 || _submitting || _submitted) return;
+    HapticFeedback.lightImpact();
+    setState(() => _submitting = true);
     try {
-      await controller.rateRoom(_rating);
+      final comment = _commentController.text.trim();
+      await controller.rateRoom(
+        _rating,
+        comment: comment.isEmpty ? null : comment,
+      );
     } finally {
       if (mounted) {
-        HapticFeedback.lightImpact();
         setState(() {
           _submitting = false;
           _submitted = true;
@@ -125,9 +133,11 @@ class _RatingViewState extends State<RatingView>
                       hover: _hover,
                       submitting: _submitting,
                       submitted: _submitted,
-                      onStar: (i) => _onStarTap(controller, i),
+                      commentController: _commentController,
+                      onStar: _onStarTap,
                       onHover: (i) => setState(() => _hover = i),
                       onClose: () => _close(controller),
+                      onSubmit: () => _submit(controller),
                     ),
                   ),
                 ),
@@ -148,9 +158,11 @@ class _Sheet extends StatelessWidget {
   final int hover;
   final bool submitting;
   final bool submitted;
+  final TextEditingController commentController;
   final ValueChanged<int> onStar;
   final ValueChanged<int> onHover;
   final VoidCallback onClose;
+  final VoidCallback onSubmit;
 
   const _Sheet({
     required this.theme,
@@ -160,112 +172,117 @@ class _Sheet extends StatelessWidget {
     required this.hover,
     required this.submitting,
     required this.submitted,
+    required this.commentController,
     required this.onStar,
     required this.onHover,
     required this.onClose,
+    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
-    // Inset from screen edges so the sheet floats as a card above the device
-    // chrome (visible scrim on all four sides) instead of bleeding to the
-    // bottom/left/right.
-    final titleColor = theme.titleStyle.color ?? Colors.black;
     final showThanks = submitted;
-    final showSubmitting = submitting && !submitted;
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
-      child: Material(
-        color: theme.surfaceColor,
-        elevation: 24,
-        shadowColor: Colors.black.withValues(alpha: 0.25),
-        borderRadius: BorderRadius.circular(28),
-        clipBehavior: Clip.antiAlias,
-        child: SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.fromLTRB(22, 22, 22, 22 + bottomInset),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Header row: title left (bold), circular close button right.
-                Row(
-                  children: [
-                    Expanded(
-                      child: AnimatedSwitcher(
-                        duration: const Duration(milliseconds: 260),
-                        transitionBuilder: (child, anim) => FadeTransition(
-                          opacity: anim,
-                          child: SlideTransition(
-                            position: Tween<Offset>(
-                              begin: const Offset(0, 0.15),
-                              end: Offset.zero,
-                            ).animate(anim),
-                            child: child,
-                          ),
-                        ),
-                        child: Text(
-                          showThanks
-                              ? 'Thanks for rating'
-                              : 'Rate your conversation',
-                          key: ValueKey<bool>(showThanks),
-                          style: theme.titleStyle.copyWith(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: -0.4,
-                          ),
-                        ),
-                      ),
+    return Material(
+      color: theme.surfaceColor,
+      elevation: 24,
+      shadowColor: Colors.black.withValues(alpha: 0.25),
+      borderRadius: const BorderRadius.vertical(top: Radius.circular(28)),
+      clipBehavior: Clip.antiAlias,
+      child: SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(22, 14, 22, 22 + bottomInset),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 44,
+                  height: 5,
+                  margin: const EdgeInsets.only(bottom: 14),
+                  decoration: BoxDecoration(
+                    color: (theme.titleStyle.color ?? Colors.black).withValues(
+                      alpha: 0.12,
                     ),
-                    _CloseButton(theme: theme, onTap: onClose),
-                  ],
-                ),
-                const SizedBox(height: 18),
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 280),
-                  curve: Curves.easeOutCubic,
-                  alignment: Alignment.topCenter,
-                  child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 280),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    transitionBuilder: (child, anim) => FadeTransition(
-                      opacity: anim,
-                      child: ScaleTransition(
-                        scale: Tween<double>(
-                          begin: 0.96,
-                          end: 1.0,
-                        ).animate(anim),
-                        child: child,
-                      ),
-                    ),
-                    child: showThanks
-                        ? _ThanksView(
-                            key: const ValueKey('thanks'),
-                            theme: theme,
-                            rating: rating,
-                            onDone: onClose,
-                          )
-                        : showSubmitting
-                            ? _SubmittingView(
-                                key: const ValueKey('submitting'),
-                                theme: theme,
-                                rating: rating,
-                              )
-                            : _RatePromptView(
-                                key: const ValueKey('rate'),
-                                theme: theme,
-                                titleColor: titleColor,
-                                rating: rating,
-                                hover: hover,
-                                onStar: onStar,
-                                onHover: onHover,
-                              ),
+                    borderRadius: BorderRadius.circular(999),
                   ),
                 ),
-              ],
-            ),
+              ),
+              // Header
+              Row(
+                children: [
+                  Expanded(
+                    child: AnimatedSwitcher(
+                      duration: const Duration(milliseconds: 260),
+                      transitionBuilder: (child, anim) => FadeTransition(
+                        opacity: anim,
+                        child: SlideTransition(
+                          position: Tween<Offset>(
+                            begin: const Offset(0, 0.15),
+                            end: Offset.zero,
+                          ).animate(anim),
+                          child: child,
+                        ),
+                      ),
+                      child: Text(
+                        showThanks
+                            ? 'Thanks for rating'
+                            : 'Rate your experience',
+                        key: ValueKey<bool>(showThanks),
+                        style: theme.titleStyle.copyWith(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          letterSpacing: -0.4,
+                        ),
+                      ),
+                    ),
+                  ),
+                  _CloseButton(theme: theme, onTap: onClose),
+                ],
+              ),
+              const SizedBox(height: 18),
+              AnimatedSize(
+                duration: const Duration(milliseconds: 280),
+                curve: Curves.easeOutCubic,
+                alignment: Alignment.topCenter,
+                child: AnimatedSwitcher(
+                  duration: const Duration(milliseconds: 280),
+                  switchInCurve: Curves.easeOutCubic,
+                  switchOutCurve: Curves.easeInCubic,
+                  transitionBuilder: (child, anim) => FadeTransition(
+                    opacity: anim,
+                    child: ScaleTransition(
+                      scale: Tween<double>(
+                        begin: 0.97,
+                        end: 1.0,
+                      ).animate(anim),
+                      child: child,
+                    ),
+                  ),
+                  child: showThanks
+                      ? _ThanksView(
+                          key: const ValueKey('thanks'),
+                          theme: theme,
+                          rating: rating,
+                          onDone: onClose,
+                        )
+                      : _RateForm(
+                          key: const ValueKey('form'),
+                          theme: theme,
+                          isDark: isDark,
+                          rating: rating,
+                          hover: hover,
+                          submitting: submitting,
+                          commentController: commentController,
+                          onStar: onStar,
+                          onHover: onHover,
+                          onSubmit: onSubmit,
+                        ),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -273,29 +290,54 @@ class _Sheet extends StatelessWidget {
   }
 }
 
-class _RatePromptView extends StatelessWidget {
+class _RateForm extends StatelessWidget {
   final TalqTheme theme;
-  final Color titleColor;
+  final bool isDark;
   final int rating;
   final int hover;
+  final bool submitting;
+  final TextEditingController commentController;
   final ValueChanged<int> onStar;
   final ValueChanged<int> onHover;
+  final VoidCallback onSubmit;
 
-  const _RatePromptView({
+  const _RateForm({
     super.key,
     required this.theme,
-    required this.titleColor,
+    required this.isDark,
     required this.rating,
     required this.hover,
+    required this.submitting,
+    required this.commentController,
     required this.onStar,
     required this.onHover,
+    required this.onSubmit,
   });
 
   @override
   Widget build(BuildContext context) {
+    final hasRating = rating > 0;
     return Column(
       mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
+        // Label ABOVE stars (App Store style).
+        Center(
+          child: AnimatedSwitcher(
+            duration: const Duration(milliseconds: 220),
+            child: Text(
+              hasRating ? _subtitleFor(rating) : 'Tap to Rate',
+              key: ValueKey<int>(rating),
+              textAlign: TextAlign.center,
+              style: theme.subtitleStyle.copyWith(
+                fontSize: 14,
+                height: 1.3,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
         Center(
           child: _StarRow(
             rating: rating,
@@ -304,64 +346,51 @@ class _RatePromptView extends StatelessWidget {
             onHover: onHover,
           ),
         ),
-        const SizedBox(height: 10),
-        Text(
-          'Tap a star to rate',
-          textAlign: TextAlign.center,
-          style: theme.subtitleStyle.copyWith(
-            fontSize: 13,
-            height: 1.3,
-            fontWeight: FontWeight.w500,
-          ),
+        AnimatedSize(
+          duration: const Duration(milliseconds: 260),
+          curve: Curves.easeOutCubic,
+          alignment: Alignment.topCenter,
+          child: hasRating
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 18),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      _CommentField(
+                        theme: theme,
+                        controller: commentController,
+                        isDark: isDark,
+                      ),
+                      const SizedBox(height: 14),
+                      _SubmitButton(
+                        theme: theme,
+                        submitting: submitting,
+                        onPressed: onSubmit,
+                      ),
+                    ],
+                  ),
+                )
+              : const SizedBox(width: double.infinity),
         ),
       ],
     );
   }
-}
 
-class _SubmittingView extends StatelessWidget {
-  final TalqTheme theme;
-  final int rating;
-
-  const _SubmittingView({super.key, required this.theme, required this.rating});
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        // Show the picked stars while we submit (subtle confirmation).
-        Center(
-          child: Row(
-            mainAxisSize: MainAxisSize.min,
-            children: List.generate(
-              5,
-              (i) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 4),
-                child: Icon(
-                  i < rating
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
-                  size: 30,
-                  color: i < rating
-                      ? const Color(0xFFFFB300)
-                      : Colors.grey.shade300,
-                ),
-              ),
-            ),
-          ),
-        ),
-        const SizedBox(height: 14),
-        SizedBox(
-          width: 22,
-          height: 22,
-          child: CircularProgressIndicator(
-            strokeWidth: 2.4,
-            valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
-          ),
-        ),
-      ],
-    );
+  String _subtitleFor(int r) {
+    switch (r) {
+      case 1:
+        return 'Sorry to hear that';
+      case 2:
+        return 'Thanks for the feedback';
+      case 3:
+        return 'Anything we could do better?';
+      case 4:
+        return 'Glad it went well';
+      case 5:
+        return 'Awesome — thanks for the love!';
+      default:
+        return 'Tap to Rate';
+    }
   }
 }
 
@@ -415,9 +444,7 @@ class _ThanksView extends StatelessWidget {
               (i) => Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 2),
                 child: Icon(
-                  i < rating
-                      ? Icons.star_rounded
-                      : Icons.star_outline_rounded,
+                  i < rating ? Icons.star_rounded : Icons.star_outline_rounded,
                   size: 18,
                   color: i < rating
                       ? const Color(0xFFFFB300)
@@ -538,6 +565,93 @@ class _StarRow extends StatelessWidget {
           ),
         );
       }),
+    );
+  }
+}
+
+class _CommentField extends StatelessWidget {
+  final TalqTheme theme;
+  final TextEditingController controller;
+  final bool isDark;
+
+  const _CommentField({
+    required this.theme,
+    required this.controller,
+    required this.isDark,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fill = isDark
+        ? Colors.white.withValues(alpha: 0.06)
+        : Colors.black.withValues(alpha: 0.04);
+    return TextField(
+      controller: controller,
+      maxLines: 3,
+      minLines: 3,
+      style: theme.bodyStyle.copyWith(fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Tell us more (optional)',
+        hintStyle: theme.subtitleStyle.copyWith(fontSize: 13),
+        filled: true,
+        fillColor: fill,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide.none,
+        ),
+        contentPadding: const EdgeInsets.all(14),
+      ),
+    );
+  }
+}
+
+class _SubmitButton extends StatelessWidget {
+  final TalqTheme theme;
+  final bool submitting;
+  final VoidCallback onPressed;
+
+  const _SubmitButton({
+    required this.theme,
+    required this.submitting,
+    required this.onPressed,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 50,
+      child: ElevatedButton(
+        onPressed: submitting ? null : onPressed,
+        style: ElevatedButton.styleFrom(
+          backgroundColor: theme.primaryColor,
+          foregroundColor: Colors.white,
+          disabledBackgroundColor: theme.primaryColor.withValues(alpha: 0.5),
+          disabledForegroundColor: Colors.white,
+          elevation: 0,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(14),
+          ),
+        ),
+        child: submitting
+            ? const SizedBox(
+                width: 22,
+                height: 22,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.4,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : const Text(
+                'Submit feedback',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_flutter',
+                  fontSize: 15,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: -0.2,
+                ),
+              ),
+      ),
     );
   }
 }
