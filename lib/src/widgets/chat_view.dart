@@ -1345,11 +1345,12 @@ class _ChatBubble extends StatelessWidget {
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Agent Avatar (only if not me)
+          // Agent Avatar (only if not me) — pinned to TOP of group so the
+          // bubble tail and avatar share the upper edge.
           if (!isMe) ...[
-            isLastInGroup
+            isFirstInGroup
                 ? _buildAvatar()
                 : const SizedBox(width: 36), // Alignment spacer
             const SizedBox(width: 8),
@@ -1359,19 +1360,20 @@ class _ChatBubble extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (isLastInGroup &&
+                if (isFirstInGroup &&
                     message.senderType != models.SenderType.system)
                   Positioned(
-                    bottom: 0,
+                    top: 0,
                     right: isMe ? -8 : null,
                     left: !isMe ? -8 : null,
                     child: CustomPaint(
-                      size: const Size(12, 12),
+                      size: const Size(14, 14),
                       painter: _WhatsAppTailPainter(
                         color: isMe
                             ? theme.userBubbleColor
                             : theme.agentBubbleColor,
                         isRight: isMe,
+                        tailUp: true,
                       ),
                     ),
                   ),
@@ -1404,14 +1406,14 @@ class _ChatBubble extends StatelessWidget {
                                 ? theme.userBubbleColor
                                 : theme.agentBubbleColor,
                             borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(20),
-                              topRight: const Radius.circular(20),
-                              bottomLeft: Radius.circular(
-                                !isMe && isLastInGroup ? 4 : 20,
+                              topLeft: Radius.circular(
+                                !isMe && isFirstInGroup ? 4 : 20,
                               ),
-                              bottomRight: Radius.circular(
-                                isMe && isLastInGroup ? 4 : 20,
+                              topRight: Radius.circular(
+                                isMe && isFirstInGroup ? 4 : 20,
                               ),
+                              bottomLeft: const Radius.circular(20),
+                              bottomRight: const Radius.circular(20),
                             ),
                             boxShadow: [
                               if (!isMe)
@@ -2219,24 +2221,57 @@ class _MessageGroup {
 class _WhatsAppTailPainter extends CustomPainter {
   final Color color;
   final bool isRight;
+  // When true, the tail attaches to the TOP corner of the bubble (tip
+  // pointing up-and-out). When false, attaches to the BOTTOM corner.
+  final bool tailUp;
 
-  _WhatsAppTailPainter({required this.color, required this.isRight});
+  _WhatsAppTailPainter({
+    required this.color,
+    required this.isRight,
+    this.tailUp = false,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = color
-      ..style = PaintingStyle.fill;
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
+    final w = size.width;
+    final h = size.height;
     final path = Path();
+
     if (isRight) {
-      path.moveTo(0, 0);
-      path.lineTo(size.width, size.height);
-      path.lineTo(0, size.height);
+      // user bubble — tail sits to the RIGHT of the bubble.
+      if (tailUp) {
+        // base on LEFT edge (against bubble's top-right), tip up-right.
+        path.moveTo(0, h);
+        path.lineTo(0, 0);
+        path.quadraticBezierTo(w * 0.7, 0, w, h * 0.45);
+        path.quadraticBezierTo(w * 0.45, h * 0.85, 0, h);
+      } else {
+        // base on LEFT edge (against bubble's bottom-right), tip down-right.
+        path.moveTo(0, 0);
+        path.quadraticBezierTo(w * 0.45, h * 0.15, w, h * 0.55);
+        path.quadraticBezierTo(w * 0.7, h, 0, h);
+        path.lineTo(0, 0);
+      }
     } else {
-      path.moveTo(size.width, 0);
-      path.lineTo(0, size.height);
-      path.lineTo(size.width, size.height);
+      // agent bubble — tail sits to the LEFT of the bubble.
+      if (tailUp) {
+        // base on RIGHT edge (against bubble's top-left), tip up-left.
+        path.moveTo(w, h);
+        path.lineTo(w, 0);
+        path.quadraticBezierTo(w * 0.3, 0, 0, h * 0.45);
+        path.quadraticBezierTo(w * 0.55, h * 0.85, w, h);
+      } else {
+        // base on RIGHT edge (against bubble's bottom-left), tip down-left.
+        path.moveTo(w, 0);
+        path.quadraticBezierTo(w * 0.55, h * 0.15, 0, h * 0.55);
+        path.quadraticBezierTo(w * 0.3, h, w, h);
+        path.lineTo(w, 0);
+      }
     }
     path.close();
     canvas.drawPath(path, paint);
