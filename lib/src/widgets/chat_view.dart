@@ -1345,12 +1345,12 @@ class _ChatBubble extends StatelessWidget {
         mainAxisAlignment: isMe
             ? MainAxisAlignment.end
             : MainAxisAlignment.start,
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Agent Avatar (only if not me) — pinned to TOP of group so the
-          // bubble tail and avatar share the upper edge.
+          // Agent Avatar (only if not me) — pinned to BOTTOM of group so the
+          // bubble tail and avatar share the lower edge (WhatsApp-style).
           if (!isMe) ...[
-            isFirstInGroup
+            isLastInGroup
                 ? _buildAvatar()
                 : const SizedBox(width: 36), // Alignment spacer
             const SizedBox(width: 8),
@@ -1360,10 +1360,10 @@ class _ChatBubble extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (isFirstInGroup &&
+                if (isLastInGroup &&
                     message.senderType != models.SenderType.system)
                   Positioned(
-                    top: 0,
+                    bottom: 0,
                     right: isMe ? -8 : null,
                     left: !isMe ? -8 : null,
                     child: CustomPaint(
@@ -1373,7 +1373,7 @@ class _ChatBubble extends StatelessWidget {
                             ? theme.userBubbleColor
                             : theme.agentBubbleColor,
                         isRight: isMe,
-                        tailUp: true,
+                        tailUp: false,
                       ),
                     ),
                   ),
@@ -1406,14 +1406,14 @@ class _ChatBubble extends StatelessWidget {
                                 ? theme.userBubbleColor
                                 : theme.agentBubbleColor,
                             borderRadius: BorderRadius.only(
-                              topLeft: Radius.circular(
-                                !isMe && isFirstInGroup ? 4 : 20,
+                              topLeft: const Radius.circular(20),
+                              topRight: const Radius.circular(20),
+                              bottomLeft: Radius.circular(
+                                !isMe && isLastInGroup ? 4 : 20,
                               ),
-                              topRight: Radius.circular(
-                                isMe && isFirstInGroup ? 4 : 20,
+                              bottomRight: Radius.circular(
+                                isMe && isLastInGroup ? 4 : 20,
                               ),
-                              bottomLeft: const Radius.circular(20),
-                              bottomRight: const Radius.circular(20),
                             ),
                             boxShadow: [
                               if (!isMe)
