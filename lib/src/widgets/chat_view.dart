@@ -1465,7 +1465,7 @@ class _ChatBubble extends StatelessWidget {
                               ],
                               Padding(
                                 padding: isImage
-                                    ? const EdgeInsets.fromLTRB(12, 4, 12, 0)
+                                    ? const EdgeInsets.fromLTRB(12, 4, 12, 8)
                                     : const EdgeInsets.only(top: 4),
                                 child: Align(
                                   alignment: Alignment.bottomRight,
