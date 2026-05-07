@@ -241,7 +241,6 @@ class StartConversationCard extends StatelessWidget {
   }
 
   static String formatReplyTime(String raw) {
-    // Try to parse patterns like "8483 min", "45 sec", "2 min"
     final minMatch = RegExp(
       r'^(\d+)\s*min$',
       caseSensitive: false,
@@ -264,7 +263,6 @@ class StartConversationCard extends StatelessWidget {
     if (secMatch != null) {
       return 'A few minutes';
     }
-    // Already human-readable or custom text — return as-is
     return raw;
   }
 

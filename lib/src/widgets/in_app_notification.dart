@@ -62,7 +62,6 @@ class _TalqInAppNotificationState extends State<TalqInAppNotification>
       controller.fetchMessages(roomId: roomId);
     }
 
-    // Navigate to chat — use the nearest Navigator (from MaterialApp)
     final navigator = Navigator.maybeOf(context);
     if (navigator != null) {
       navigator.push(
@@ -170,7 +169,6 @@ class _NotificationBanner extends StatelessWidget {
           padding: const EdgeInsets.symmetric(horizontal: 16),
           child: Row(
             children: [
-              // Avatar
               Container(
                 width: 40,
                 height: 40,
@@ -190,7 +188,6 @@ class _NotificationBanner extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 12),
-              // Content
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -223,7 +220,6 @@ class _NotificationBanner extends StatelessWidget {
                 ),
               ),
               const SizedBox(width: 8),
-              // Close
               GestureDetector(
                 onTap: onDismiss,
                 child: Icon(

@@ -409,13 +409,10 @@ class TalqWorkspace {
   factory TalqWorkspace.fromJson(Map<String, dynamic> json) {
     String? rt;
     if (json['showResponseTime'] == true) {
-      // use customResponseTime if available (for both AGENT and CUSTOM types)
-      // the backend populates this field dynamically for AGENT type
       if (json['customResponseTime'] != null &&
           json['customResponseTime'].toString().isNotEmpty) {
         rt = json['customResponseTime'];
       } else {
-        // fallback to a reasonable default
         rt = 'A few minutes';
       }
     }
@@ -427,9 +424,6 @@ class TalqWorkspace {
       showResponseTime: json['showResponseTime'] ?? true,
       autoReplyMessage: json['autoReplyMessage'],
       autoReplyEnabled: json['autoReplyEnabled'] ?? false,
-      // agentAvatars is typically populated from the parent payload, not the workspace object itself
-      // but if the backend ever adds it to workspace, we can parse it here.
-      // For now, default to empty.
       logoUrl: json['logoUrl'],
       talqLogoUrl: json['talqLogoUrl'],
       avatarUrl: json['avatarUrl'],

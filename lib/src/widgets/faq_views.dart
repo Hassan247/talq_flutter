@@ -31,7 +31,6 @@ class _FAQListViewState extends State<FAQListView> {
     super.initState();
     _scrollController.addListener(_onScroll);
 
-    // Initial fetch if empty
     WidgetsBinding.instance.addPostFrameCallback((_) {
       final controller = context.read<TalqController>();
       if (controller.paginatedFaqs.isEmpty) {
@@ -72,7 +71,7 @@ class _FAQListViewState extends State<FAQListView> {
         child: Scaffold(
           backgroundColor: widget.theme.backgroundColor,
           appBar: AppBar(
-            backgroundColor: widget.theme.backgroundColor, // seamless
+            backgroundColor: widget.theme.backgroundColor,
             elevation: 0,
             scrolledUnderElevation: 0,
             systemOverlayStyle: SystemUiOverlayStyle.dark,
@@ -164,7 +163,7 @@ class _FAQListViewState extends State<FAQListView> {
   Widget _buildSearchBar() {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
-      color: widget.theme.backgroundColor, // seamless
+      color: widget.theme.backgroundColor,
       child: TextField(
         controller: _searchController,
         focusNode: _searchFocusNode,
@@ -192,7 +191,7 @@ class _FAQListViewState extends State<FAQListView> {
                 )
               : null,
           filled: true,
-          fillColor: widget.theme.surfaceColor, // Input is white/surface
+          fillColor: widget.theme.surfaceColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(16),
             borderSide: BorderSide.none,
@@ -260,7 +259,7 @@ class _FAQListViewState extends State<FAQListView> {
                     'assets/icons/article.svg',
                     package: 'talq_flutter',
                     colorFilter: ColorFilter.mode(
-                      widget.theme.primaryColor, // Use primary color for icon
+                      widget.theme.primaryColor,
                       BlendMode.srcIn,
                     ),
                     width: 20,

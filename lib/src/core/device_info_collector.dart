@@ -20,8 +20,7 @@ class DeviceInfoCollector {
         return await _collectAndroidInfo();
       }
     } catch (e) {
-      // silently fail - device info is optional analytics data
-      // we don't want to break the app if collection fails
+      // device info collection is best-effort; ignore failures
     }
     return {};
   }
@@ -31,7 +30,6 @@ class DeviceInfoCollector {
     final info = await _deviceInfo.iosInfo;
     final appVersion = await _getAppVersion();
 
-    // convert machine identifier to human-readable name
     final deviceModel = _iosDeviceName(info.utsname.machine);
 
     return {
@@ -66,7 +64,6 @@ class DeviceInfoCollector {
   /// converts iOS machine identifier to human-readable device name
   /// e.g., "iPhone16,2" -> "iPhone 16 Plus"
   static String _iosDeviceName(String machineId) {
-    // common device mappings (add more as needed)
     const deviceNames = {
       // iPhone 19 series (projected)
       'iPhone21,1': 'iPhone 19 Pro',

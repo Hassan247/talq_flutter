@@ -122,13 +122,11 @@ class TalqClient {
       ),
     );
 
-    // Link split: Subscriptions go over WS, everything else over HTTP
     final Link link = Link.split(
       (request) => request.isSubscription,
       wsLink,
       authLink.concat(httpLink),
     );
-    // Create client
     try {
       client = GraphQLClient(
         cache: GraphQLCache(store: InMemoryStore()),

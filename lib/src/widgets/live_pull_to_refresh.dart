@@ -133,8 +133,6 @@ class _LivePullToRefreshState extends State<LivePullToRefresh>
   Widget build(BuildContext context) {
     final showing = _refreshing || widget.isRefreshing;
     final progress = (_pullExtent / widget.triggerExtent).clamp(0.0, 1.0);
-    // Hide the indicator strip when not pulling and not refreshing — keeps
-    // the UI quiet during normal scrolling.
     final headerHeight = showing
         ? 36.0
         : (_pullExtent > 0 ? (24 + progress * 12) : 0.0);
@@ -246,12 +244,12 @@ class _RingPainter extends CustomPainter {
     final rect = Rect.fromCircle(center: center, radius: radius);
 
     if (isRefreshing) {
-      const sweep = 4.7124; // 3π/2
+      const sweep = 4.7124;
       canvas.drawArc(rect, -1.5708 + rotation, sweep, false, arcPaint);
       return;
     }
 
-    final sweep = progress * 6.2832; // up to 2π
+    final sweep = progress * 6.2832;
     canvas.drawArc(rect, -1.5708, sweep, false, arcPaint);
   }
 

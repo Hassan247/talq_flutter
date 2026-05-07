@@ -24,14 +24,12 @@ class TalqController extends ChangeNotifier {
   bool _isFetchingMoreRooms = false;
   List<TalqFAQ> _faqs = [];
 
-  // Paginated FAQs
   List<TalqFAQ> _paginatedFaqs = [];
   bool _faqHasNextPage = false;
   String? _faqEndCursor;
   String _faqSearchQuery = '';
   bool _isFaqLoading = false;
 
-  // Message Pagination
   bool _hasMoreMessages = false;
   bool _isFetchingMore = false;
   bool _isRoomLoading = false;
@@ -57,10 +55,9 @@ class TalqController extends ChangeNotifier {
   TalqMessage? _replyingTo;
   bool _isChatVisible = false;
   AppLifecycleState _lifecycleState = AppLifecycleState.resumed;
-  int _fetchVersion = 0; // used to cancel stale fetchMessages calls
+  int _fetchVersion = 0;
   bool _disposed = false;
 
-  // In-app notification state
   TalqMessage? _pendingNotification;
   Timer? _notificationTimer;
 
@@ -136,8 +133,6 @@ class TalqController extends ChangeNotifier {
       return;
     }
 
-    // Ensure we always show at least one chunk worth of rooms,
-    // so newly added rooms don't get cut off.
     _visibleRoomCount = math.max(
       _visibleRoomCount,
       math.min(_roomListChunkSize, _rooms.length),
@@ -267,7 +262,6 @@ class TalqController extends ChangeNotifier {
     if (visible &&
         _roomId != null &&
         _lifecycleState == AppLifecycleState.resumed) {
-      // when chat becomes visible, mark messages as read
       markAsRead();
     }
   }
@@ -295,10 +289,8 @@ class TalqController extends ChangeNotifier {
     notifyListeners();
 
     try {
-      // 1. Initialize GraphQL Client
       await _useCases.initializeClient();
 
-      // 2. Get/Register Visitor
       final deviceId = await AuthManager.getDeviceId();
       final platform = AuthManager.getPlatform();
       final deviceInfo = await DeviceInfoCollector.collect();
@@ -352,24 +344,20 @@ class TalqController extends ChangeNotifier {
       final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
       _workspace = ws.copyWith(agentAvatars: avatars);
 
-      // Apply primary color to theme if valid
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
           _theme = _theme.copyWith(
             primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
           );
-          // Cache for instant loading on next app launch
           AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
           // invalid hex, keep default
         }
       }
 
-      // Populate FAQs
       final List faqsList = authData['faqs'] ?? [];
       _faqs = faqsList.map((f) => TalqFAQ.fromJson(f)).toList();
 
-      // Populate rooms list
       final List roomsList = authData['visitor']['rooms'] ?? [];
       final newRooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
 
@@ -381,7 +369,6 @@ class TalqController extends ChangeNotifier {
       _sortRooms();
       _syncVisibleRoomCount(reset: true);
 
-      // Try to find an active room or default to the most recent one
       if (_rooms.isNotEmpty) {
         final activeRoom = _rooms.firstWhere(
           (r) => r.status == RoomStatus.open || r.status == RoomStatus.assigned,
@@ -398,22 +385,18 @@ class TalqController extends ChangeNotifier {
         }
       }
 
-      // 3. Re-init client with token
       await _useCases.initializeClient();
 
-      // 4. Load initial messages (markAsRead will be called by setChatVisible when chat opens)
       if (_roomId != null) {
         unawaited(fetchMessages(roomId: _roomId));
       }
 
-      // 5. Start subscriptions
       _startMessageSubscription();
       _startWorkspaceSubscription();
       if (_roomId != null) {
         _startTypingSubscription();
       }
 
-      // Update current page if provided
       if (currentPage != null) {
         unawaited(updatePage(currentPage));
       }
@@ -432,7 +415,7 @@ class TalqController extends ChangeNotifier {
   /// Prepares the controller for a new conversation locally without creating a room on the backend.
   /// The room will be created when the first message is sent.
   void prepareNewConversation() {
-    _fetchVersion++; // cancel any pending fetchMessages calls
+    _fetchVersion++;
     _roomId = null;
     _messages = [];
     _hasMoreMessages = false;
@@ -471,7 +454,6 @@ class TalqController extends ChangeNotifier {
       final roomData = result.data!['startNewConversation'];
       final newRoom = TalqRoom.fromJson(roomData);
 
-      // Update local state
       _rooms.insert(0, newRoom);
       _sortRooms();
       _syncVisibleRoomCount();
@@ -483,16 +465,13 @@ class TalqController extends ChangeNotifier {
       _showRatingPrompt = false;
       _isRatingSubmitted = false;
 
-      // In reverse scrolling, messages are Newest -> Oldest.
-      // Initial message is usually null for new conversation unless backend adds system message.
       if (newRoom.lastMessage != null) {
         _messages.add(newRoom.lastMessage!);
       }
       _cacheCurrentRoomMessages();
 
-      // No need to fetchMessages for a brand new empty room
       _startTypingSubscription();
-      _startMessageSubscription(); // Ensure we listen to this new room
+      _startMessageSubscription();
 
       _clearError();
       notifyListeners();
@@ -589,8 +568,6 @@ class TalqController extends ChangeNotifier {
       _isFetchingMore = true;
       notifyListeners();
     } else {
-      // capture current version to detect if state changed during async operation
-      // Only capture version for initial load, to allow cancellation
       _fetchVersion++;
       if (isSwitchingRoom) {
         _roomId = targetRoomId;
@@ -602,10 +579,6 @@ class TalqController extends ChangeNotifier {
         _showRatingPrompt = false;
         _replyingTo = null;
 
-        // Room changed: drop any "agent typing" state inherited from the
-        // previous room and (re-)subscribe scoped to the new room. Without
-        // this, an agent typing in room A would still flip the indicator
-        // for room B if the visitor switched rooms.
         _isAgentTyping = false;
         _typingTimer?.cancel();
         _startTypingSubscription();
@@ -635,17 +608,12 @@ class TalqController extends ChangeNotifier {
 
     final currentFetchVersion = _fetchVersion;
 
-    // Prepare cursor for pagination
-    // Since we sort NEWEST -> OLDEST, the 'after' cursor for fetching OLDER messages
-    // is the ID of the LAST message we have (which is the oldest one in our list).
-    // Backend GetMessages uses 'after' to fetch messages OLDER than the cursor.
     String? afterCursor;
     if (isLoadMore && _messages.isNotEmpty) {
       afterCursor = _messages.last.id;
     }
 
     if (!isLoadMore) {
-      // Mark as delivered when fetching room (only initial load)
       markAsDelivered(targetRoomId);
     }
 
@@ -654,7 +622,6 @@ class TalqController extends ChangeNotifier {
       afterCursor: afterCursor,
     );
 
-    // Safety check: if version changed while fetching (only for initial load), abort
     if (!isLoadMore && currentFetchVersion != _fetchVersion) {
       return;
     }
@@ -698,28 +665,6 @@ class TalqController extends ChangeNotifier {
       _setError(e, fallbackMessage: 'Unable to parse messages right now.');
     }
 
-    // We don't really use events for strictly ordered logic right now,
-    // but if we did, we'd need to merge them carefully.
-    // For now, let's keep the existing logic for reassignments but only process them on initial load?
-    // Or we can just ignore them for pagination simplicity if they aren't critical.
-    // The current implementation injects "Reassigned to..." messages.
-    // To do this correctly with pagination is tricky because events are separate.
-    // Let's simplified: Only showing reassignment events on initial load or if they are recent?
-    // Actually, if we paginate, we might miss events that happened "between" pages if we don't fetch events with pagination too.
-    // But events are not paginated in the query? `events` returns ALL events?
-    // Checking schema... `events: [RoomEvent!]!` -> returns ALL events.
-    // So we can just process all events and insert them into the list based on timestamp.
-    // But if we are paginating messages, we only want events that fall within the time range of the fetched messages.
-    // This is getting complicated.
-    // Simple approach: Just ignore reassignment events for infinite scroll for now, or just append them all at the end (oldest)?
-    // Better: Process events only on initial load, and filter them to show only those
-    // that are relevant to the messages we have?
-    // Let's stick to basics: Just show messages.
-
-    // Backend returns messages Ordered by CreatedAt DESC (Newest first).
-    // So `newMessages` are already [Newest, ..., Oldest].
-
-    // Pagination status
     _hasMoreMessages = pageInfo?['hasNextPage'] ?? false;
     debugPrint(
       '[TalqController] fetchMessages: isLoadMore=$isLoadMore, newMessages=${newMessages.length}, hasMoreMessages=$_hasMoreMessages, totalMessages=${_messages.length}, afterCursor=$afterCursor',
@@ -731,26 +676,18 @@ class TalqController extends ChangeNotifier {
     );
 
     if (!isLoadMore) {
-      // Re-inject events logic (only on initial load for now to keep it simple)
       final assignedEvents = eventList
           .where((e) => e['type'] == 'ROOM_ASSIGNED')
           .toList();
       for (int i = 1; i < assignedEvents.length; i++) {
-        // ... (same logic as before, create system message)
-        // we need to insert this system message into _messages at correct position
-        // Since _messages is Newest->Oldest, we need to find where it fits.
-        // This is O(N) but N is 20-50, so fine.
-        // Implementing this strictly might be overkill for this task.
-        // Let's skip event injection for infinite scroll task to ensure stability first.
+        // event injection skipped for pagination stability
       }
 
-      // fetch room status and start typing subscription if we switched rooms
       if (roomId != null) {
         await _fetchRoomStatus();
         _startTypingSubscription();
       }
 
-      // Start subscription if not already
       _startMessageSubscription();
     }
 
@@ -758,7 +695,6 @@ class TalqController extends ChangeNotifier {
     _isRoomLoading = false;
     notifyListeners();
 
-    // only mark as read if chat is currently visible and it's initial load
     if (_isChatVisible && !isLoadMore) {
       markAsRead();
     }
@@ -779,8 +715,6 @@ class TalqController extends ChangeNotifier {
     final replyToId = _replyingTo?.id;
     final optimisticCreatedAt = DateTime.now();
 
-    // IF tempId was NOT provided, we add the optimistic message immediately.
-    // This prevents visible delay when a new room has to be created first.
     if (tempId == null) {
       final optMsg = TalqMessage(
         id: effectiveTempId,
@@ -794,14 +728,11 @@ class TalqController extends ChangeNotifier {
       );
 
       _messages.insert(0, optMsg);
-      _replyingTo = null; // Clear after sending
+      _replyingTo = null;
       _cacheCurrentRoomMessages();
       notifyListeners();
     }
 
-    // IF _roomId is null, it means we are in "new conversation" mode (e.g. from "Send us a message").
-    // We must force the creation of a NEW room first, otherwise the backend might attach
-    // this message to an existing open room.
     if (_roomId == null) {
       try {
         final createResult = await _useCases.startNewConversation();
@@ -820,7 +751,6 @@ class TalqController extends ChangeNotifier {
         final roomData = createResult.data!['startNewConversation'];
         final newRoom = TalqRoom.fromJson(roomData);
 
-        // Update local state
         _rooms.insert(0, newRoom);
         _sortRooms();
         _roomId = newRoom.id;
@@ -842,7 +772,6 @@ class TalqController extends ChangeNotifier {
       }
     }
 
-    // Update room preview optimistically
     if (_roomId != null) {
       final roomIdx = _rooms.indexWhere((r) => r.id == _roomId);
       if (roomIdx != -1) {
@@ -905,14 +834,12 @@ class TalqController extends ChangeNotifier {
       return;
     }
 
-    // Replace optimistic message with real one
     final index = _messages.indexWhere((m) => m.id == effectiveTempId);
     if (index != -1) {
       final oldMsg = _messages[index];
       final data = result.data!['sendVisitorMessage'];
       final realMessage = TalqMessage.fromJson(data);
 
-      // Preserve read/delivered status if already applied by room pulse
       final persistedMessage = TalqMessage(
         id: realMessage.id,
         roomId: realMessage.roomId,
@@ -936,13 +863,11 @@ class TalqController extends ChangeNotifier {
         serverMessages: const [],
       );
 
-      // Update room ID if it was still null (fallback)
       if (_roomId == null) {
         _roomId = data['room']['id'];
         _startTypingSubscription();
       }
 
-      // Update room preview with real message data
       final roomIdx = _rooms.indexWhere((r) => r.id == _roomId);
       if (roomIdx != -1) {
         final room = _rooms[roomIdx];
@@ -981,11 +906,6 @@ class TalqController extends ChangeNotifier {
       contentType = ContentType.pdf;
     }
 
-    // The iOS image_picker / camera plugins hand us temp filenames like
-    // "image_picker_3A926B94-42B5-46AA-...jpg" and Android's are similarly
-    // ugly. Rename them to a clean timestamp-based name so the server (and
-    // any downstream client) sees a friendly filename. Documents picked via
-    // FilePicker keep their original name.
     String fileName = rawFileName;
     final lower = rawFileName.toLowerCase();
     final isPickerJunk =
@@ -1003,7 +923,6 @@ class TalqController extends ChangeNotifier {
       fileName = 'IMG_$stamp$ext';
     }
 
-    // 1. Create optimistic message
     final tempId = 'temp-${DateTime.now().millisecondsSinceEpoch}';
     final trimmedCaption = caption?.trim() ?? '';
     final messageContent = trimmedCaption.isNotEmpty
@@ -1021,20 +940,17 @@ class TalqController extends ChangeNotifier {
       replyTo: _replyingTo,
     );
 
-    // Insert at beginning (Newest)
     _messages.insert(0, optMsg);
     _replyingTo = null;
     _cacheCurrentRoomMessages();
     notifyListeners();
 
     try {
-      // 2. Upload file through centralized Dio client
       final fileUrl = await _useCases.uploadFile(
         filePath,
         overrideFileName: fileName,
       );
 
-      // 3. Send message with detected type
       await sendMessage(
         messageContent,
         contentType: contentType,
@@ -1042,9 +958,6 @@ class TalqController extends ChangeNotifier {
         fileName: fileName,
         tempId: tempId,
       );
-
-      // 4. No need to remove temporary optimistic message anymore,
-      // sendMessage will replace it instead of creating a new one.
     } catch (e) {
       debugPrint('[TalqController] sendFile failed: $e');
       _setError(e, fallbackMessage: 'Unable to upload file right now.');
@@ -1094,7 +1007,6 @@ class TalqController extends ChangeNotifier {
     if (_roomId == null) return;
     if (!_isChatVisible || _lifecycleState != AppLifecycleState.resumed) return;
 
-    // Optimistically clear unread count locally
     final roomIndex = _rooms.indexWhere((r) => r.id == _roomId);
     if (roomIndex != -1) {
       final room = _rooms[roomIndex];
@@ -1146,7 +1058,6 @@ class TalqController extends ChangeNotifier {
             result.data!['visitorNewMessage'],
           );
 
-          // Update the rooms list with last message
           final roomIndex = _rooms.indexWhere((r) => r.id == newMessage.roomId);
           if (roomIndex != -1) {
             final room = _rooms[roomIndex];
@@ -1173,14 +1084,11 @@ class TalqController extends ChangeNotifier {
             await fetchRooms();
           }
 
-          // Show in-app notification for agent/bot messages when chat isn't visible
           if (newMessage.senderType != SenderType.visitor && !_isChatVisible) {
             _showInAppNotification(newMessage);
           }
 
-          // 2. Logic for Active Room message list
           if (newMessage.roomId == _roomId) {
-            // Check if we already have this message (either as real or optimistic)
             final existingIdx = _messages.indexWhere((m) {
               return m.id == newMessage.id ||
                   (m.id.startsWith('temp-') &&
@@ -1189,7 +1097,6 @@ class TalqController extends ChangeNotifier {
             });
 
             if (existingIdx != -1) {
-              // Message exists, preserve status during replacement
               final oldMsg = _messages[existingIdx];
               final persistedMessage = TalqMessage(
                 id: newMessage.id,
@@ -1209,10 +1116,8 @@ class TalqController extends ChangeNotifier {
               );
               _messages[existingIdx] = persistedMessage;
             } else {
-              // Truly new message
               _messages.insert(0, newMessage);
 
-              // Mark as delivered for incoming agent/other messages
               if (newMessage.senderType != SenderType.visitor) {
                 markAsDelivered(_roomId!);
                 if (_isChatVisible) {
@@ -1231,7 +1136,6 @@ class TalqController extends ChangeNotifier {
           error,
           fallbackMessage: 'Live updates interrupted. Pull to refresh.',
         );
-        // Attempt to resubscribe after a delay
         Future.delayed(const Duration(seconds: 5), () {
           if (!_disposed) _startMessageSubscription();
         });
@@ -1253,7 +1157,6 @@ class TalqController extends ChangeNotifier {
             if (raw == null) return;
             final updated = TalqMessage.fromJson(raw);
 
-            // update active message list
             if (updated.roomId == _roomId) {
               final idx = _messages.indexWhere((m) => m.id == updated.id);
               if (idx != -1) {
@@ -1282,7 +1185,6 @@ class TalqController extends ChangeNotifier {
               }
             }
 
-            // update lastMessage in rooms list when applicable
             final roomIdx = _rooms.indexWhere((r) => r.id == updated.roomId);
             if (roomIdx != -1) {
               final room = _rooms[roomIdx];
@@ -1324,15 +1226,12 @@ class TalqController extends ChangeNotifier {
           final roomData = result.data!['visitorRoomUpdated'];
           final roomId = roomData['id'];
 
-          // 1. Update the main rooms list
           final roomIndex = _rooms.indexWhere((r) => r.id == roomId);
           final newRoom = TalqRoom.fromJson(roomData);
 
           if (roomIndex != -1) {
             final existingRoom = _rooms[roomIndex];
-            // Only update last message info if it's actually newer or same
-            // This prevents race conditions where ROOM_UPDATED pulse (stale)
-            // overwrites a NEW_MESSAGE pulse (fresh)
+            // Only update last-message info if it's actually newer; prevents stale ROOM_UPDATED pulses overwriting fresh NEW_MESSAGE pulses.
             bool shouldUpdateLastMsg = true;
             if (existingRoom.lastMessageAt != null &&
                 newRoom.lastMessageAt != null) {
@@ -1355,23 +1254,18 @@ class TalqController extends ChangeNotifier {
           _sortRooms();
           notifyListeners();
 
-          // 2. Update active room state if necessary
           if (roomId == _roomId) {
             final newStatus = RoomStatus.fromString(roomData['status']);
 
-            // If transitioning to RESOLVED, always show prompt (re-rating flow)
             if (newStatus == RoomStatus.resolved &&
                 _roomStatus != RoomStatus.resolved) {
               _showRatingPrompt = true;
             }
 
-            // Sync message statuses for visitor messages
-            // Use the unreadCount to identify which messages are read/delivered
             final unreadN = newRoom.unreadCount;
             final allRead = unreadN == 0;
             final lastMsg = roomData['lastMessage'];
 
-            // Fallback to lastMessage status if explicitly provided
             bool lastMsgRead = false;
             bool lastMsgDelivered = false;
             if (lastMsg != null &&
@@ -1381,8 +1275,6 @@ class TalqController extends ChangeNotifier {
               lastMsgDelivered = lastMsg['delivered'] ?? false;
             }
 
-            // Identify IDs of unread confirmed messages
-            // _messages is newest-first (index 0 is newest)
             final confirmedVisitorMsgs = _messages
                 .where(
                   (m) =>
@@ -1405,13 +1297,11 @@ class TalqController extends ChangeNotifier {
                   shouldMarkRead = true;
                   shouldMarkDelivered = true;
                 } else {
-                  // If it's a confirmed message and NOT in the unread set, it's read
                   if (!m.id.startsWith('temp-') && !unreadIds.contains(m.id)) {
                     shouldMarkRead = true;
                     shouldMarkDelivered = true;
                   }
 
-                  // Also respect lastMsg status (it might be fresher than unreadCount pulse)
                   if (m.id == lastMsg?['id']) {
                     if (lastMsgRead) shouldMarkRead = true;
                     if (lastMsgDelivered) shouldMarkDelivered = true;
@@ -1473,11 +1363,9 @@ class TalqController extends ChangeNotifier {
           final wsData = result.data!['visitorWorkspaceUpdated'];
           final newWorkspace = TalqWorkspace.fromJson(wsData);
 
-          // preserve agent avatars from existing workspace
           final avatars = _workspace?.agentAvatars ?? [];
           _workspace = newWorkspace.copyWith(agentAvatars: avatars);
 
-          // apply primary color to theme if valid
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               _theme = _theme.copyWith(
@@ -1515,12 +1403,10 @@ class TalqController extends ChangeNotifier {
             if (result.data != null) {
               final typingUserId = result.data!['typing'];
 
-              // If it's not us (the visitor), then it's the agent
               if (typingUserId != _visitor?.id) {
                 _isAgentTyping = true;
                 notifyListeners();
 
-                // Reset after 3 seconds of no activity
                 _typingTimer?.cancel();
                 _typingTimer = Timer(const Duration(seconds: 3), () {
                   _isAgentTyping = false;
@@ -1569,7 +1455,7 @@ class TalqController extends ChangeNotifier {
 
     if (!result.hasException) {
       _clearError(notify: true);
-      _showRatingPrompt = false; // Hide prompt on success
+      _showRatingPrompt = false;
       _isRatingSubmitted = true;
       _rating = rating;
       _ratingComment = comment;
@@ -1602,7 +1488,6 @@ class TalqController extends ChangeNotifier {
     final capturedVersion = _fetchVersion;
     final result = await _useCases.fetchRoomStatus(_roomId!);
 
-    // Safety check: if version changed while fetching, abort
     if (capturedVersion != _fetchVersion) {
       return;
     }
@@ -1614,7 +1499,6 @@ class TalqController extends ChangeNotifier {
       _rating = roomData['rating'];
       _ratingComment = roomData['ratingComment'];
       _isRatingSubmitted = roomData['rating'] != null;
-      // On fetch (refresh), only show prompt if unrated
       if (_roomStatus == RoomStatus.resolved && _rating == null) {
         _showRatingPrompt = true;
       }
@@ -1763,7 +1647,6 @@ class TalqController extends ChangeNotifier {
       _faqHasNextPage = connection.hasNextPage;
       _faqEndCursor = connection.endCursor;
 
-      // Update the main faqs list for background loading if this is the initial/empty search load
       if (_faqSearchQuery.isEmpty && reload) {
         _faqs = List.from(connection.faqs);
       }

@@ -40,13 +40,11 @@ class PdfThumbnailHelper {
           filePathOrUrl.startsWith('https://');
       final tempDir = await getTemporaryDirectory();
 
-      // lowercase comments: use a hash of the path/url as the cache key
       final hash = md5.convert(utf8.encode(filePathOrUrl)).toString();
       final cacheKey = 'pdf_cache_$hash';
       final thumbFile = File('${tempDir.path}/${cacheKey}_thumb.jpg');
       final metaFile = File('${tempDir.path}/${cacheKey}_meta.json');
 
-      // lowercase comments: check cache first
       if (await thumbFile.exists() && await metaFile.exists()) {
         final metaJson = json.decode(await metaFile.readAsString());
         return PdfMetadata.fromJson(metaJson, thumbFile);
@@ -54,7 +52,6 @@ class PdfThumbnailHelper {
 
       String localPath = filePathOrUrl;
       if (isRemote) {
-        // lowercase comments: download remote file to temp location
         final downloadPath = '${tempDir.path}/${cacheKey}_download.pdf';
         final bytes = await TalqClient.downloadBytes(filePathOrUrl);
         await File(downloadPath).writeAsBytes(bytes);
@@ -86,24 +83,21 @@ class PdfThumbnailHelper {
         fileSize: fileSize,
       );
 
-      // lowercase comments: save metadata to cache
       await metaFile.writeAsString(json.encode(metadata.toJson()));
 
       await page.close();
       await document.close();
 
-      // lowercase comments: clean up downloaded file if it was remote
       if (isRemote) {
         try {
           await File(localPath).delete();
         } catch (e) {
-          // ignore cleanup errors
+          // ignore
         }
       }
 
       return metadata;
     } catch (e) {
-      // ignore metadata errors
       return null;
     }
   }

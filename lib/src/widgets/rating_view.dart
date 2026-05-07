@@ -46,8 +46,6 @@ class _RatingViewState extends State<RatingView>
     _scrimAnim = CurvedAnimation(parent: _slide, curve: Curves.easeOut);
 
     final controller = Provider.of<TalqController>(context, listen: false);
-    // If a rating was already submitted, never show this sheet — the
-    // resolved banner is the single source of truth for confirmation.
     if (controller.rating != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (!mounted) return;
@@ -83,7 +81,6 @@ class _RatingViewState extends State<RatingView>
       );
       if (!mounted) return;
       _submitted = true;
-      // Dismiss the sheet — confirmation lives on the resolved banner.
       await _close(controller);
     } catch (_) {
       if (mounted) setState(() => _submitting = false);
@@ -111,7 +108,6 @@ class _RatingViewState extends State<RatingView>
           builder: (context, _) {
             return Stack(
               children: [
-                // Scrim — tap to dismiss.
                 Positioned.fill(
                   child: GestureDetector(
                     behavior: HitTestBehavior.opaque,
@@ -123,7 +119,6 @@ class _RatingViewState extends State<RatingView>
                     ),
                   ),
                 ),
-                // Sheet
                 Align(
                   alignment: Alignment.bottomCenter,
                   child: FractionalTranslation(
@@ -198,7 +193,6 @@ class _Sheet extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              // Drag handle
               Center(
                 child: Container(
                   width: 44,
@@ -212,7 +206,6 @@ class _Sheet extends StatelessWidget {
                   ),
                 ),
               ),
-              // Header
               Row(
                 children: [
                   Expanded(
@@ -278,7 +271,6 @@ class _RateForm extends StatelessWidget {
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        // Label ABOVE stars (App Store style).
         Center(
           child: AnimatedSwitcher(
             duration: const Duration(milliseconds: 220),

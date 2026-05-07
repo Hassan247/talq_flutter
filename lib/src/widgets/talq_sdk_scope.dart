@@ -62,7 +62,6 @@ class _TalqSdkScopeState extends State<TalqSdkScope> {
   Widget build(BuildContext context) {
     Widget innerChild = widget.child;
 
-    // Wrap with in-app notification overlay if enabled
     if (widget.showInAppNotifications) {
       innerChild = TalqInAppNotification(child: innerChild);
     }

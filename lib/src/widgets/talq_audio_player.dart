@@ -65,7 +65,6 @@ class _TalqAudioPlayerState extends State<TalqAudioPlayer> {
       });
     });
 
-    // Prime the player so we can show the duration before playback.
     _player.setSourceUrl(widget.url).catchError((_) {
       if (!mounted) return;
       setState(() => _hasError = true);
@@ -84,7 +83,6 @@ class _TalqAudioPlayerState extends State<TalqAudioPlayer> {
 
   Future<void> _toggle() async {
     if (_hasError) {
-      // try to recover once
       setState(() => _hasError = false);
       try {
         await _player.setSourceUrl(widget.url);

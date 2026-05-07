@@ -95,7 +95,6 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
         appBar: AppBar(
           backgroundColor: Colors.black.withValues(alpha: 0.5),
           elevation: 0,
-          // Use the same back arrow as the chat screen for consistency.
           leading: const BackButton(color: Colors.white),
           title: Text(
             widget.fileName,

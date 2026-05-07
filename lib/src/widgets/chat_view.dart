@@ -47,16 +47,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   Timer? _typingThrottle;
   TalqController? _controller;
 
-  // Sticky date overlay state
   String _overlayDateLabel = '';
   bool _showDateOverlay = false;
   Timer? _dateOverlayTimer;
   final Map<int, GlobalKey> _groupKeys = {};
 
-  // Rating prompt dialog state. We render the rating sheet via
-  // showGeneralDialog (root navigator) so its dark scrim covers the
-  // entire screen including the AppBar — instead of being clipped to
-  // the Scaffold body.
   bool _ratingDialogOpen = false;
 
   @override
@@ -65,7 +60,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     WidgetsBinding.instance.addObserver(this);
     _scrollController.addListener(_onScroll);
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      // notify controller that chat is now visible
       if (mounted) {
         context.read<TalqController>().setChatVisible(true);
       }
@@ -75,7 +69,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    // Save reference to controller for use in dispose()
     _controller = context.read<TalqController>();
   }
 
@@ -83,29 +76,23 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     if (_scrollController.hasClients) {
       final maxScroll = _scrollController.position.maxScrollExtent;
       final currentScroll = _scrollController.position.pixels;
-      // Load more when we are 200px from the "top" (which is maxScroll in reverse)
       if (maxScroll - currentScroll <= 200) {
         final controller = _controller ?? context.read<TalqController>();
         if (!controller.isFetchingMore && controller.hasMoreMessages) {
           controller.fetchMessages(isLoadMore: true);
         }
       }
-      // Update sticky date overlay
       _updateVisibleDate();
     }
   }
 
   void _updateVisibleDate() {
-    // Find the topmost visible date group by checking render positions
     final listRenderBox =
         _scrollController.position.context.storageContext.findRenderObject()
             as RenderBox?;
     if (listRenderBox == null) return;
 
     String? topDate;
-    // WhatsApp-style: if any group's inline date pill is visible near the top
-    // of the viewport, suppress the sticky overlay so we don't render two
-    // identical "TODAY/YESTERDAY" pills at once.
     bool inlinePillVisible = false;
     for (final entry in _groupKeys.entries) {
       final keyContext = entry.value.currentContext;
@@ -115,12 +102,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
 
       final position = renderBox.localToGlobal(Offset.zero);
       final size = renderBox.size;
-      // If the bottom of this group is above the top of the viewport, skip it.
-      // If the top of this group is below the viewport, skip it.
-      // We want the group whose content spans the top area of the chat.
-      // In a reversed list, higher index = older = visually higher.
-      // The group is visible at top if its top edge is at or above the chat top area
-      // and its bottom edge is below the chat top area.
       if (position.dy < 200 && position.dy + size.height > 0) {
         topDate = _getDateLabel(
           _lastGroupedMessages != null &&
@@ -129,10 +110,12 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
               : DateTime.now(),
         );
       }
-      // The inline date pill sits at the very top of each group (the first
-      // ~60px). If that band is currently within the visible viewport area
-      // near the top of the chat, the inline pill is doing the job already.
-      if (position.dy >= 0 && position.dy < 80) {
+      // The inline pill sits ~24px below the group top and is ~32px tall.
+      // Hide the floating sticky as soon as that inline pill enters or
+      // overlaps the sticky's region (top ~80px) so we never show two pills.
+      final pillTop = position.dy + 24;
+      final pillBottom = position.dy + 56;
+      if (pillBottom >= 0 && pillTop <= 80) {
         inlinePillVisible = true;
       }
     }
@@ -144,7 +127,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     }
 
     if (inlinePillVisible) {
-      // Inline pill already showing — hide overlay immediately, WhatsApp-style.
       _dateOverlayTimer?.cancel();
       if (_showDateOverlay) {
         setState(() => _showDateOverlay = false);
@@ -167,7 +149,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   @override
   void dispose() {
     WidgetsBinding.instance.removeObserver(this);
-    // Use cached controller reference safely
     _controller?.setChatVisible(false);
     _messageController.dispose();
     _scrollController.dispose();
@@ -184,7 +165,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   void _scrollToBottom() {
     if (_scrollController.hasClients) {
       _scrollController.animateTo(
-        0.0, // 0 is bottom in reverse mode
+        0.0,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
       );
@@ -198,7 +179,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         t.toLowerCase().startsWith('usually')) {
       return t;
     }
-    // Format raw "8483 min" / "45 sec" into human-readable
     final formatted = StartConversationCard.formatReplyTime(t);
     if (formatted != t) {
       return 'Usually replies in ${formatted.toLowerCase()}';
@@ -275,11 +255,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
             );
           }
 
-          // use controller's theme for reactive updates
           final theme = controller.theme;
 
-          // Drive the root-navigator rating dialog after this frame so the
-          // scrim covers the AppBar (it can't be hosted in the body Stack).
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (!mounted) return;
             _syncRatingDialog(controller, theme);
@@ -492,7 +469,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                       controller.messages,
                                     );
                                     _lastGroupedMessages = groupedMessages;
-                                    // Clean up stale keys
                                     _groupKeys.removeWhere(
                                       (k, _) => k >= groupedMessages.length,
                                     );
@@ -535,12 +511,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                           children: [
                                             Container(
                                               width: double.infinity,
-                                              // Compensate for the asymmetric
-                                              // ListView padding (left:16,
-                                              // right:0) so the pill is
-                                              // centered relative to the
-                                              // actual screen, not the list's
-                                              // content area.
                                               padding:
                                                   const EdgeInsets.fromLTRB(
                                                     0,
@@ -672,7 +642,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         _buildInputArea(controller, theme),
                       ],
                     ),
-                    // WhatsApp-style sticky date overlay
                     if (_showDateOverlay && _overlayDateLabel.isNotEmpty)
                       Positioned(
                         top: 8,
@@ -730,35 +699,25 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     );
   }
 
-  /// Opens or closes the rating sheet as a root-navigator dialog so its
-  /// scrim spans the entire screen (including AppBar). Idempotent — safe
-  /// to invoke from a Consumer rebuild.
   void _syncRatingDialog(TalqController controller, TalqTheme theme) {
     final shouldShow = controller.showRatingPrompt;
     if (shouldShow && !_ratingDialogOpen) {
       _ratingDialogOpen = true;
-      // Use the root navigator so the dialog overlays the AppBar.
       showGeneralDialog<void>(
         context: context,
         useRootNavigator: true,
         barrierDismissible: false,
-        // RatingView renders its own animated scrim; keep barrier transparent.
         barrierColor: Colors.transparent,
         barrierLabel: 'Rating',
         transitionDuration: Duration.zero,
         pageBuilder: (_, __, ___) => RatingView(theme: theme),
       ).whenComplete(() {
         _ratingDialogOpen = false;
-        // If the dialog was popped while the controller still wants the
-        // prompt visible (e.g. user used a system back gesture), align
-        // the controller state by dismissing.
         if (mounted && controller.showRatingPrompt) {
           controller.dismissRatingPrompt();
         }
       });
     } else if (!shouldShow && _ratingDialogOpen) {
-      // Controller closed the prompt (submit success / dismiss / resolve);
-      // pop the dialog if it's still on top.
       final nav = Navigator.of(context, rootNavigator: true);
       if (nav.canPop()) {
         nav.pop();
@@ -777,7 +736,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         radius: 18,
       );
     }
-    // Fallback: workspace initial in a colored circle
     final name = controller.workspace?.name ?? '';
     final initial = name.isNotEmpty ? name[0].toUpperCase() : '?';
     return CircleAvatar(
@@ -802,9 +760,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       final stars = controller.rating ?? 0;
       final accent = theme.resolvedTextColor;
       final softBg = theme.resolvedBackgroundColor;
-      // Duolingo-style edge-to-edge footer: no side/bottom margins, no
-      // rounded corners. Title on the left, stars (rated) or icon (unrated)
-      // on the right, full-width primary action below when ratable.
       return AnimatedSize(
         duration: const Duration(milliseconds: 280),
         curve: Curves.easeOutCubic,
@@ -837,8 +792,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                         ),
                       ),
                       const SizedBox(width: 12),
-                      // Right cluster: stars (when rated) or task-complete
-                      // icon (when not yet rated).
                       if (!canRate && stars > 0)
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -1136,7 +1089,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
-              color: const Color(0xFFF1F5F9), // Light grey background
+              color: const Color(0xFFF1F5F9),
               shape: BoxShape.circle,
             ),
             child: SvgPicture.asset(
@@ -1167,7 +1120,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     if (_messageController.text.trim().isEmpty) return;
     controller.sendMessage(_messageController.text);
     _messageController.clear();
-    _typingThrottle?.cancel(); // Clear throttle on send
+    _typingThrottle?.cancel();
     Future.delayed(const Duration(milliseconds: 100), _scrollToBottom);
   }
 
@@ -1336,10 +1289,10 @@ class _ChatBubble extends StatelessWidget {
 
     return Padding(
       padding: EdgeInsets.only(
-        bottom: isLastInGroup ? 16 : 4, // more spacing between groups
+        bottom: isLastInGroup ? 16 : 4,
         top: 0,
-        left: isMe ? 48 : 0, // offset user bubbles to match agent avatar space
-        right: isMe ? 0 : 48, // offset agent bubbles to limit width on right
+        left: isMe ? 48 : 0,
+        right: isMe ? 0 : 48,
       ),
       child: Row(
         mainAxisAlignment: isMe
@@ -1347,12 +1300,8 @@ class _ChatBubble extends StatelessWidget {
             : MainAxisAlignment.start,
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
-          // Agent Avatar (only if not me) — pinned to BOTTOM of group so the
-          // bubble tail and avatar share the lower edge (WhatsApp-style).
           if (!isMe) ...[
-            isLastInGroup
-                ? _buildAvatar()
-                : const SizedBox(width: 36), // Alignment spacer
+            isLastInGroup ? _buildAvatar() : const SizedBox(width: 36),
             const SizedBox(width: 8),
           ],
 
@@ -1360,23 +1309,6 @@ class _ChatBubble extends StatelessWidget {
             child: Stack(
               clipBehavior: Clip.none,
               children: [
-                if (isLastInGroup &&
-                    message.senderType != models.SenderType.system)
-                  Positioned(
-                    bottom: 0,
-                    right: isMe ? -8 : null,
-                    left: !isMe ? -8 : null,
-                    child: CustomPaint(
-                      size: const Size(14, 14),
-                      painter: _WhatsAppTailPainter(
-                        color: isMe
-                            ? theme.userBubbleColor
-                            : theme.agentBubbleColor,
-                        isRight: isMe,
-                        tailUp: false,
-                      ),
-                    ),
-                  ),
                 GestureDetector(
                   onHorizontalDragEnd: (details) {
                     if (details.primaryVelocity != null &&
@@ -1529,11 +1461,30 @@ class _ChatBubble extends StatelessWidget {
                     ],
                   ),
                 ),
+                if (isLastInGroup &&
+                    message.senderType != models.SenderType.system)
+                  Positioned(
+                    bottom: 0,
+                    right: isMe ? -8 : null,
+                    left: !isMe ? -8 : null,
+                    child: IgnorePointer(
+                      child: CustomPaint(
+                        size: const Size(14, 14),
+                        painter: _WhatsAppTailPainter(
+                          color: isMe
+                              ? theme.userBubbleColor
+                              : theme.agentBubbleColor,
+                          isRight: isMe,
+                          tailUp: false,
+                        ),
+                      ),
+                    ),
+                  ),
               ],
             ),
           ),
 
-          if (isMe) const SizedBox(width: 16), // Right margin for user bubbles
+          if (isMe) const SizedBox(width: 16),
         ],
       ),
     );
@@ -1654,10 +1605,6 @@ class _ChatBubble extends StatelessWidget {
     ).format(message.createdAt.toLocal());
 
     if (isReassignment) {
-      // Friendly handoff banner. Renders the server-side "Reassigned to X"
-      // as a visitor-facing "You're now chatting with X" card with the
-      // agent's actual avatar (when available), the name on its own line,
-      // and the time on a soft second line so nothing wraps awkwardly.
       final agentName = message.content
           .replaceFirst('Reassigned to', '')
           .trim();
@@ -1692,8 +1639,6 @@ class _ChatBubble extends StatelessWidget {
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
-                  // Agent avatar (real photo if we have one, otherwise a soft
-                  // gradient circle with a friendly "wave" icon).
                   Container(
                     width: 32,
                     height: 32,
@@ -1790,7 +1735,6 @@ class _ChatBubble extends StatelessWidget {
       );
     }
 
-    // Default system message style
     return Center(
       child: Container(
         margin: const EdgeInsets.symmetric(vertical: 16),
@@ -2221,8 +2165,6 @@ class _MessageGroup {
 class _WhatsAppTailPainter extends CustomPainter {
   final Color color;
   final bool isRight;
-  // When true, the tail attaches to the TOP corner of the bubble (tip
-  // pointing up-and-out). When false, attaches to the BOTTOM corner.
   final bool tailUp;
 
   _WhatsAppTailPainter({
@@ -2243,30 +2185,24 @@ class _WhatsAppTailPainter extends CustomPainter {
     final path = Path();
 
     if (isRight) {
-      // user bubble — tail sits to the RIGHT of the bubble.
       if (tailUp) {
-        // base on LEFT edge (against bubble's top-right), tip up-right.
         path.moveTo(0, h);
         path.lineTo(0, 0);
         path.quadraticBezierTo(w * 0.7, 0, w, h * 0.45);
         path.quadraticBezierTo(w * 0.45, h * 0.85, 0, h);
       } else {
-        // base on LEFT edge (against bubble's bottom-right), tip down-right.
         path.moveTo(0, 0);
         path.quadraticBezierTo(w * 0.45, h * 0.15, w, h * 0.55);
         path.quadraticBezierTo(w * 0.7, h, 0, h);
         path.lineTo(0, 0);
       }
     } else {
-      // agent bubble — tail sits to the LEFT of the bubble.
       if (tailUp) {
-        // base on RIGHT edge (against bubble's top-left), tip up-left.
         path.moveTo(w, h);
         path.lineTo(w, 0);
         path.quadraticBezierTo(w * 0.3, 0, 0, h * 0.45);
         path.quadraticBezierTo(w * 0.55, h * 0.85, w, h);
       } else {
-        // base on RIGHT edge (against bubble's bottom-left), tip down-left.
         path.moveTo(w, 0);
         path.quadraticBezierTo(w * 0.55, h * 0.15, 0, h * 0.55);
         path.quadraticBezierTo(w * 0.3, h, w, h);

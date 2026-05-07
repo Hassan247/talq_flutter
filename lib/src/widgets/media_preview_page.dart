@@ -53,8 +53,6 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
   Widget build(BuildContext context) {
     final controller = context.watch<TalqController>();
     final theme = controller.theme;
-    // Replace ugly raw filenames like "image_picker_3A926B94-…" with a
-    // friendly title based on what the user is actually previewing.
     final isImage = widget.contentType == models.ContentType.image;
     final title = isImage ? 'Photo' : 'Document';
 
@@ -65,7 +63,6 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
         appBar: AppBar(
           backgroundColor: Colors.black,
           elevation: 0,
-          // Use the same back arrow as the chat screen for consistency.
           leading: BackButton(color: Colors.white),
           title: Text(
             title,
@@ -180,7 +177,6 @@ class _MediaPreviewPageState extends State<MediaPreviewPage> {
               ),
             ),
 
-            // Caption area
             Container(
               padding: EdgeInsets.fromLTRB(
                 16,

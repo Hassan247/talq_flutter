@@ -105,15 +105,12 @@ class HomeScreenSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Logo placeholder
             const ShimmerBox(width: 40, height: 40, borderRadius: 10),
             const SizedBox(height: 34),
-            // Welcome text lines
             const ShimmerBox(width: 280, height: 30, borderRadius: 6),
             const SizedBox(height: 10),
             const ShimmerBox(width: 220, height: 30, borderRadius: 6),
             const SizedBox(height: 14),
-            // Subtitle
             const ShimmerBox(width: 260, height: 14, borderRadius: 4),
             const SizedBox(height: 6),
             const ShimmerBox(width: 140, height: 14, borderRadius: 4),
@@ -149,10 +146,8 @@ class ConversationCardSkeleton extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Title
             const ShimmerBox(width: 180, height: 20, borderRadius: 6),
             const SizedBox(height: 16),
-            // Avatar row
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
@@ -161,7 +156,6 @@ class ConversationCardSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // 3 overlapping avatars
                   const ShimmerBox(width: 90, height: 34, borderRadius: 17),
                   const SizedBox(width: 14),
                   Column(
@@ -176,7 +170,6 @@ class ConversationCardSkeleton extends StatelessWidget {
               ),
             ),
             const SizedBox(height: 18),
-            // Button
             const ShimmerBox(
               width: double.infinity,
               height: 50,
@@ -222,7 +215,6 @@ class MessagesListSkeleton extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Avatar
                   const ShimmerBox(width: 48, height: 48, borderRadius: 16),
                   const SizedBox(width: 14),
                   Expanded(
@@ -279,20 +271,16 @@ class ChatMessagesSkeleton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
         child: Column(
           children: [
-            // Agent message (left-aligned)
             _buildMessageRow(isMe: false, width: 220),
             const SizedBox(height: 16),
             _buildMessageRow(isMe: false, width: 180),
             const SizedBox(height: 24),
-            // User message (right-aligned)
             _buildMessageRow(isMe: true, width: 200),
             const SizedBox(height: 16),
-            // Agent message
             _buildMessageRow(isMe: false, width: 260),
             const SizedBox(height: 16),
             _buildMessageRow(isMe: false, width: 140),
             const SizedBox(height: 24),
-            // User message
             _buildMessageRow(isMe: true, width: 170),
           ],
         ),
@@ -405,7 +393,6 @@ class _TypingIndicatorDotsState extends State<TypingIndicatorDots>
           children: List.generate(3, (index) {
             final delay = index * 0.2;
             final t = (_controller.value - delay) % 1.0;
-            // Smooth bounce: goes up then back down in first half of cycle
             final bounce = t < 0.5 ? (t * 2) : (1.0 - (t - 0.5) * 2);
             final offset =
                 -4.0 * Curves.easeOut.transform(bounce.clamp(0.0, 1.0));

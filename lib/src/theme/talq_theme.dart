@@ -38,17 +38,13 @@ class TalqTheme {
 
   const TalqTheme({
     this.inputBackgroundColor = const Color(0xFFF1F3F5),
-    this.cardShadowColor = const Color(
-      0x0D000000,
-    ), // Colors.black.withValues(alpha: 0.05)
-    this.avatarBackgroundColor = const Color(0xFFEBEFF3), // Slate 100
-    this.avatarIconColor = const Color(0xFF83888F), // Colors.grey
-    this.resolvedBackgroundColor = const Color(0xFFE8F5E9), // Colors.green[50]
-    this.resolvedTextColor = const Color(0xFF4CAF50), // Colors.green
-    this.inputHintColor = const Color(0xFFBDBDBD), // Colors.grey[400]
-    this.unavailabilityOverlayColor = const Color(
-      0x80000000,
-    ), // Colors.black.withValues(alpha: 0.5)
+    this.cardShadowColor = const Color(0x0D000000),
+    this.avatarBackgroundColor = const Color(0xFFEBEFF3),
+    this.avatarIconColor = const Color(0xFF83888F),
+    this.resolvedBackgroundColor = const Color(0xFFE8F5E9),
+    this.resolvedTextColor = const Color(0xFF4CAF50),
+    this.inputHintColor = const Color(0xFFBDBDBD),
+    this.unavailabilityOverlayColor = const Color(0x80000000),
     this.primaryColor = const Color(0xFF0057FF),
     this.backgroundColor = const Color(0xFFF5F7FA),
     this.surfaceColor = const Color(0xFFFFFFFF),
@@ -56,10 +52,10 @@ class TalqTheme {
     this.userBubbleColor = const Color(0xFF151515),
     this.agentBubbleColor = const Color(0xFFFFFFFF),
     this.userTextColor = const Color(0xFFFFFFFF),
-    this.agentTextColor = const Color(0xDD000000), // Colors.black87
-    this.sentTickColor = const Color(0xFF9E9E9E), // Colors.grey
-    this.deliveredTickColor = const Color(0xFF9E9E9E), // Colors.grey
-    this.readTickColor = const Color(0xFF2196F3), // Colors.blue
+    this.agentTextColor = const Color(0xDD000000),
+    this.sentTickColor = const Color(0xFF9E9E9E),
+    this.deliveredTickColor = const Color(0xFF9E9E9E),
+    this.readTickColor = const Color(0xFF2196F3),
     this.unreadBadgeColor = const Color(0xFFFBECEB),
     this.unreadTextColor = const Color(0xFFD3453D),
     this.titleStyle = const TextStyle(
@@ -74,14 +70,14 @@ class TalqTheme {
       package: 'talq_flutter',
       fontSize: 11,
       fontWeight: FontWeight.normal,
-      color: Color(0xFF757575), // Colors.grey[600]
+      color: Color(0xFF757575),
     ),
     this.bodyStyle = const TextStyle(
       fontFamily: 'Inter',
       package: 'talq_flutter',
       fontSize: 15,
       height: 1.4,
-      color: Color(0xDD000000), // Colors.black87
+      color: Color(0xDD000000),
     ),
     this.timestampStyle = const TextStyle(
       fontFamily: 'Inter',

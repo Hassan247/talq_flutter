@@ -50,13 +50,8 @@ class _MessagesListViewState extends State<MessagesListView> {
     if (!_scrollController.hasClients) return;
     final position = _scrollController.position;
 
-    // Don't trigger load-more when the list is too short to scroll. Without
-    // this guard, `pixels (0) >= maxScrollExtent (0) - 240` is always true,
-    // so a single touch would fire pagination on a 1-room list.
     if (position.maxScrollExtent <= 0) return;
 
-    // Only react to user-initiated scrolls (drags + ballistic flings), not
-    // synthetic notifications from a stationary touch.
     if (position.userScrollDirection == ScrollDirection.idle) return;
 
     if (position.pixels < position.maxScrollExtent - 240) return;
@@ -272,7 +267,6 @@ class _MessageCard extends StatelessWidget {
     final isBot = lastMsg?.senderType == SenderType.bot;
     final isResolved = room.status == RoomStatus.resolved;
 
-    // Avatar/name priority: last agent who messaged → assigned agent → workspace
     final String displayName;
     final String? avatarUrl;
     if (isBot) {
@@ -338,7 +332,6 @@ class _MessageCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      // Top row: name + time
                       Row(
                         children: [
                           Expanded(
@@ -375,7 +368,6 @@ class _MessageCard extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 4),
-                      // Bottom row: preview (with optional ticks/icon prefix) + trailing badge
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -455,7 +447,6 @@ class _MessageCard extends StatelessWidget {
       );
     }
 
-    // Tinted icons: highlight unread; mute when read.
     final accent = hasUnread ? theme.primaryColor : subtitleColor;
 
     Widget? leadingIcon;
@@ -482,14 +473,12 @@ class _MessageCard extends StatelessWidget {
         break;
     }
 
-    // Sender ticks (only when the visitor sent the last message and it's text)
     Widget? ticks;
     if (isMe && msg.contentType == ContentType.text) {
       ticks = _buildTicks(msg);
     }
 
     if (leadingIcon != null && attachmentLabel != null) {
-      // Single-line attachment row with icon prefix.
       return Row(
         children: [
           if (isMe) ...[_buildTicks(msg), const SizedBox(width: 4)],
@@ -510,9 +499,6 @@ class _MessageCard extends StatelessWidget {
       );
     }
 
-    // Plain text preview — up to 2 lines, WhatsApp-style.
-    // Embed the tick inline as a WidgetSpan so wrapped lines flow under
-    // the tick (rather than being indented by a separate leading column).
     if (ticks != null) {
       return Text.rich(
         TextSpan(
