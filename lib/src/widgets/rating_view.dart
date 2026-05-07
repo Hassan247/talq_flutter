@@ -27,7 +27,7 @@ class _RatingViewState extends State<RatingView>
   int _rating = 0;
   int _hover = 0;
   bool _submitting = false;
-  final TextEditingController _commentController = TextEditingController();
+  bool _submitted = false;
 
   late final AnimationController _slide;
   late final Animation<double> _slideAnim;
@@ -46,36 +46,36 @@ class _RatingViewState extends State<RatingView>
 
     final controller = Provider.of<TalqController>(context, listen: false);
     if (controller.rating != null) {
+      // Already rated — jump straight to the thank-you state.
       _rating = controller.rating!;
-      _commentController.text = controller.ratingComment ?? '';
+      _submitted = true;
     }
     _slide.forward();
   }
 
   @override
   void dispose() {
-    _commentController.dispose();
     _slide.dispose();
     super.dispose();
   }
 
-  void _onStarTap(int index) {
+  Future<void> _onStarTap(TalqController controller, int index) async {
+    if (_submitting || _submitted) return;
     HapticFeedback.selectionClick();
-    setState(() => _rating = index + 1);
-  }
-
-  Future<void> _submit(TalqController controller) async {
-    if (_rating == 0 || _submitting) return;
-    setState(() => _submitting = true);
+    setState(() {
+      _rating = index + 1;
+      _submitting = true;
+    });
     try {
-      await controller.rateRoom(
-        _rating,
-        comment: _commentController.text.trim().isEmpty
-            ? null
-            : _commentController.text.trim(),
-      );
+      await controller.rateRoom(_rating);
     } finally {
-      if (mounted) setState(() => _submitting = false);
+      if (mounted) {
+        HapticFeedback.lightImpact();
+        setState(() {
+          _submitting = false;
+          _submitted = true;
+        });
+      }
     }
   }
 
@@ -124,11 +124,10 @@ class _RatingViewState extends State<RatingView>
                       rating: _rating,
                       hover: _hover,
                       submitting: _submitting,
-                      commentController: _commentController,
-                      onStar: _onStarTap,
+                      submitted: _submitted,
+                      onStar: (i) => _onStarTap(controller, i),
                       onHover: (i) => setState(() => _hover = i),
                       onClose: () => _close(controller),
-                      onSubmit: () => _submit(controller),
                     ),
                   ),
                 ),
@@ -148,11 +147,10 @@ class _Sheet extends StatelessWidget {
   final int rating;
   final int hover;
   final bool submitting;
-  final TextEditingController commentController;
+  final bool submitted;
   final ValueChanged<int> onStar;
   final ValueChanged<int> onHover;
   final VoidCallback onClose;
-  final VoidCallback onSubmit;
 
   const _Sheet({
     required this.theme,
@@ -161,11 +159,10 @@ class _Sheet extends StatelessWidget {
     required this.rating,
     required this.hover,
     required this.submitting,
-    required this.commentController,
+    required this.submitted,
     required this.onStar,
     required this.onHover,
     required this.onClose,
-    required this.onSubmit,
   });
 
   @override
@@ -173,6 +170,9 @@ class _Sheet extends StatelessWidget {
     // Inset from screen edges so the sheet floats as a card above the device
     // chrome (visible scrim on all four sides) instead of bleeding to the
     // bottom/left/right.
+    final titleColor = theme.titleStyle.color ?? Colors.black;
+    final showThanks = submitted;
+    final showSubmitting = submitting && !submitted;
     return Padding(
       padding: const EdgeInsets.fromLTRB(12, 0, 12, 12),
       child: Material(
@@ -193,12 +193,28 @@ class _Sheet extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: Text(
-                        'Rate your conversation',
-                        style: theme.titleStyle.copyWith(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          letterSpacing: -0.4,
+                      child: AnimatedSwitcher(
+                        duration: const Duration(milliseconds: 260),
+                        transitionBuilder: (child, anim) => FadeTransition(
+                          opacity: anim,
+                          child: SlideTransition(
+                            position: Tween<Offset>(
+                              begin: const Offset(0, 0.15),
+                              end: Offset.zero,
+                            ).animate(anim),
+                            child: child,
+                          ),
+                        ),
+                        child: Text(
+                          showThanks
+                              ? 'Thanks for rating'
+                              : 'Rate your conversation',
+                          key: ValueKey<bool>(showThanks),
+                          style: theme.titleStyle.copyWith(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            letterSpacing: -0.4,
+                          ),
                         ),
                       ),
                     ),
@@ -206,66 +222,47 @@ class _Sheet extends StatelessWidget {
                   ],
                 ),
                 const SizedBox(height: 18),
-                // Once the user has rated, hide the stars and the prompt and
-                // collapse straight into the comment + submit area. While
-                // unrated, show the centered intrinsic-width star row plus a
-                // helper label below it.
                 AnimatedSize(
-                  duration: const Duration(milliseconds: 240),
+                  duration: const Duration(milliseconds: 280),
                   curve: Curves.easeOutCubic,
                   alignment: Alignment.topCenter,
-                  child: rating == 0
-                      ? Column(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Center(
-                              child: _StarRow(
+                  child: AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 280),
+                    switchInCurve: Curves.easeOutCubic,
+                    switchOutCurve: Curves.easeInCubic,
+                    transitionBuilder: (child, anim) => FadeTransition(
+                      opacity: anim,
+                      child: ScaleTransition(
+                        scale: Tween<double>(
+                          begin: 0.96,
+                          end: 1.0,
+                        ).animate(anim),
+                        child: child,
+                      ),
+                    ),
+                    child: showThanks
+                        ? _ThanksView(
+                            key: const ValueKey('thanks'),
+                            theme: theme,
+                            rating: rating,
+                            onDone: onClose,
+                          )
+                        : showSubmitting
+                            ? _SubmittingView(
+                                key: const ValueKey('submitting'),
+                                theme: theme,
+                                rating: rating,
+                              )
+                            : _RatePromptView(
+                                key: const ValueKey('rate'),
+                                theme: theme,
+                                titleColor: titleColor,
                                 rating: rating,
                                 hover: hover,
-                                onTap: onStar,
+                                onStar: onStar,
                                 onHover: onHover,
                               ),
-                            ),
-                            const SizedBox(height: 10),
-                            Text(
-                              'Tap a star to rate',
-                              textAlign: TextAlign.center,
-                              style: theme.subtitleStyle.copyWith(
-                                fontSize: 13,
-                                height: 1.3,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Center(
-                              child: Text(
-                                _subtitleFor(rating),
-                                textAlign: TextAlign.center,
-                                style: theme.subtitleStyle.copyWith(
-                                  fontSize: 13,
-                                  height: 1.3,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 14),
-                            _CommentField(
-                              theme: theme,
-                              controller: commentController,
-                              isDark: isDark,
-                            ),
-                            const SizedBox(height: 14),
-                            _SubmitButton(
-                              theme: theme,
-                              submitting: submitting,
-                              onPressed: onSubmit,
-                            ),
-                          ],
-                        ),
+                  ),
                 ),
               ],
             ),
@@ -274,22 +271,195 @@ class _Sheet extends StatelessWidget {
       ),
     );
   }
+}
 
-  String _subtitleFor(int r) {
-    switch (r) {
-      case 1:
-        return 'Sorry to hear that. Tell us what went wrong.';
-      case 2:
-        return 'Thanks — we appreciate the feedback.';
-      case 3:
-        return 'Thanks! Anything we could do better?';
-      case 4:
-        return 'Great! Glad it went well.';
-      case 5:
-        return 'Awesome! 🎉 Thanks for the love.';
-      default:
-        return 'How was your support experience today?';
-    }
+class _RatePromptView extends StatelessWidget {
+  final TalqTheme theme;
+  final Color titleColor;
+  final int rating;
+  final int hover;
+  final ValueChanged<int> onStar;
+  final ValueChanged<int> onHover;
+
+  const _RatePromptView({
+    super.key,
+    required this.theme,
+    required this.titleColor,
+    required this.rating,
+    required this.hover,
+    required this.onStar,
+    required this.onHover,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Center(
+          child: _StarRow(
+            rating: rating,
+            hover: hover,
+            onTap: onStar,
+            onHover: onHover,
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          'Tap a star to rate',
+          textAlign: TextAlign.center,
+          style: theme.subtitleStyle.copyWith(
+            fontSize: 13,
+            height: 1.3,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SubmittingView extends StatelessWidget {
+  final TalqTheme theme;
+  final int rating;
+
+  const _SubmittingView({super.key, required this.theme, required this.rating});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Show the picked stars while we submit (subtle confirmation).
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              5,
+              (i) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 4),
+                child: Icon(
+                  i < rating
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 30,
+                  color: i < rating
+                      ? const Color(0xFFFFB300)
+                      : Colors.grey.shade300,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        SizedBox(
+          width: 22,
+          height: 22,
+          child: CircularProgressIndicator(
+            strokeWidth: 2.4,
+            valueColor: AlwaysStoppedAnimation<Color>(theme.primaryColor),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ThanksView extends StatelessWidget {
+  final TalqTheme theme;
+  final int rating;
+  final VoidCallback onDone;
+
+  const _ThanksView({
+    super.key,
+    required this.theme,
+    required this.rating,
+    required this.onDone,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        // Animated check-circle in primary tint.
+        Center(
+          child: TweenAnimationBuilder<double>(
+            duration: const Duration(milliseconds: 420),
+            curve: Curves.easeOutBack,
+            tween: Tween(begin: 0.6, end: 1.0),
+            builder: (context, scale, child) =>
+                Transform.scale(scale: scale, child: child),
+            child: Container(
+              width: 64,
+              height: 64,
+              decoration: BoxDecoration(
+                color: theme.primaryColor.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.check_rounded,
+                size: 36,
+                color: theme.primaryColor,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 14),
+        Center(
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: List.generate(
+              5,
+              (i) => Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 2),
+                child: Icon(
+                  i < rating
+                      ? Icons.star_rounded
+                      : Icons.star_outline_rounded,
+                  size: 18,
+                  color: i < rating
+                      ? const Color(0xFFFFB300)
+                      : Colors.grey.shade300,
+                ),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Text(
+          rating >= 4
+              ? 'Your feedback helps us improve. Thanks for taking the time!'
+              : 'Thanks — your feedback helps us do better.',
+          textAlign: TextAlign.center,
+          style: theme.subtitleStyle.copyWith(fontSize: 13, height: 1.35),
+        ),
+        const SizedBox(height: 18),
+        SizedBox(
+          height: 50,
+          child: ElevatedButton(
+            onPressed: onDone,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.primaryColor,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(14),
+              ),
+            ),
+            child: const Text(
+              'Done',
+              style: TextStyle(
+                fontFamily: 'Inter',
+                fontSize: 15,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
   }
 }
 
@@ -368,93 +538,6 @@ class _StarRow extends StatelessWidget {
           ),
         );
       }),
-    );
-  }
-}
-
-class _CommentField extends StatelessWidget {
-  final TalqTheme theme;
-  final TextEditingController controller;
-  final bool isDark;
-
-  const _CommentField({
-    required this.theme,
-    required this.controller,
-    required this.isDark,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final fill = isDark
-        ? Colors.white.withValues(alpha: 0.06)
-        : Colors.black.withValues(alpha: 0.04);
-    return TextField(
-      controller: controller,
-      maxLines: 3,
-      minLines: 3,
-      style: theme.bodyStyle.copyWith(fontSize: 14),
-      decoration: InputDecoration(
-        hintText: 'Share more details (optional)',
-        hintStyle: theme.subtitleStyle.copyWith(fontSize: 13),
-        filled: true,
-        fillColor: fill,
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(14),
-          borderSide: BorderSide.none,
-        ),
-        contentPadding: const EdgeInsets.all(14),
-      ),
-    );
-  }
-}
-
-class _SubmitButton extends StatelessWidget {
-  final TalqTheme theme;
-  final bool submitting;
-  final VoidCallback onPressed;
-
-  const _SubmitButton({
-    required this.theme,
-    required this.submitting,
-    required this.onPressed,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 50,
-      child: ElevatedButton(
-        onPressed: submitting ? null : onPressed,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
-          disabledBackgroundColor: theme.primaryColor.withValues(alpha: 0.5),
-          disabledForegroundColor: Colors.white,
-          elevation: 0,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(14),
-          ),
-        ),
-        child: submitting
-            ? const SizedBox(
-                width: 22,
-                height: 22,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2.4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                ),
-              )
-            : const Text(
-                'Submit feedback',
-                style: TextStyle(
-                  fontFamily: 'Inter',
-                  package: 'talq_flutter',
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: -0.2,
-                ),
-              ),
-      ),
     );
   }
 }
