@@ -597,13 +597,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                   isLastInGroup: isLastInGroup,
                                                   onSwipe: () => controller
                                                       .setReplyingTo(message),
-                                                  onLongPress: () =>
-                                                      _showReactions(
-                                                        context,
-                                                        controller,
-                                                        message,
-                                                        theme,
-                                                      ),
+                                                  // Reactions are temporarily
+                                                  // disabled at the SDK level
+                                                  // and will be re-enabled in a
+                                                  // future release.
+                                                  onLongPress: () {},
                                                 );
                                               },
                                             ),
@@ -1235,6 +1233,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     );
   }
 
+  // ignore: unused_element
   void _showReactions(
     BuildContext context,
     TalqController controller,
@@ -1498,8 +1497,11 @@ class _ChatBubble extends StatelessWidget {
                           ),
                         ),
                       ),
-                      if (message.reactions.isNotEmpty)
-                        _buildReactionsDisplay(),
+                      // Reactions UI temporarily disabled. Existing reaction
+                      // data on messages is preserved on the model and will
+                      // be rendered again when the feature ships properly.
+                      // if (message.reactions.isNotEmpty)
+                      //   _buildReactionsDisplay(),
                     ],
                   ),
                 ),
@@ -1532,6 +1534,7 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
+  // ignore: unused_element
   Widget _buildReactionsDisplay() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
