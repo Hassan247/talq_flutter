@@ -17,12 +17,19 @@ class FAQListSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return Consumer<TalqController>(
       builder: (context, controller, _) {
+        final ws = controller.workspace;
+        if (ws != null && !ws.showFaqSection) {
+          return const SizedBox.shrink();
+        }
         final faqs = controller.faqs;
         if (faqs.isEmpty) {
           return const SizedBox.shrink();
         }
-        final displayFaqs = faqs.take(4).toList();
+        final displayCount = ws?.faqHomeDisplayCount ?? 4;
+        final displayFaqs = faqs.take(displayCount).toList();
         final hasMore = faqs.length > displayFaqs.length;
+        final sectionTitle = ws?.faqSectionTitle ?? 'Help & Resources';
+        final browseAllLabel = ws?.faqBrowseAllLabel ?? 'Browse all articles';
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -65,7 +72,7 @@ class FAQListSection extends StatelessWidget {
                       children: [
                         Expanded(
                           child: Text(
-                            'Help & Resources',
+                            sectionTitle,
                             style: theme.titleStyle.copyWith(
                               fontSize: 22,
                               fontWeight: FontWeight.w800,
@@ -169,7 +176,7 @@ class FAQListSection extends StatelessWidget {
                           child: Row(
                             children: [
                               Text(
-                                'Browse all articles',
+                                browseAllLabel,
                                 style: TextStyle(
                                   fontFamily: 'Inter',
                                   package: 'talq_flutter',

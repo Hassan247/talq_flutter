@@ -75,36 +75,38 @@ class StartConversationCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  SizedBox(
-                    width: 90,
-                    height: 40,
-                    child: Stack(
-                      children: [
-                        _buildAvatarItem(
-                          0,
-                          imageUrl: agentAvatars.isNotEmpty
-                              ? agentAvatars[0]
-                              : null,
-                          isFaded: agentAvatars.isEmpty,
-                        ),
-                        _buildAvatarItem(
-                          22,
-                          imageUrl: agentAvatars.length > 1
-                              ? agentAvatars[1]
-                              : null,
-                          isFaded: agentAvatars.length < 2,
-                        ),
-                        _buildAvatarItem(
-                          44,
-                          imageUrl: agentAvatars.length > 2
-                              ? agentAvatars[2]
-                              : null,
-                          isFaded: agentAvatars.length < 3,
-                        ),
-                      ],
+                  if (controller.workspace?.showAgentAvatars ?? true) ...[
+                    SizedBox(
+                      width: 90,
+                      height: 40,
+                      child: Stack(
+                        children: [
+                          _buildAvatarItem(
+                            0,
+                            imageUrl: agentAvatars.isNotEmpty
+                                ? agentAvatars[0]
+                                : null,
+                            isFaded: agentAvatars.isEmpty,
+                          ),
+                          _buildAvatarItem(
+                            22,
+                            imageUrl: agentAvatars.length > 1
+                                ? agentAvatars[1]
+                                : null,
+                            isFaded: agentAvatars.length < 2,
+                          ),
+                          _buildAvatarItem(
+                            44,
+                            imageUrl: agentAvatars.length > 2
+                                ? agentAvatars[2]
+                                : null,
+                            isFaded: agentAvatars.length < 3,
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 10),
+                    const SizedBox(width: 10),
+                  ],
                   Expanded(child: _buildSupportTeamSection()),
                 ],
               ),
@@ -161,10 +163,11 @@ class StartConversationCard extends StatelessWidget {
                       ),
                       child: Row(
                         children: [
-                          const Expanded(
+                          Expanded(
                             child: Text(
-                              'Start new conversation',
-                              style: TextStyle(
+                              controller.workspace?.startConversationCtaLabel ??
+                                  'Start new conversation',
+                              style: const TextStyle(
                                 fontFamily: 'Inter',
                                 package: 'talq_flutter',
                                 color: Colors.white,
@@ -267,15 +270,17 @@ class StartConversationCard extends StatelessWidget {
   }
 
   Widget _buildSupportTeamSection() {
-    final replyTime = (controller.workspace?.responseTime ?? '').trim();
+    final ws = controller.workspace;
+    final replyTime = (ws?.responseTime ?? '').trim();
+    final defaultText = ws?.defaultReplyTimeText ?? 'Replies in minutes';
     final displayReplyTime = replyTime.isNotEmpty
         ? formatReplyTime(replyTime)
-        : 'A few minutes';
+        : defaultText;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Typical reply time',
+          ws?.replyTimeLabel ?? 'Typical reply time',
           style: theme.subtitleStyle.copyWith(
             fontSize: 12.5,
             fontWeight: FontWeight.w600,

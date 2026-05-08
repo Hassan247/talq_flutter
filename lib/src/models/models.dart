@@ -393,6 +393,24 @@ class TalqWorkspace {
   final String welcomeMessage;
   final String primaryColor;
 
+  // Widget customization (server-driven). Each falls back to a sensible
+  // English default when the backend doesn't send a value, so older backends
+  // (pre-Phase-11) continue to work without breakage.
+  final String heroSubtitle;
+  final String replyTimeLabel;
+  final String defaultReplyTimeText;
+  final String startConversationCtaLabel;
+  final String faqSectionTitle;
+  final String faqBrowseAllLabel;
+  final String faqHelpfulPrompt;
+  final String emptyConversationsTitle;
+  final String emptyConversationsSubtitle;
+  final String messageInputPlaceholder;
+  final bool showFaqSection;
+  final bool showStartConversationCard;
+  final bool showAgentAvatars;
+  final int faqHomeDisplayCount;
+
   TalqWorkspace({
     required this.id,
     required this.name,
@@ -406,6 +424,21 @@ class TalqWorkspace {
     this.avatarUrl,
     this.welcomeMessage = 'Hello there! How can we help you today?',
     this.primaryColor = '#151515',
+    this.heroSubtitle =
+        'Ask a question, check previous chats, or browse quick answers.',
+    this.replyTimeLabel = 'Typical reply time',
+    this.defaultReplyTimeText = 'Replies in minutes',
+    this.startConversationCtaLabel = 'Start new conversation',
+    this.faqSectionTitle = 'Help & Resources',
+    this.faqBrowseAllLabel = 'Browse all articles',
+    this.faqHelpfulPrompt = 'Was this helpful?',
+    this.emptyConversationsTitle = 'No conversations yet',
+    this.emptyConversationsSubtitle = 'Your messages will appear here.',
+    this.messageInputPlaceholder = 'Type something',
+    this.showFaqSection = true,
+    this.showStartConversationCard = true,
+    this.showAgentAvatars = true,
+    this.faqHomeDisplayCount = 4,
   });
 
   factory TalqWorkspace.fromJson(Map<String, dynamic> json) {
@@ -417,6 +450,12 @@ class TalqWorkspace {
       } else {
         rt = 'A few minutes';
       }
+    }
+
+    String pickStr(String key, String fallback) {
+      final v = json[key];
+      if (v is String && v.trim().isNotEmpty) return v;
+      return fallback;
     }
 
     return TalqWorkspace(
@@ -432,6 +471,34 @@ class TalqWorkspace {
       welcomeMessage:
           json['welcomeMessage'] ?? 'Hello there! How can we help you today?',
       primaryColor: json['primaryColor'] ?? '#151515',
+      heroSubtitle: pickStr(
+        'heroSubtitle',
+        'Ask a question, check previous chats, or browse quick answers.',
+      ),
+      replyTimeLabel: pickStr('replyTimeLabel', 'Typical reply time'),
+      defaultReplyTimeText: pickStr('defaultReplyTimeText', 'Replies in minutes'),
+      startConversationCtaLabel: pickStr(
+        'startConversationCtaLabel',
+        'Start new conversation',
+      ),
+      faqSectionTitle: pickStr('faqSectionTitle', 'Help & Resources'),
+      faqBrowseAllLabel: pickStr('faqBrowseAllLabel', 'Browse all articles'),
+      faqHelpfulPrompt: pickStr('faqHelpfulPrompt', 'Was this helpful?'),
+      emptyConversationsTitle: pickStr(
+        'emptyConversationsTitle',
+        'No conversations yet',
+      ),
+      emptyConversationsSubtitle: pickStr(
+        'emptyConversationsSubtitle',
+        'Your messages will appear here.',
+      ),
+      messageInputPlaceholder: pickStr('messageInputPlaceholder', 'Type something'),
+      showFaqSection: json['showFaqSection'] ?? true,
+      showStartConversationCard: json['showStartConversationCard'] ?? true,
+      showAgentAvatars: json['showAgentAvatars'] ?? true,
+      faqHomeDisplayCount: (json['faqHomeDisplayCount'] is int)
+          ? json['faqHomeDisplayCount'] as int
+          : 4,
     );
   }
 
@@ -448,6 +515,20 @@ class TalqWorkspace {
     String? avatarUrl,
     String? welcomeMessage,
     String? primaryColor,
+    String? heroSubtitle,
+    String? replyTimeLabel,
+    String? defaultReplyTimeText,
+    String? startConversationCtaLabel,
+    String? faqSectionTitle,
+    String? faqBrowseAllLabel,
+    String? faqHelpfulPrompt,
+    String? emptyConversationsTitle,
+    String? emptyConversationsSubtitle,
+    String? messageInputPlaceholder,
+    bool? showFaqSection,
+    bool? showStartConversationCard,
+    bool? showAgentAvatars,
+    int? faqHomeDisplayCount,
   }) {
     return TalqWorkspace(
       id: id ?? this.id,
@@ -462,6 +543,25 @@ class TalqWorkspace {
       avatarUrl: avatarUrl ?? this.avatarUrl,
       welcomeMessage: welcomeMessage ?? this.welcomeMessage,
       primaryColor: primaryColor ?? this.primaryColor,
+      heroSubtitle: heroSubtitle ?? this.heroSubtitle,
+      replyTimeLabel: replyTimeLabel ?? this.replyTimeLabel,
+      defaultReplyTimeText: defaultReplyTimeText ?? this.defaultReplyTimeText,
+      startConversationCtaLabel:
+          startConversationCtaLabel ?? this.startConversationCtaLabel,
+      faqSectionTitle: faqSectionTitle ?? this.faqSectionTitle,
+      faqBrowseAllLabel: faqBrowseAllLabel ?? this.faqBrowseAllLabel,
+      faqHelpfulPrompt: faqHelpfulPrompt ?? this.faqHelpfulPrompt,
+      emptyConversationsTitle:
+          emptyConversationsTitle ?? this.emptyConversationsTitle,
+      emptyConversationsSubtitle:
+          emptyConversationsSubtitle ?? this.emptyConversationsSubtitle,
+      messageInputPlaceholder:
+          messageInputPlaceholder ?? this.messageInputPlaceholder,
+      showFaqSection: showFaqSection ?? this.showFaqSection,
+      showStartConversationCard:
+          showStartConversationCard ?? this.showStartConversationCard,
+      showAgentAvatars: showAgentAvatars ?? this.showAgentAvatars,
+      faqHomeDisplayCount: faqHomeDisplayCount ?? this.faqHomeDisplayCount,
     );
   }
 }

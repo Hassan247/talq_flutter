@@ -124,11 +124,16 @@ class _RoomsListViewState extends State<RoomsListView> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               const SizedBox(height: 14),
-                              StartConversationCard(
-                                theme: theme,
-                                controller: controller,
-                              ),
-                              const SizedBox(height: 16),
+                              if (controller
+                                      .workspace
+                                      ?.showStartConversationCard ??
+                                  true) ...[
+                                StartConversationCard(
+                                  theme: theme,
+                                  controller: controller,
+                                ),
+                                const SizedBox(height: 16),
+                              ],
                               _buildMessagesSection(context, theme, controller),
                               const SizedBox(height: 20),
                               FAQListSection(theme: theme),
@@ -294,7 +299,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  'Ask a question, check previous chats, or browse quick answers.',
+                  controller.workspace?.heroSubtitle ??
+                      'Ask a question, check previous chats, or browse quick answers.',
                   style: TextStyle(
                     fontFamily: 'Inter',
                     package: 'talq_flutter',

@@ -141,7 +141,7 @@ class _MessagesListViewState extends State<MessagesListView> {
                     ),
                   )
                 else if (controller.rooms.isEmpty)
-                  _buildEmptyState(activeTheme)
+                  _buildEmptyState(activeTheme, controller)
                 else
                   RefreshIndicator(
                     onRefresh: () => _handleRefresh(controller),
@@ -201,7 +201,11 @@ class _MessagesListViewState extends State<MessagesListView> {
     );
   }
 
-  Widget _buildEmptyState(TalqTheme theme) {
+  Widget _buildEmptyState(TalqTheme theme, TalqController controller) {
+    final ws = controller.workspace;
+    final title = ws?.emptyConversationsTitle ?? 'No conversations yet';
+    final subtitle =
+        ws?.emptyConversationsSubtitle ?? 'Your messages will appear here.';
     return Center(
       child: Padding(
         padding: const EdgeInsets.all(28),
@@ -222,7 +226,7 @@ class _MessagesListViewState extends State<MessagesListView> {
             ),
             const SizedBox(height: 22),
             Text(
-              'No conversations yet',
+              title,
               style: theme.titleStyle.copyWith(
                 fontSize: 22,
                 fontWeight: FontWeight.w800,
@@ -231,7 +235,7 @@ class _MessagesListViewState extends State<MessagesListView> {
             ),
             const SizedBox(height: 10),
             Text(
-              'Your messages will appear here.',
+              subtitle,
               textAlign: TextAlign.center,
               style: theme.subtitleStyle.copyWith(
                 fontSize: 14,

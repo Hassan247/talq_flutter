@@ -181,8 +181,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     }
   }
 
-  String _formatResponseTime(String? time) {
-    if (time == null) return 'Usually replies in minutes';
+  String _formatResponseTime(String? time, {String? fallback}) {
+    if (time == null) return fallback ?? 'Usually replies in minutes';
     final t = time.trim();
     if (t.toLowerCase().startsWith('replies') ||
         t.toLowerCase().startsWith('usually')) {
@@ -328,6 +328,9 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                               Text(
                                 _formatResponseTime(
                                   controller.workspace?.responseTime,
+                                  fallback: controller
+                                      .workspace
+                                      ?.defaultReplyTimeText,
                                 ),
                                 style: theme.subtitleStyle.copyWith(
                                   fontSize: 12,
@@ -932,7 +935,9 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                       child: TextField(
                         controller: _messageController,
                         decoration: InputDecoration(
-                          hintText: 'Type something',
+                          hintText:
+                              controller.workspace?.messageInputPlaceholder ??
+                              'Type something',
                           hintStyle: theme.subtitleStyle.copyWith(
                             fontSize: 15,
                             color: theme.inputHintColor,

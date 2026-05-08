@@ -506,11 +506,13 @@ class _FAQDetailViewState extends State<FAQDetailView> {
   }
 
   Widget _buildVoteContent() {
+    final ws = context.read<TalqController>().workspace;
+    final prompt = ws?.faqHelpfulPrompt ?? 'Was this helpful?';
     return Column(
       children: [
         Center(
           child: Text(
-            'Was this helpful?',
+            prompt,
             style: widget.theme.subtitleStyle.copyWith(
               fontSize: 14,
               fontWeight: FontWeight.w700,

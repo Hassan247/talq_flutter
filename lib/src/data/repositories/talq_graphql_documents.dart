@@ -50,6 +50,20 @@ class TalqGraphqlDocuments {
           autoReplyMessage
           welcomeMessage
           primaryColor
+          heroSubtitle
+          replyTimeLabel
+          defaultReplyTimeText
+          startConversationCtaLabel
+          faqSectionTitle
+          faqBrowseAllLabel
+          faqHelpfulPrompt
+          emptyConversationsTitle
+          emptyConversationsSubtitle
+          messageInputPlaceholder
+          showFaqSection
+          showStartConversationCard
+          showAgentAvatars
+          faqHomeDisplayCount
         }
         agentAvatars
         faqs {
@@ -338,6 +352,20 @@ class TalqGraphqlDocuments {
         autoReplyMessage
         welcomeMessage
         primaryColor
+        heroSubtitle
+        replyTimeLabel
+        defaultReplyTimeText
+        startConversationCtaLabel
+        faqSectionTitle
+        faqBrowseAllLabel
+        faqHelpfulPrompt
+        emptyConversationsTitle
+        emptyConversationsSubtitle
+        messageInputPlaceholder
+        showFaqSection
+        showStartConversationCard
+        showAgentAvatars
+        faqHomeDisplayCount
       }
     }
   ''';
