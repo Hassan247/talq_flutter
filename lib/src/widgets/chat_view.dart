@@ -1071,10 +1071,17 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                 onTap: () async {
                   final navigator = Navigator.of(context);
                   navigator.pop();
+                  // Allowed extensions come from server-driven widgetConfig
+                  // when available, falling back to the SDK default. This
+                  // way the workspace can broaden/narrow accepted document
+                  // types without re-releasing the host app.
+                  final allowed = controller.widgetConfig.allowedFileExtensions;
                   FilePickerResult? result = await FilePicker.platform
                       .pickFiles(
                         type: FileType.custom,
-                        allowedExtensions: ['pdf'],
+                        allowedExtensions: allowed.isNotEmpty
+                            ? allowed
+                            : const ['pdf'],
                       );
                   if (result != null && mounted) {
                     navigator.push(

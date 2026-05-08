@@ -412,4 +412,37 @@ class TalqGraphqlDocuments {
       }
     }
   ''';
+
+  /// Server-driven SDK config. Forward-compatible: integrated apps will
+  /// silently use [TalqWidgetConfig.defaults] until the backend implements
+  /// this field, after which timers/limits/feature flags can be tuned
+  /// without re-releasing the host app.
+  static const String widgetConfigQuery = r'''
+    query WidgetConfig {
+      widgetConfig {
+        ttlSeconds
+        timers {
+          connectMs
+          sendMs
+          receiveMs
+          wsInactivityMs
+          heartbeatMs
+          typingStopMs
+          typingThrottleMs
+          notificationDismissMs
+          reconnectBackoffMs
+        }
+        limits {
+          allowedFileExtensions
+          maxUploadBytes
+          messageMaxLength
+        }
+        sdkPolicy {
+          minVersion
+          recommendedVersion
+          deprecationMessage
+        }
+      }
+    }
+  ''';
 }

@@ -2,6 +2,8 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+export 'widget_config.dart';
+
 enum SenderType {
   visitor,
   agent,

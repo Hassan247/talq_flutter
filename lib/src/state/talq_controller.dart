@@ -7,6 +7,7 @@ import 'package:path/path.dart' as path;
 
 import '../core/auth_manager.dart';
 import '../core/device_info_collector.dart';
+import '../core/talq_cache.dart';
 import '../core/talq_client.dart';
 import '../core/talq_error_mapper.dart';
 import '../models/models.dart';
@@ -62,10 +63,12 @@ class TalqController extends ChangeNotifier {
   Timer? _notificationTimer;
 
   TalqTheme _theme = const TalqTheme();
+  TalqWidgetConfig _widgetConfig = TalqWidgetConfig.defaults;
 
   TalqController(TalqClient client)
     : _useCases = TalqUseCases.fromClient(client) {
     _loadCachedTheme();
+    _hydrateFromCache();
   }
 
   /// Load cached primary color so the FAB shows the correct color immediately
@@ -76,6 +79,60 @@ class TalqController extends ChangeNotifier {
         _theme = _theme.copyWith(primaryColor: TalqTheme.fromHex(cachedHex));
         notifyListeners();
       } catch (_) {}
+    }
+  }
+
+  /// Restore last-good workspace / rooms / faqs / widgetConfig from disk so
+  /// the home screen shows real content on cold open instead of flashing
+  /// empty white cards while the network round-trip completes.
+  Future<void> _hydrateFromCache() async {
+    try {
+      final cachedWidgetConfig = await TalqCache.getWidgetConfig();
+      if (cachedWidgetConfig != null) {
+        _widgetConfig = TalqWidgetConfig.fromJson(cachedWidgetConfig);
+      }
+
+      final cachedWorkspace = await TalqCache.getWorkspace();
+      if (cachedWorkspace != null) {
+        try {
+          final ws = TalqWorkspace.fromJson(cachedWorkspace);
+          final avatars = await TalqCache.getAgentAvatars();
+          _workspace = ws.copyWith(agentAvatars: avatars);
+          if (_workspace!.primaryColor.isNotEmpty) {
+            try {
+              _theme = _theme.copyWith(
+                primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
+              );
+            } catch (_) {}
+          }
+        } catch (_) {}
+      }
+
+      final cachedFaqs = await TalqCache.getFaqs();
+      if (cachedFaqs.isNotEmpty) {
+        try {
+          _faqs = cachedFaqs.map((f) => TalqFAQ.fromJson(f)).toList();
+        } catch (_) {}
+      }
+
+      final cachedRooms = await TalqCache.getRooms();
+      if (cachedRooms.isNotEmpty) {
+        try {
+          _rooms = cachedRooms.map((r) => TalqRoom.fromJson(r)).toList();
+          _sortRooms();
+          _syncVisibleRoomCount(reset: true);
+        } catch (_) {}
+      }
+
+      // We're "initialized" from the user's perspective if we have a cached
+      // workspace — the next live fetch will refresh in the background.
+      if (_workspace != null) {
+        _isInitialized = true;
+      }
+      if (_disposed) return;
+      notifyListeners();
+    } catch (_) {
+      // best-effort cache hydration; never block startup on errors.
     }
   }
 
@@ -103,6 +160,18 @@ class TalqController extends ChangeNotifier {
   String? get roomId => _roomId;
   RoomStatus get roomStatus => _roomStatus;
   TalqTheme get theme => _theme;
+  TalqWidgetConfig get widgetConfig => _widgetConfig;
+
+  /// Whether the SDK has a workspace object available (cached or fresh).
+  /// Use this — not [isInitialized] — to gate per-card UI on the home screen,
+  /// so cached workspaces render real content instantly on cold open.
+  bool get hasWorkspace => _workspace != null;
+
+  /// Whether rooms have been hydrated (cache or fresh fetch).
+  bool get hasRooms => _rooms.isNotEmpty;
+
+  /// Whether FAQs have been hydrated (cache or fresh fetch).
+  bool get hasFaqs => _faqs.isNotEmpty;
 
   TalqRoom? get currentRoom {
     if (_roomId == null) return null;
@@ -328,7 +397,12 @@ class TalqController extends ChangeNotifier {
         debugPrint(
           '[TalqController] initVisitor exception: ${result.exception}',
         );
-        _isInitialized = true;
+        // Only mark as initialized when we already have *some* data to render
+        // (cached workspace from a previous session). Otherwise leave the
+        // skeleton up so the user doesn't see a row of empty white cards.
+        if (_workspace != null) {
+          _isInitialized = true;
+        }
         _setError(
           result.exception,
           fallbackMessage: 'Unable to start chat right now.',
@@ -344,6 +418,14 @@ class TalqController extends ChangeNotifier {
       final avatars = (authData['agentAvatars'] as List?)?.cast<String>() ?? [];
       _workspace = ws.copyWith(agentAvatars: avatars);
 
+      // Persist last-good workspace + agentAvatars for next cold open.
+      unawaited(
+        TalqCache.saveWorkspace(
+          Map<String, dynamic>.from(authData['workspace'] as Map),
+          agentAvatars: avatars,
+        ),
+      );
+
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
           _theme = _theme.copyWith(
@@ -357,9 +439,25 @@ class TalqController extends ChangeNotifier {
 
       final List faqsList = authData['faqs'] ?? [];
       _faqs = faqsList.map((f) => TalqFAQ.fromJson(f)).toList();
+      unawaited(
+        TalqCache.saveFaqs(
+          faqsList
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        ),
+      );
 
       final List roomsList = authData['visitor']['rooms'] ?? [];
       final newRooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
+      unawaited(
+        TalqCache.saveRooms(
+          roomsList
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        ),
+      );
 
       if (capturedVersion != _fetchVersion) {
         return;
@@ -403,8 +501,13 @@ class TalqController extends ChangeNotifier {
 
       _isInitialized = true;
       _clearError();
+      // Refresh server-driven config in the background; non-blocking.
+      unawaited(fetchWidgetConfig());
     } catch (e) {
-      _isInitialized = true;
+      // Same rationale as the result.hasException branch above.
+      if (_workspace != null) {
+        _isInitialized = true;
+      }
       _setError(e, fallbackMessage: 'Unable to start chat right now.');
     } finally {
       _isLoading = false;
@@ -495,6 +598,14 @@ class TalqController extends ChangeNotifier {
       _rooms = roomsList.map((r) => TalqRoom.fromJson(r)).toList();
       _sortRooms();
       _syncVisibleRoomCount(reset: resetVisibleWindow);
+      unawaited(
+        TalqCache.saveRooms(
+          roomsList
+              .whereType<Map>()
+              .map((e) => Map<String, dynamic>.from(e))
+              .toList(),
+        ),
+      );
       notifyListeners();
       return;
     }
@@ -505,9 +616,32 @@ class TalqController extends ChangeNotifier {
     );
   }
 
+  /// Fetches the server-driven SDK config (timers, upload limits, feature
+  /// flags, min SDK version, etc). Forward-compatible: if the backend
+  /// hasn't shipped the `widgetConfig` resolver yet, this fails silently
+  /// and the SDK keeps using [TalqWidgetConfig.defaults].
+  Future<void> fetchWidgetConfig() async {
+    try {
+      final result = await _useCases.fetchWidgetConfig();
+      if (result.hasException) return;
+      final raw = result.data?['widgetConfig'];
+      if (raw is! Map) return;
+      final json = Map<String, dynamic>.from(raw);
+      _widgetConfig = TalqWidgetConfig.fromJson(json);
+      unawaited(TalqCache.saveWidgetConfig(json));
+      if (_disposed) return;
+      notifyListeners();
+    } catch (e) {
+      // Server hasn't implemented widgetConfig yet, network glitch, etc.
+      // Defaults stay in effect; not an error worth surfacing.
+      debugPrint('[TalqController] widgetConfig fetch skipped: $e');
+    }
+  }
+
   /// Completely resets the current session and visitor identity
   Future<void> resetSession() async {
     await AuthManager.resetSession();
+    await TalqCache.clear();
     _isInitialized = false;
     _visitor = null;
     _roomId = null;

@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:ui';
 
 import 'package:cached_network_image/cached_network_image.dart';
@@ -45,13 +46,16 @@ class _RoomsListViewState extends State<RoomsListView> {
     if (!controller.isInitialized) {
       await controller.initialize();
       if (!mounted) return;
+    } else {
+      // Already initialized (e.g. cached state hydrated on cold open).
+      // Refresh rooms in the background so the cached snapshot doesn't go
+      // stale, but don't block the UI on it.
+      unawaited(controller.fetchRooms());
     }
 
-    await controller.fetchRooms();
-    if (!mounted) return;
-
+    // FAQs are returned by initVisitor; only refetch if missing.
     if (controller.faqs.isEmpty) {
-      await controller.fetchFaqs(reload: true);
+      unawaited(controller.fetchFaqs(reload: true));
     }
   }
 
@@ -80,7 +84,7 @@ class _RoomsListViewState extends State<RoomsListView> {
               ),
               Positioned.fill(
                 top: mediaQuery.padding.top + 238,
-                child: !controller.isInitialized
+                child: !controller.hasWorkspace
                     ? Padding(
                         padding: const EdgeInsets.fromLTRB(18, 28, 18, 0),
                         child: Column(

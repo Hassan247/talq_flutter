@@ -160,4 +160,6 @@ class TalqUseCases {
       afterCursor: afterCursor,
     );
   }
+
+  Future<QueryResult> fetchWidgetConfig() => _repository.fetchWidgetConfig();
 }

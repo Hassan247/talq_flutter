@@ -201,6 +201,10 @@ class TalqRepository {
     );
   }
 
+  Future<QueryResult> fetchWidgetConfig() {
+    return _remote.query(TalqGraphqlDocuments.widgetConfigQuery);
+  }
+
   String _contentTypeToGql(ContentType contentType) {
     switch (contentType) {
       case ContentType.image:
