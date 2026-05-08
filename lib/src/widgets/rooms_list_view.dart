@@ -59,6 +59,13 @@ class _RoomsListViewState extends State<RoomsListView> {
     }
   }
 
+  Future<void> _handleHomeRefresh(TalqController controller) async {
+    await Future.wait<void>([
+      controller.fetchRooms(resetVisibleWindow: true),
+      controller.fetchFaqs(reload: true),
+    ]);
+  }
+
   @override
   Widget build(BuildContext context) {
     final controller = context.watch<TalqController>();
@@ -99,26 +106,34 @@ class _RoomsListViewState extends State<RoomsListView> {
                           ],
                         ),
                       )
-                    : SingleChildScrollView(
-                        padding: EdgeInsets.fromLTRB(
-                          18,
-                          14,
-                          18,
-                          mediaQuery.padding.bottom + 34,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            const SizedBox(height: 14),
-                            StartConversationCard(
-                              theme: theme,
-                              controller: controller,
-                            ),
-                            const SizedBox(height: 16),
-                            _buildMessagesSection(context, theme, controller),
-                            const SizedBox(height: 20),
-                            FAQListSection(theme: theme),
-                          ],
+                    : RefreshIndicator(
+                        onRefresh: () => _handleHomeRefresh(controller),
+                        color: theme.primaryColor,
+                        backgroundColor: theme.surfaceColor,
+                        edgeOffset: 8,
+                        displacement: 24,
+                        child: SingleChildScrollView(
+                          physics: const AlwaysScrollableScrollPhysics(),
+                          padding: EdgeInsets.fromLTRB(
+                            18,
+                            14,
+                            18,
+                            mediaQuery.padding.bottom + 34,
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              const SizedBox(height: 14),
+                              StartConversationCard(
+                                theme: theme,
+                                controller: controller,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildMessagesSection(context, theme, controller),
+                              const SizedBox(height: 20),
+                              FAQListSection(theme: theme),
+                            ],
+                          ),
                         ),
                       ),
               ),
