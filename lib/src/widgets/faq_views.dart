@@ -367,28 +367,6 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 4,
-                ),
-                decoration: BoxDecoration(
-                  color: widget.theme.primaryColor.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Text(
-                  'Article',
-                  style: TextStyle(
-                    fontFamily: 'Inter',
-                    package: 'talq_flutter',
-                    color: widget.theme.primaryColor,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.0,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
               Text(
                 widget.faq.question,
                 style: widget.theme.titleStyle.copyWith(
