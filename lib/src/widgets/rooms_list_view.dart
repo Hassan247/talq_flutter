@@ -308,6 +308,8 @@ class _RoomsListViewState extends State<RoomsListView> {
         child: CachedNetworkImage(
           imageUrl: logoUrl,
           fit: BoxFit.contain,
+          alignment: Alignment.centerLeft,
+          placeholder: (context, url) => const SizedBox(height: 36),
           errorWidget: (context, url, error) => SvgPicture.asset(
             'assets/images/monosend_logo.svg',
             package: 'talq_flutter',
