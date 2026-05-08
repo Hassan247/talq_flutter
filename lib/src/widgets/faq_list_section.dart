@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_markdown/flutter_markdown.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:provider/provider.dart';
 
@@ -26,6 +27,20 @@ class FAQListSection extends StatelessWidget {
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Pre-warm flutter_markdown so the first FAQ tap doesn't pay the
+            // package's lazy initialisation cost during the page transition.
+            // Rendered offstage at zero size so it has no visual impact.
+            Offstage(
+              offstage: true,
+              child: TickerMode(
+                enabled: false,
+                child: SizedBox(
+                  width: 1,
+                  height: 1,
+                  child: MarkdownBody(data: faqs.first.answer),
+                ),
+              ),
+            ),
             Container(
               decoration: BoxDecoration(
                 color: theme.surfaceColor,

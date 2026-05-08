@@ -313,6 +313,18 @@ class FAQDetailView extends StatefulWidget {
 class _FAQDetailViewState extends State<FAQDetailView> {
   bool _voted = false;
   bool? _isHelpful;
+  bool _showBody = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Defer heavy MarkdownBody render until after the page-push transition
+    // has rendered its first frame, so taps feel instant.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      setState(() => _showBody = true);
+    });
+  }
 
   Future<void> _handleVote(bool helpful) async {
     if (_voted) return;
@@ -387,29 +399,32 @@ class _FAQDetailViewState extends State<FAQDetailView> {
                 ),
               ),
               const SizedBox(height: 28),
-              MarkdownBody(
-                data: widget.faq.answer,
-                styleSheet: MarkdownStyleSheet(
-                  p: widget.theme.bodyStyle.copyWith(
-                    height: 1.7,
-                    fontSize: 16,
-                    color: widget.theme.titleStyle.color?.withValues(
-                      alpha: 0.7,
+              if (_showBody)
+                MarkdownBody(
+                  data: widget.faq.answer,
+                  styleSheet: MarkdownStyleSheet(
+                    p: widget.theme.bodyStyle.copyWith(
+                      height: 1.7,
+                      fontSize: 16,
+                      color: widget.theme.titleStyle.color?.withValues(
+                        alpha: 0.7,
+                      ),
                     ),
+                    h1: widget.theme.titleStyle.copyWith(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.5,
+                    ),
+                    h2: widget.theme.titleStyle.copyWith(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: -0.3,
+                    ),
+                    listBullet: widget.theme.bodyStyle.copyWith(fontSize: 16),
                   ),
-                  h1: widget.theme.titleStyle.copyWith(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: -0.5,
-                  ),
-                  h2: widget.theme.titleStyle.copyWith(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.3,
-                  ),
-                  listBullet: widget.theme.bodyStyle.copyWith(fontSize: 16),
-                ),
-              ),
+                )
+              else
+                _buildBodyPlaceholder(),
               const SizedBox(height: 48),
               _buildFeedbackSection(),
               const SizedBox(height: 40),
@@ -417,6 +432,31 @@ class _FAQDetailViewState extends State<FAQDetailView> {
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildBodyPlaceholder() {
+    final lineColor = widget.theme.cardShadowColor.withValues(alpha: 0.08);
+    Widget bar(double widthFactor) => FractionallySizedBox(
+      alignment: Alignment.centerLeft,
+      widthFactor: widthFactor,
+      child: Container(
+        height: 14,
+        decoration: BoxDecoration(
+          color: lineColor,
+          borderRadius: BorderRadius.circular(4),
+        ),
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        bar(1.0),
+        const SizedBox(height: 12),
+        bar(0.95),
+        const SizedBox(height: 12),
+        bar(0.6),
+      ],
     );
   }
 
