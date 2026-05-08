@@ -8,7 +8,6 @@ import '../models/models.dart';
 import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'chat_view.dart';
-import 'live_pull_to_refresh.dart';
 import 'shared_widgets.dart';
 import 'shimmer_skeleton.dart';
 
@@ -91,7 +90,6 @@ class _MessagesListViewState extends State<MessagesListView> {
       child: Consumer<TalqController>(
         builder: (context, controller, child) {
           final activeTheme = widget.theme ?? controller.theme;
-          final isDark = Theme.of(context).brightness == Brightness.dark;
 
           return Scaffold(
             backgroundColor: activeTheme.backgroundColor,
@@ -145,11 +143,12 @@ class _MessagesListViewState extends State<MessagesListView> {
                 else if (controller.rooms.isEmpty)
                   _buildEmptyState(activeTheme)
                 else
-                  LivePullToRefresh(
-                    isDark: isDark,
-                    isRefreshing: _isRefreshing,
-                    progressColor: activeTheme.primaryColor,
+                  RefreshIndicator(
                     onRefresh: () => _handleRefresh(controller),
+                    color: activeTheme.primaryColor,
+                    backgroundColor: activeTheme.surfaceColor,
+                    edgeOffset: 8,
+                    displacement: 24,
                     child: _buildList(activeTheme, controller),
                   ),
               ],
@@ -167,7 +166,7 @@ class _MessagesListViewState extends State<MessagesListView> {
 
     return ListView.builder(
       controller: _scrollController,
-      physics: LivePullToRefresh.cappedScrollPhysics(),
+      physics: const AlwaysScrollableScrollPhysics(),
       padding: const EdgeInsets.fromLTRB(16, 10, 16, 28),
       itemCount: totalItems,
       itemBuilder: (context, index) {
