@@ -300,7 +300,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                   elevation: 0,
                   scrolledUnderElevation: 0,
                   surfaceTintColor: Colors.transparent,
-                  backgroundColor: theme.backgroundColor,
+                  backgroundColor: Colors.white,
                   leading: BackButton(color: theme.titleStyle.color),
                   centerTitle: false,
                   titleSpacing: 0,
@@ -895,9 +895,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
       decoration: const BoxDecoration(
         color: Colors.white,
-        border: Border(
-          top: BorderSide(color: Color(0x0A000000), width: 1),
-        ),
+        border: Border(top: BorderSide(color: Color(0x0A000000), width: 1)),
       ),
       child: SafeArea(
         top: false,
