@@ -986,8 +986,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                 child: SvgPicture.asset(
                   'assets/icons/send-message.svg',
                   package: 'talq_flutter',
-                  colorFilter: const ColorFilter.mode(
-                    Colors.white,
+                  colorFilter: ColorFilter.mode(
+                    theme.userTextColor,
                     BlendMode.srcIn,
                   ),
                   width: 18,

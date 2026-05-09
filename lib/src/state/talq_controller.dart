@@ -71,13 +71,26 @@ class TalqController extends ChangeNotifier {
     _hydrateFromCache();
   }
 
+  /// Pick a contrasting text color (white on dark, near-black on light) for
+  /// the user bubble so visitor messages stay readable regardless of brand
+  /// color.
+  Color _onPrimary(Color c) {
+    return c.computeLuminance() > 0.55
+        ? const Color(0xDD000000)
+        : Colors.white;
+  }
+
   /// Load cached primary color so the FAB shows the correct color immediately
   Future<void> _loadCachedTheme() async {
     final cachedHex = await AuthManager.getPrimaryColor();
     if (cachedHex != null && cachedHex.isNotEmpty) {
       try {
         final c = TalqTheme.fromHex(cachedHex);
-        _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
+        _theme = _theme.copyWith(
+          primaryColor: c,
+          userBubbleColor: c,
+          userTextColor: _onPrimary(c),
+        );
         notifyListeners();
       } catch (_) {}
     }
@@ -102,7 +115,11 @@ class TalqController extends ChangeNotifier {
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               final c = TalqTheme.fromHex(_workspace!.primaryColor);
-              _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
+              _theme = _theme.copyWith(
+                primaryColor: c,
+                userBubbleColor: c,
+                userTextColor: _onPrimary(c),
+              );
             } catch (_) {}
           }
         } catch (_) {}
@@ -429,7 +446,11 @@ class TalqController extends ChangeNotifier {
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
           final c = TalqTheme.fromHex(_workspace!.primaryColor);
-          _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
+          _theme = _theme.copyWith(
+            primaryColor: c,
+            userBubbleColor: c,
+            userTextColor: _onPrimary(c),
+          );
           AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
           // invalid hex, keep default
@@ -1512,7 +1533,11 @@ class TalqController extends ChangeNotifier {
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               final c = TalqTheme.fromHex(_workspace!.primaryColor);
-              _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
+              _theme = _theme.copyWith(
+                primaryColor: c,
+                userBubbleColor: c,
+                userTextColor: _onPrimary(c),
+              );
               AuthManager.savePrimaryColor(_workspace!.primaryColor);
               debugPrint(
                 '[TalqController] Theme updated: primaryColor=${_workspace!.primaryColor}',
