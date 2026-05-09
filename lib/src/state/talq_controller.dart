@@ -75,9 +75,7 @@ class TalqController extends ChangeNotifier {
   /// the user bubble so visitor messages stay readable regardless of brand
   /// color.
   Color _onPrimary(Color c) {
-    return c.computeLuminance() > 0.55
-        ? const Color(0xDD000000)
-        : Colors.white;
+    return c.computeLuminance() > 0.55 ? const Color(0xDD000000) : Colors.white;
   }
 
   /// Load cached primary color so the FAB shows the correct color immediately
