@@ -76,7 +76,8 @@ class TalqController extends ChangeNotifier {
     final cachedHex = await AuthManager.getPrimaryColor();
     if (cachedHex != null && cachedHex.isNotEmpty) {
       try {
-        _theme = _theme.copyWith(primaryColor: TalqTheme.fromHex(cachedHex));
+        final c = TalqTheme.fromHex(cachedHex);
+        _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
         notifyListeners();
       } catch (_) {}
     }
@@ -100,8 +101,10 @@ class TalqController extends ChangeNotifier {
           _workspace = ws.copyWith(agentAvatars: avatars);
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
+              final c = TalqTheme.fromHex(_workspace!.primaryColor);
               _theme = _theme.copyWith(
-                primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
+                primaryColor: c,
+                userBubbleColor: c,
               );
             } catch (_) {}
           }
@@ -428,8 +431,10 @@ class TalqController extends ChangeNotifier {
 
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
+          final c = TalqTheme.fromHex(_workspace!.primaryColor);
           _theme = _theme.copyWith(
-            primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
+            primaryColor: c,
+            userBubbleColor: c,
           );
           AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
@@ -1512,8 +1517,10 @@ class TalqController extends ChangeNotifier {
 
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
+              final c = TalqTheme.fromHex(_workspace!.primaryColor);
               _theme = _theme.copyWith(
-                primaryColor: TalqTheme.fromHex(_workspace!.primaryColor),
+                primaryColor: c,
+                userBubbleColor: c,
               );
               AuthManager.savePrimaryColor(_workspace!.primaryColor);
               debugPrint(
