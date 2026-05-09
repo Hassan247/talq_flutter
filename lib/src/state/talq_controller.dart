@@ -102,10 +102,7 @@ class TalqController extends ChangeNotifier {
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               final c = TalqTheme.fromHex(_workspace!.primaryColor);
-              _theme = _theme.copyWith(
-                primaryColor: c,
-                userBubbleColor: c,
-              );
+              _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
             } catch (_) {}
           }
         } catch (_) {}
@@ -432,10 +429,7 @@ class TalqController extends ChangeNotifier {
       if (_workspace!.primaryColor.isNotEmpty) {
         try {
           final c = TalqTheme.fromHex(_workspace!.primaryColor);
-          _theme = _theme.copyWith(
-            primaryColor: c,
-            userBubbleColor: c,
-          );
+          _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
           AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
           // invalid hex, keep default
@@ -1518,10 +1512,7 @@ class TalqController extends ChangeNotifier {
           if (_workspace!.primaryColor.isNotEmpty) {
             try {
               final c = TalqTheme.fromHex(_workspace!.primaryColor);
-              _theme = _theme.copyWith(
-                primaryColor: c,
-                userBubbleColor: c,
-              );
+              _theme = _theme.copyWith(primaryColor: c, userBubbleColor: c);
               AuthManager.savePrimaryColor(_workspace!.primaryColor);
               debugPrint(
                 '[TalqController] Theme updated: primaryColor=${_workspace!.primaryColor}',

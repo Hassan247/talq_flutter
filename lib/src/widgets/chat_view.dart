@@ -892,107 +892,109 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     }
 
     return Container(
-      padding: const EdgeInsets.fromLTRB(16, 8, 16, 2),
-      decoration: BoxDecoration(color: theme.backgroundColor),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 2),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(
+          top: BorderSide(color: Color(0x0A000000), width: 1),
+        ),
+      ),
       child: SafeArea(
         top: false,
         left: false,
         right: false,
-        minimum: const EdgeInsets.only(bottom: 4),
+        minimum: const EdgeInsets.only(bottom: 8),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
           children: [
-            Expanded(
+            // Plus button (attachment) — circle, primary @ 10%
+            GestureDetector(
+              onTap: () => _showAttachmentOptions(context, controller, theme),
               child: Container(
+                width: 42,
+                height: 42,
                 decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(28),
+                  color: theme.primaryColor.withValues(alpha: 0.10),
+                  shape: BoxShape.circle,
                 ),
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
-                child: Row(
-                  children: [
-                    IconButton(
-                      onPressed: () =>
-                          _showAttachmentOptions(context, controller, theme),
-                      icon: SvgPicture.asset(
-                        'assets/icons/plus.svg',
-                        package: 'talq_flutter',
-                        colorFilter: ColorFilter.mode(
-                          theme.primaryColor,
-                          BlendMode.srcIn,
-                        ),
-                        width: 24,
-                        height: 24,
-                      ),
-                      style: IconButton.styleFrom(
-                        backgroundColor: theme.primaryColor.withValues(
-                          alpha: 0.05,
-                        ),
-                        padding: const EdgeInsets.all(8),
-                      ),
-                    ),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: TextField(
-                        controller: _messageController,
-                        decoration: InputDecoration(
-                          hintText:
-                              controller.workspace?.messageInputPlaceholder ??
-                              'Type something',
-                          hintStyle: theme.subtitleStyle.copyWith(
-                            fontSize: 15,
-                            color: theme.inputHintColor,
-                          ),
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          disabledBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          filled: false,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 8,
-                          ),
-                          isDense: true,
-                        ),
-                        minLines: 1,
-                        maxLines: 5,
-                        style: theme.bodyStyle.copyWith(
-                          fontSize: 16,
-                          color: Colors.black87,
-                        ),
-                        onChanged: (text) => _onTextChanged(text, controller),
-                      ),
-                    ),
-                  ],
+                alignment: Alignment.center,
+                child: SvgPicture.asset(
+                  'assets/icons/plus.svg',
+                  package: 'talq_flutter',
+                  colorFilter: ColorFilter.mode(
+                    theme.primaryColor,
+                    BlendMode.srcIn,
+                  ),
+                  width: 20,
+                  height: 20,
                 ),
               ),
             ),
             const SizedBox(width: 8),
-            Container(
-              decoration: BoxDecoration(
-                color: theme.primaryColor,
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.primaryColor.withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    offset: const Offset(0, 4),
+            // Pill text field
+            Expanded(
+              child: Container(
+                constraints: const BoxConstraints(minHeight: 42),
+                padding: const EdgeInsets.symmetric(horizontal: 16),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF3F4F6),
+                  borderRadius: BorderRadius.circular(22),
+                ),
+                alignment: Alignment.center,
+                child: TextField(
+                  controller: _messageController,
+                  decoration: InputDecoration(
+                    hintText:
+                        controller.workspace?.messageInputPlaceholder ??
+                        'Type something',
+                    hintStyle: theme.bodyStyle.copyWith(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w500,
+                      color: const Color(0x700A0A0A),
+                    ),
+                    border: InputBorder.none,
+                    enabledBorder: InputBorder.none,
+                    focusedBorder: InputBorder.none,
+                    disabledBorder: InputBorder.none,
+                    errorBorder: InputBorder.none,
+                    focusedErrorBorder: InputBorder.none,
+                    filled: false,
+                    contentPadding: const EdgeInsets.symmetric(vertical: 10),
+                    isDense: true,
                   ),
-                ],
+                  minLines: 1,
+                  maxLines: 5,
+                  style: theme.bodyStyle.copyWith(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w500,
+                    color: const Color(0xFF0A0A0A),
+                  ),
+                  onChanged: (text) => _onTextChanged(text, controller),
+                ),
               ),
-              child: IconButton(
-                onPressed: () => _handleSend(controller),
-                icon: SvgPicture.asset(
+            ),
+            const SizedBox(width: 8),
+            // Send button — primary circle
+            GestureDetector(
+              onTap: () => _handleSend(controller),
+              child: Container(
+                width: 42,
+                height: 42,
+                decoration: BoxDecoration(
+                  color: theme.primaryColor,
+                  shape: BoxShape.circle,
+                ),
+                alignment: Alignment.center,
+                child: SvgPicture.asset(
                   'assets/icons/send-message.svg',
                   package: 'talq_flutter',
                   colorFilter: const ColorFilter.mode(
                     Colors.white,
                     BlendMode.srcIn,
                   ),
-                  width: 22,
-                  height: 22,
+                  width: 18,
+                  height: 18,
                 ),
-                padding: const EdgeInsets.all(12),
               ),
             ),
           ],
