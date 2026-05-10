@@ -119,8 +119,8 @@ class _TalqFABState extends State<TalqFAB> with SingleTickerProviderStateMixin {
                       'packages/talq_flutter/assets/icons/messages.svg',
                       width: 26,
                       height: 26,
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
+                      colorFilter: ColorFilter.mode(
+                        activeTheme.userTextColor,
                         BlendMode.srcIn,
                       ),
                     ),

@@ -263,18 +263,18 @@ class _RoomsListViewState extends State<RoomsListView> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _buildWorkspaceBrand(controller),
+                    _buildWorkspaceBrand(controller, theme),
                     Material(
-                      color: Colors.white.withValues(alpha: 0.14),
+                      color: theme.userTextColor.withValues(alpha: 0.14),
                       shape: const CircleBorder(),
                       child: InkWell(
                         onTap: () => Navigator.pop(context),
                         customBorder: const CircleBorder(),
-                        child: const Padding(
-                          padding: EdgeInsets.all(10),
+                        child: Padding(
+                          padding: const EdgeInsets.all(10),
                           child: Icon(
                             Icons.close_rounded,
-                            color: Colors.white,
+                            color: theme.userTextColor,
                             size: 22,
                           ),
                         ),
@@ -287,10 +287,10 @@ class _RoomsListViewState extends State<RoomsListView> {
                   hasWelcome
                       ? welcome
                       : 'Hello there! How can we help you today?',
-                  style: const TextStyle(
+                  style: TextStyle(
                     fontFamily: 'Inter',
                     package: 'talq_flutter',
-                    color: Colors.white,
+                    color: theme.userTextColor,
                     fontSize: 35,
                     fontWeight: FontWeight.w800,
                     height: 1.08,
@@ -304,7 +304,7 @@ class _RoomsListViewState extends State<RoomsListView> {
                   style: TextStyle(
                     fontFamily: 'Inter',
                     package: 'talq_flutter',
-                    color: Colors.white.withValues(alpha: 0.78),
+                    color: theme.userTextColor.withValues(alpha: 0.78),
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
                     height: 1.35,
@@ -319,7 +319,7 @@ class _RoomsListViewState extends State<RoomsListView> {
     );
   }
 
-  Widget _buildWorkspaceBrand(TalqController controller) {
+  Widget _buildWorkspaceBrand(TalqController controller, TalqTheme theme) {
     final logoUrl =
         controller.workspace?.talqLogoUrl ?? controller.workspace?.logoUrl;
 
@@ -335,7 +335,10 @@ class _RoomsListViewState extends State<RoomsListView> {
             'assets/images/monosend_logo.svg',
             package: 'talq_flutter',
             height: 36,
-            colorFilter: const ColorFilter.mode(Colors.white, BlendMode.srcIn),
+            colorFilter: ColorFilter.mode(
+              theme.userTextColor,
+              BlendMode.srcIn,
+            ),
           ),
         ),
       );
@@ -343,15 +346,15 @@ class _RoomsListViewState extends State<RoomsListView> {
 
     return Row(
       mainAxisSize: MainAxisSize.min,
-      children: const [
-        Icon(Icons.forum_rounded, color: Colors.white, size: 28),
-        SizedBox(width: 10),
+      children: [
+        Icon(Icons.forum_rounded, color: theme.userTextColor, size: 28),
+        const SizedBox(width: 10),
         Text(
           'Talq',
           style: TextStyle(
             fontFamily: 'Inter',
             package: 'talq_flutter',
-            color: Colors.white,
+            color: theme.userTextColor,
             fontSize: 24,
             fontWeight: FontWeight.w900,
             letterSpacing: -0.6,
@@ -430,8 +433,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                     child: SvgPicture.asset(
                       'assets/icons/messages.svg',
                       package: 'talq_flutter',
-                      colorFilter: const ColorFilter.mode(
-                        Colors.white,
+                      colorFilter: ColorFilter.mode(
+                        theme.userTextColor,
                         BlendMode.srcIn,
                       ),
                       width: 22,

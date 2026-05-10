@@ -477,21 +477,23 @@ class _SubmitButton extends StatelessWidget {
         onPressed: submitting ? null : onPressed,
         style: ElevatedButton.styleFrom(
           backgroundColor: theme.primaryColor,
-          foregroundColor: Colors.white,
+          foregroundColor: theme.userTextColor,
           disabledBackgroundColor: theme.primaryColor.withValues(alpha: 0.5),
-          disabledForegroundColor: Colors.white,
+          disabledForegroundColor: theme.userTextColor,
           elevation: 0,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(14),
           ),
         ),
         child: submitting
-            ? const SizedBox(
+            ? SizedBox(
                 width: 22,
                 height: 22,
                 child: CircularProgressIndicator(
                   strokeWidth: 2.4,
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                  valueColor: AlwaysStoppedAnimation<Color>(
+                    theme.userTextColor,
+                  ),
                 ),
               )
             : const Text(

@@ -767,10 +767,10 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       backgroundColor: theme.primaryColor,
       child: Text(
         initial,
-        style: const TextStyle(
+        style: TextStyle(
           fontFamily: 'Inter',
           package: 'talq_flutter',
-          color: Colors.white,
+          color: theme.userTextColor,
           fontSize: 16,
           fontWeight: FontWeight.w700,
         ),

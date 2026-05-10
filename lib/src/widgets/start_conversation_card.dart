@@ -167,19 +167,19 @@ class StartConversationCard extends StatelessWidget {
                             child: Text(
                               controller.workspace?.startConversationCtaLabel ??
                                   'Start new conversation',
-                              style: const TextStyle(
+                              style: TextStyle(
                                 fontFamily: 'Inter',
                                 package: 'talq_flutter',
-                                color: Colors.white,
+                                color: theme.userTextColor,
                                 fontSize: 16,
                                 fontWeight: FontWeight.w700,
                                 letterSpacing: -0.3,
                               ),
                             ),
                           ),
-                          const Icon(
+                          Icon(
                             Icons.arrow_forward_rounded,
-                            color: Colors.white,
+                            color: theme.userTextColor,
                             size: 20,
                           ),
                         ],
