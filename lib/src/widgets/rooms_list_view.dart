@@ -28,6 +28,11 @@ class _RoomsListViewState extends State<RoomsListView> {
   @override
   void initState() {
     super.initState();
+    // Force light status-bar icons immediately on Android. AnnotatedRegion
+    // alone doesn't always apply on the first frame when the SDK is opened
+    // as a modal/bottom sheet, leaving the host app's status bar style
+    // visible behind the purple hero until the user navigates.
+    SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle.light);
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       _bootstrapHomeData();
