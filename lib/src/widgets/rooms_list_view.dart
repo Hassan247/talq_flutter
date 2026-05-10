@@ -335,10 +335,7 @@ class _RoomsListViewState extends State<RoomsListView> {
             'assets/images/monosend_logo.svg',
             package: 'talq_flutter',
             height: 36,
-            colorFilter: ColorFilter.mode(
-              theme.userTextColor,
-              BlendMode.srcIn,
-            ),
+            colorFilter: ColorFilter.mode(theme.userTextColor, BlendMode.srcIn),
           ),
         ),
       );
