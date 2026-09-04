@@ -157,6 +157,7 @@ class TalqGraphqlDocuments {
               delivered
               reactions
               deletedAt
+              editedAt
               deletedBy
               replyTo {
                 id
@@ -201,6 +202,7 @@ class TalqGraphqlDocuments {
         delivered
         reactions
         deletedAt
+        editedAt
         deletedBy
         replyTo {
           id
@@ -262,6 +264,7 @@ class TalqGraphqlDocuments {
         delivered
         reactions
         deletedAt
+        editedAt
         deletedBy
         room {
           id
@@ -285,6 +288,7 @@ class TalqGraphqlDocuments {
         read
         reactions
         deletedAt
+        editedAt
         deletedBy
         replyTo {
           id

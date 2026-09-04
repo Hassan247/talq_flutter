@@ -1721,7 +1721,11 @@ class _ChatBubble extends StatelessWidget {
                                         mainAxisSize: MainAxisSize.min,
                                         children: [
                                           Text(
-                                            timeStr,
+                                            (message.editedAt != null &&
+                                                        !message.isDeleted
+                                                    ? 'edited \u00b7 '
+                                                    : '') +
+                                                timeStr,
                                             style: theme.timestampStyle
                                                 .copyWith(
                                                   color: isMe

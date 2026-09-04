@@ -1,3 +1,7 @@
+## 1.2.2
+
+- Show an "edited" marker on messages the agent has rewritten.
+
 ## 1.2.1
 
 - Quoted-message panel restyled to match the dashboard (inset accent bar, reply glyph, "You" for your own quoted message).

@@ -286,6 +286,7 @@ class TalqController extends ChangeNotifier {
         isUploading: false,
         deletedAt: serverMessage.deletedAt ?? existingMessage.deletedAt,
         deletedBy: serverMessage.deletedBy ?? existingMessage.deletedBy,
+        editedAt: serverMessage.editedAt ?? existingMessage.editedAt,
       );
     }
 
@@ -1415,6 +1416,7 @@ class TalqController extends ChangeNotifier {
                   reactions: updated.reactions,
                   deletedAt: updated.deletedAt,
                   deletedBy: updated.deletedBy,
+                  editedAt: updated.editedAt,
                 );
                 _cacheCurrentRoomMessages();
                 notifyListeners();

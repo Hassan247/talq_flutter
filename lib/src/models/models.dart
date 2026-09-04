@@ -92,6 +92,7 @@ class TalqMessage {
   final bool isUploading;
   final DateTime? deletedAt;
   final String? deletedBy;
+  final DateTime? editedAt;
 
   TalqMessage({
     required this.id,
@@ -112,6 +113,7 @@ class TalqMessage {
     this.isUploading = false,
     this.deletedAt,
     this.deletedBy,
+    this.editedAt,
   });
 
   factory TalqMessage.fromJson(Map<String, dynamic> json) {
@@ -147,6 +149,9 @@ class TalqMessage {
             ? DateTime.tryParse(json['deletedAt'])
             : null,
         deletedBy: json['deletedBy'],
+        editedAt: json['editedAt'] != null
+            ? DateTime.tryParse(json['editedAt'])
+            : null,
       );
     } catch (e) {
       if (kDebugMode) {
@@ -196,6 +201,7 @@ class TalqMessage {
       'replyTo': replyTo?.toJson(),
       'deletedAt': deletedAt?.toIso8601String(),
       'deletedBy': deletedBy,
+      'editedAt': editedAt?.toIso8601String(),
     };
   }
 
@@ -219,6 +225,7 @@ class TalqMessage {
     Map<String, dynamic>? reactions,
     DateTime? deletedAt,
     String? deletedBy,
+    DateTime? editedAt,
   }) {
     return TalqMessage(
       id: id ?? this.id,
@@ -239,6 +246,7 @@ class TalqMessage {
       isUploading: isUploading ?? this.isUploading,
       deletedAt: deletedAt ?? this.deletedAt,
       deletedBy: deletedBy ?? this.deletedBy,
+      editedAt: editedAt ?? this.editedAt,
     );
   }
 }
