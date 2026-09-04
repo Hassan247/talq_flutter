@@ -499,6 +499,16 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                             letterSpacing: -0.2,
                                                           ),
                                                     ),
+                                                    // lift the block clear of
+                                                    // the composer while the
+                                                    // keyboard is up
+                                                    if (MediaQuery.of(
+                                                          context,
+                                                        ).viewInsets.bottom >
+                                                        0)
+                                                      const SizedBox(
+                                                        height: 88,
+                                                      ),
                                                   ],
                                                 ),
                                         ),
@@ -628,9 +638,15 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                   // conversation is closed
                                                   enabled:
                                                       controller.roomStatus !=
-                                                      models
-                                                          .RoomStatus
-                                                          .resolved,
+                                                          models
+                                                              .RoomStatus
+                                                              .resolved &&
+                                                      // system notices are
+                                                      // not quotable
+                                                      message.senderType !=
+                                                          models
+                                                              .SenderType
+                                                              .system,
                                                   onReply: () {
                                                     controller.setReplyingTo(
                                                       message,
@@ -643,8 +659,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                           _,
                                                         ) {
                                                           if (mounted) {
-                                                            _messageFocus
-                                                                .requestFocus();
+                                                            FocusScope.of(
+                                                              context,
+                                                            ).requestFocus(
+                                                              _messageFocus,
+                                                            );
                                                           }
                                                         });
                                                   },
@@ -1840,8 +1859,12 @@ class _ChatBubble extends StatelessWidget {
                     ],
                   ),
                 ),
+                // A deleted message is a hollow outlined bubble, so it gets
+                // no solid tail - that would leave a filled nub hanging off an
+                // empty bubble.
                 if (isLastInGroup &&
-                    message.senderType != models.SenderType.system)
+                    message.senderType != models.SenderType.system &&
+                    !message.isDeleted)
                   Positioned(
                     bottom: 0,
                     right: isMe ? -8 : null,
