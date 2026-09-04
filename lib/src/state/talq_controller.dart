@@ -792,7 +792,13 @@ class TalqController extends ChangeNotifier {
       afterCursor: afterCursor,
     );
 
-    if (!isLoadMore && currentFetchVersion != _fetchVersion) {
+    // Only discard the response if we've since navigated to a different room.
+    // Keying this on the version alone meant two racing fetches for the SAME
+    // room could both be thrown away, leaving the thread showing "No messages
+    // yet" until it was reopened.
+    if (!isLoadMore &&
+        currentFetchVersion != _fetchVersion &&
+        targetRoomId != _roomId) {
       return;
     }
 
