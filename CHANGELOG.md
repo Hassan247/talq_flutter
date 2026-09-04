@@ -1,3 +1,7 @@
+## 1.2.1
+
+- Quoted-message panel restyled to match the dashboard (inset accent bar, reply glyph, "You" for your own quoted message).
+
 ## 1.2.0
 
 - Fix messages from one conversation appearing inside another (thread and cache

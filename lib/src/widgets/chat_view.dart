@@ -1870,53 +1870,80 @@ class _ChatBubble extends StatelessWidget {
         quote.senderName ??
         (quote.senderType == models.SenderType.visitor ? 'VISITOR' : 'AGENT');
 
+    final accent = isMe ? Colors.white : theme.primaryColor;
+    final label = quote.senderType == models.SenderType.visitor
+        ? 'You'
+        : senderName;
+
+    // Dashboard style: a soft rounded panel with a free-standing accent bar
+    // inside it, not a left border (which the corner radius bends).
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.fromLTRB(10, 8, 12, 8),
       decoration: BoxDecoration(
         color: isMe
-            ? Colors.black.withValues(alpha: 0.1)
-            : theme.backgroundColor.withValues(alpha: 0.6),
+            ? Colors.white.withValues(alpha: 0.12)
+            : Colors.black.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border(
-          left: BorderSide(
-            color: isMe
-                ? Colors.white.withValues(alpha: 0.4)
-                : theme.primaryColor,
-            width: 3.5,
-          ),
-        ),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            senderName,
-            style: theme.titleStyle.copyWith(
-              fontSize: 11,
-              fontWeight: FontWeight.w800,
-              color: isMe ? Colors.white : theme.primaryColor,
-              letterSpacing: 0.1,
+      child: IntrinsicHeight(
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Container(
+              width: 3,
+              decoration: BoxDecoration(
+                color: isMe ? Colors.white.withValues(alpha: 0.75) : accent,
+                borderRadius: BorderRadius.circular(2),
+              ),
             ),
-          ),
-          const SizedBox(height: 3),
-          Text(
-            quoteIsImage
-                ? 'Sent an image'
-                : quoteIsDocument
-                ? 'Sent a document'
-                : quote.content,
-            maxLines: 2,
-            overflow: TextOverflow.ellipsis,
-            style: theme.subtitleStyle.copyWith(
-              fontSize: 13,
-              height: 1.3,
-              color: isMe
-                  ? Colors.white.withValues(alpha: 0.85)
-                  : theme.subtitleStyle.color?.withValues(alpha: 0.8),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.reply_rounded, size: 14, color: accent),
+                      const SizedBox(width: 4),
+                      Flexible(
+                        child: Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: theme.titleStyle.copyWith(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: accent,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 3),
+                  Text(
+                    quoteIsImage
+                        ? 'Sent an image'
+                        : quoteIsDocument
+                        ? 'Sent a document'
+                        : quote.content,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: theme.subtitleStyle.copyWith(
+                      fontSize: 13,
+                      height: 1.3,
+                      color: isMe
+                          ? Colors.white.withValues(alpha: 0.85)
+                          : theme.subtitleStyle.color?.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
