@@ -167,23 +167,30 @@ class _RoomsListViewState extends State<RoomsListView> {
       fontSize: 12,
     );
     return Center(
-      child: Text.rich(
-        TextSpan(
-          children: [
-            TextSpan(
-              text: 'Powered by ',
-              style: base.copyWith(fontWeight: FontWeight.w500, color: muted),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            'Powered by',
+            style: base.copyWith(fontWeight: FontWeight.w500, color: muted),
+          ),
+          const SizedBox(width: 5),
+          SvgPicture.asset(
+            'assets/icons/talq-logo.svg',
+            package: 'talq_flutter',
+            height: 14,
+            width: 14,
+          ),
+          const SizedBox(width: 3),
+          Text(
+            'Talq',
+            style: base.copyWith(
+              fontWeight: FontWeight.w800,
+              letterSpacing: -0.1,
+              color: muted,
             ),
-            TextSpan(
-              text: 'Talq',
-              style: base.copyWith(
-                fontWeight: FontWeight.w800,
-                letterSpacing: -0.1,
-                color: muted,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

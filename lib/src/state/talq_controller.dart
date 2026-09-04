@@ -18,6 +18,10 @@ class TalqController extends ChangeNotifier {
   final TalqUseCases _useCases;
 
   List<TalqMessage> _messages = [];
+  // The room `_messages` currently belongs to. Tracked separately from
+  // `_roomId` because initialize()/fetchRooms reassign `_roomId` to the
+  // active room without touching the thread on screen.
+  String? _messagesRoomId;
   final Map<String, List<TalqMessage>> _messageCache = {};
   List<TalqRoom> _rooms = [];
   static const int _roomListChunkSize = 15;
@@ -210,8 +214,12 @@ class TalqController extends ChangeNotifier {
   }
 
   void _cacheCurrentRoomMessages() {
-    if (_roomId == null) return;
-    _cacheMessagesForRoom(_roomId!, _messages);
+    // Key on the thread's own room, never `_roomId`: caching room B's
+    // messages under room A's id is how one chat's history leaked into
+    // another.
+    final owner = _messagesRoomId;
+    if (owner == null) return;
+    _cacheMessagesForRoom(owner, _messages);
   }
 
   void _syncVisibleRoomCount({bool reset = false}) {
@@ -234,9 +242,14 @@ class TalqController extends ChangeNotifier {
   List<TalqMessage> _mergeMessagesNewestFirst({
     required List<TalqMessage> localMessages,
     required List<TalqMessage> serverMessages,
+    String? roomId,
   }) {
     final mergedById = <String, TalqMessage>{
-      for (final message in localMessages) message.id: message,
+      for (final message in localMessages)
+        if (roomId == null ||
+            message.roomId == null ||
+            message.roomId == roomId)
+          message.id: message,
     };
 
     for (final serverMessage in serverMessages) {
@@ -266,6 +279,8 @@ class TalqController extends ChangeNotifier {
             : existingMessage.reactions,
         localFilePath: existingMessage.localFilePath,
         isUploading: false,
+        deletedAt: serverMessage.deletedAt ?? existingMessage.deletedAt,
+        deletedBy: serverMessage.deletedBy ?? existingMessage.deletedBy,
       );
     }
 
@@ -558,6 +573,7 @@ class TalqController extends ChangeNotifier {
   void prepareNewConversation() {
     _fetchVersion++;
     _roomId = null;
+    _messagesRoomId = null;
     _messages = [];
     _hasMoreMessages = false;
     _isRoomLoading = false;
@@ -599,6 +615,7 @@ class TalqController extends ChangeNotifier {
       _sortRooms();
       _syncVisibleRoomCount();
       _roomId = newRoom.id;
+      _messagesRoomId = newRoom.id;
       _roomStatus = newRoom.status;
       _messages = [];
       _hasMoreMessages = false;
@@ -683,6 +700,7 @@ class TalqController extends ChangeNotifier {
     _isInitialized = false;
     _visitor = null;
     _roomId = null;
+    _messagesRoomId = null;
     _rooms = [];
     _visibleRoomCount = 0;
     _isFetchingMoreRooms = false;
@@ -733,7 +751,11 @@ class TalqController extends ChangeNotifier {
     final targetRoomId = roomId ?? _roomId;
     if (targetRoomId == null) return;
 
-    final isSwitchingRoom = !isLoadMore && roomId != null && roomId != _roomId;
+    // Switch whenever the thread on screen belongs to a different room than
+    // the one requested. Compared against _messagesRoomId, not _roomId: the
+    // latter is reassigned by initialize() without clearing _messages, so a
+    // fetch for room A could merge into room B's list.
+    final isSwitchingRoom = !isLoadMore && targetRoomId != _messagesRoomId;
 
     if (isLoadMore) {
       if (_isFetchingMore || !_hasMoreMessages) return;
@@ -743,6 +765,7 @@ class TalqController extends ChangeNotifier {
       _fetchVersion++;
       if (isSwitchingRoom) {
         _roomId = targetRoomId;
+        _messagesRoomId = targetRoomId;
         _hasMoreMessages = false;
         // Seed status/rating from the room we already hold in the list, so the
         // closed + rating banner renders the moment the conversation opens.
@@ -863,6 +886,7 @@ class TalqController extends ChangeNotifier {
     _messages = _mergeMessagesNewestFirst(
       localMessages: _messages,
       serverMessages: newMessages,
+      roomId: targetRoomId,
     );
 
     if (!isLoadMore) {
@@ -944,6 +968,7 @@ class TalqController extends ChangeNotifier {
         _rooms.insert(0, newRoom);
         _sortRooms();
         _roomId = newRoom.id;
+        _messagesRoomId = newRoom.id;
         _roomStatus = newRoom.status;
         _showRatingPrompt = false;
         _isRatingSubmitted = false;
@@ -1055,6 +1080,7 @@ class TalqController extends ChangeNotifier {
 
       if (_roomId == null) {
         _roomId = data['room']['id'];
+        _messagesRoomId = _roomId;
         _startTypingSubscription();
       }
 
@@ -1278,7 +1304,7 @@ class TalqController extends ChangeNotifier {
             _showInAppNotification(newMessage);
           }
 
-          if (newMessage.roomId == _roomId) {
+          if (newMessage.roomId == _roomId && _messagesRoomId == _roomId) {
             final existingIdx = _messages.indexWhere((m) {
               return m.id == newMessage.id ||
                   (m.id.startsWith('temp-') &&
@@ -1357,7 +1383,7 @@ class TalqController extends ChangeNotifier {
             if (raw == null) return;
             final updated = TalqMessage.fromJson(raw);
 
-            if (updated.roomId == _roomId) {
+            if (updated.roomId == _roomId && _messagesRoomId == _roomId) {
               final idx = _messages.indexWhere((m) => m.id == updated.id);
               if (idx != -1) {
                 final old = _messages[idx];

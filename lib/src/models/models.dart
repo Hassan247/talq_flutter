@@ -191,6 +191,11 @@ class TalqMessage {
       'createdAt': createdAt.toIso8601String(),
       'read': isRead,
       'delivered': isDelivered,
+      if (roomId != null) 'room': {'id': roomId},
+      'reactions': reactions,
+      'replyTo': replyTo?.toJson(),
+      'deletedAt': deletedAt?.toIso8601String(),
+      'deletedBy': deletedBy,
     };
   }
 
@@ -476,7 +481,10 @@ class TalqWorkspace {
         'Ask a question, check previous chats, or browse quick answers.',
       ),
       replyTimeLabel: pickStr('replyTimeLabel', 'Typical reply time'),
-      defaultReplyTimeText: pickStr('defaultReplyTimeText', 'Replies in minutes'),
+      defaultReplyTimeText: pickStr(
+        'defaultReplyTimeText',
+        'Replies in minutes',
+      ),
       startConversationCtaLabel: pickStr(
         'startConversationCtaLabel',
         'Start new conversation',
@@ -492,7 +500,10 @@ class TalqWorkspace {
         'emptyConversationsSubtitle',
         'Your messages will appear here.',
       ),
-      messageInputPlaceholder: pickStr('messageInputPlaceholder', 'Type something'),
+      messageInputPlaceholder: pickStr(
+        'messageInputPlaceholder',
+        'Type something',
+      ),
       showFaqSection: json['showFaqSection'] ?? true,
       showStartConversationCard: json['showStartConversationCard'] ?? true,
       showAgentAvatars: json['showAgentAvatars'] ?? true,

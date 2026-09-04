@@ -10,19 +10,15 @@ class TalqBloc extends Bloc<TalqEvent, TalqState> {
   final bool disposeControllerOnClose;
   late final VoidCallback _controllerListener;
 
-  TalqBloc({
-    required this.controller,
-    this.disposeControllerOnClose = false,
-  }) : super(TalqState.fromController(controller)) {
+  TalqBloc({required this.controller, this.disposeControllerOnClose = false})
+    : super(TalqState.fromController(controller)) {
     on<TalqSyncRequested>(_onSyncRequested);
     on<TalqInitializeRequested>(_onInitializeRequested);
     on<TalqFetchRoomsRequested>(_onFetchRoomsRequested);
     on<TalqFetchMessagesRequested>(_onFetchMessagesRequested);
     on<TalqSendMessageRequested>(_onSendMessageRequested);
     on<TalqSendFileRequested>(_onSendFileRequested);
-    on<TalqPrepareNewConversationRequested>(
-      _onPrepareNewConversationRequested,
-    );
+    on<TalqPrepareNewConversationRequested>(_onPrepareNewConversationRequested);
     on<TalqStartNewConversationRequested>(_onStartNewConversationRequested);
     on<TalqFetchFaqsRequested>(_onFetchFaqsRequested);
     on<TalqRateRoomRequested>(_onRateRoomRequested);

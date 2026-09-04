@@ -17,6 +17,7 @@ import '../state/talq_controller.dart';
 import '../theme/talq_theme.dart';
 import 'media_preview_page.dart';
 import 'media_viewer_page.dart';
+import 'message_actions_overlay.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
 import 'shared_widgets.dart';
@@ -648,21 +649,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                     controller.setReplyingTo(
                                                       message,
                                                     );
-                                                    // Defer to after the reply bar is laid out: focus requested
-                                                    // synchronously during the rebuild that setReplyingTo triggers
-                                                    // gets dropped, so the keyboard never came up.
-                                                    WidgetsBinding.instance
-                                                        .addPostFrameCallback((
-                                                          _,
-                                                        ) {
-                                                          if (mounted) {
-                                                            FocusScope.of(
-                                                              context,
-                                                            ).requestFocus(
-                                                              _messageFocus,
-                                                            );
-                                                          }
-                                                        });
+                                                    _focusComposer();
                                                   },
                                                   child: _ChatBubble(
                                                     message: message,
@@ -672,24 +659,23 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                     isLastInGroup:
                                                         isLastInGroup,
                                                     onSwipe: () {},
-                                                    // React to agent/bot messages only - never your own.
                                                     onLongPress:
-                                                        (message.senderType ==
-                                                                    models
-                                                                        .SenderType
-                                                                        .agent ||
-                                                                message.senderType ==
-                                                                    models
-                                                                        .SenderType
-                                                                        .bot) &&
+                                                        message.senderType !=
+                                                                models
+                                                                    .SenderType
+                                                                    .system &&
                                                             !message.isDeleted
                                                         ? () {
                                                             HapticFeedback.mediumImpact();
-                                                            _showReactions(
+                                                            _showMessageActions(
                                                               context,
                                                               controller,
                                                               message,
                                                               theme,
+                                                              isFirstInGroup:
+                                                                  isFirstInGroup,
+                                                              isLastInGroup:
+                                                                  isLastInGroup,
                                                             );
                                                           }
                                                         : () {},
@@ -1239,6 +1225,76 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     );
   }
 
+  /// Bring the keyboard up for the composer. Deferred a frame so it lands
+  /// after the rebuild that setReplyingTo triggers. If the node still holds
+  /// focus while the keyboard is down (iOS drag-to-dismiss, the keyboard's own
+  /// hide key), requestFocus is a no-op — which is why only the FIRST swipe
+  /// used to open the keyboard — so ask the platform to show it directly.
+  void _focusComposer() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (_messageFocus.hasFocus) {
+        SystemChannels.textInput.invokeMethod('TextInput.show');
+      } else {
+        FocusScope.of(context).requestFocus(_messageFocus);
+      }
+    });
+  }
+
+  void _showMessageActions(
+    BuildContext context,
+    TalqController controller,
+    models.TalqMessage message,
+    TalqTheme theme, {
+    required bool isFirstInGroup,
+    required bool isLastInGroup,
+  }) {
+    final me = controller.visitor?.id;
+    final mine = <String>{
+      for (final e in message.reactions.entries)
+        if (me != null && e.value is List && (e.value as List).contains(me))
+          e.key,
+    };
+    final isAgentSide =
+        message.senderType == models.SenderType.agent ||
+        message.senderType == models.SenderType.bot;
+
+    showTalqMessageActions(
+      context: context,
+      theme: theme,
+      preview: _ChatBubble(
+        message: message,
+        theme: theme,
+        isFirstInGroup: isFirstInGroup,
+        isLastInGroup: isLastInGroup,
+        onSwipe: () {},
+        onLongPress: () {},
+        preview: true,
+      ),
+      isRightAligned: message.isMe,
+      // visitors react to the agent's messages, never their own
+      canReact: isAgentSide,
+      canReply: controller.roomStatus != models.RoomStatus.resolved,
+      canCopy:
+          message.contentType == models.ContentType.text &&
+          message.content.trim().isNotEmpty,
+      myReactions: mine,
+      onToggleReaction: (emoji) {
+        HapticFeedback.lightImpact();
+        if (mine.contains(emoji)) {
+          controller.removeReaction(message.id, emoji);
+        } else {
+          controller.addReaction(message.id, emoji);
+        }
+      },
+      onReply: () {
+        controller.setReplyingTo(message);
+        _focusComposer();
+      },
+      copyText: message.content,
+    );
+  }
+
   void _handleSend(TalqController controller) {
     if (_messageController.text.trim().isEmpty) return;
     controller.sendMessage(_messageController.text);
@@ -1333,191 +1389,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
       ),
     );
   }
-
-  void _showReactions(
-    BuildContext context,
-    TalqController controller,
-    models.TalqMessage message,
-    TalqTheme theme,
-  ) {
-    final reactions = ['❤️', '👍', '😂', '😮', '😢', '🔥'];
-
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.transparent,
-      builder: (context) => Container(
-        margin: const EdgeInsets.all(16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: theme.surfaceColor,
-          borderRadius: BorderRadius.circular(40),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 4),
-            ),
-          ],
-        ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: [
-            for (final emoji in reactions)
-              InkWell(
-                onTap: () {
-                  Navigator.pop(context);
-                  controller.addReaction(message.id, emoji);
-                },
-                customBorder: const CircleBorder(),
-                child: Padding(
-                  padding: const EdgeInsets.all(6),
-                  child: Text(
-                    emoji,
-                    style: const TextStyle(
-                      fontFamily: 'Inter',
-                      package: 'talq_flutter',
-                      fontSize: 28,
-                    ),
-                  ),
-                ),
-              ),
-            InkWell(
-              onTap: () {
-                Navigator.pop(context);
-                _showAllReactions(context, controller, message, theme);
-              },
-              customBorder: const CircleBorder(),
-              child: Container(
-                width: 40,
-                height: 40,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: theme.primaryColor.withValues(alpha: 0.08),
-                ),
-                child: Icon(
-                  Icons.add_rounded,
-                  size: 22,
-                  color: theme.primaryColor,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-/// Full emoji grid, opened from the "+" in the quick reaction bar.
-void _showAllReactions(
-  BuildContext context,
-  TalqController controller,
-  models.TalqMessage message,
-  TalqTheme theme,
-) {
-  const all = [
-    '\u{1F44D}',
-    '\u{2764}\u{FE0F}',
-    '\u{1F602}',
-    '\u{1F62E}',
-    '\u{1F622}',
-    '\u{1F64F}',
-    '\u{1F525}',
-    '\u{1F389}',
-    '\u{1F44F}',
-    '\u{1F4AF}',
-    '\u{2705}',
-    '\u{1F91D}',
-    '\u{1F60A}',
-    '\u{1F60D}',
-    '\u{1F914}',
-    '\u{1F605}',
-    '\u{1F60E}',
-    '\u{1F973}',
-    '\u{1F607}',
-    '\u{1F64C}',
-    '\u{1F4AA}',
-    '\u{1F44C}',
-    '\u{2728}',
-    '\u{2B50}',
-    '\u{1F611}',
-    '\u{1F615}',
-    '\u{1F624}',
-    '\u{1F62D}',
-    '\u{1F631}',
-    '\u{1F92F}',
-    '\u{1F494}',
-    '\u{26A0}\u{FE0F}',
-  ];
-
-  showModalBottomSheet(
-    context: context,
-    backgroundColor: Colors.transparent,
-    isScrollControlled: true,
-    builder: (sheetContext) => Container(
-      decoration: BoxDecoration(
-        color: theme.surfaceColor,
-        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(height: 10),
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.withValues(alpha: 0.3),
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-            Padding(
-              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
-              child: Align(
-                alignment: Alignment.centerLeft,
-                child: Text(
-                  'Pick a reaction',
-                  style: theme.titleStyle.copyWith(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                  ),
-                ),
-              ),
-            ),
-            Flexible(
-              child: GridView.count(
-                crossAxisCount: 8,
-                shrinkWrap: true,
-                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
-                children: [
-                  for (final emoji in all)
-                    InkWell(
-                      onTap: () {
-                        Navigator.pop(sheetContext);
-                        controller.addReaction(message.id, emoji);
-                      },
-                      customBorder: const CircleBorder(),
-                      child: Center(
-                        child: Text(
-                          emoji,
-                          style: const TextStyle(
-                            fontFamily: 'Inter',
-                            package: 'talq_flutter',
-                            fontSize: 24,
-                          ),
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    ),
-  );
 }
 
 /// WhatsApp-style swipe-to-reply: the bubble tracks your finger as you pull it
@@ -1652,6 +1523,9 @@ class _ChatBubble extends StatelessWidget {
   final VoidCallback onLongPress;
   final TalqTheme theme;
 
+  /// Rendered inside the long-press overlay: bubble only, no reactions.
+  final bool preview;
+
   const _ChatBubble({
     required this.message,
     required this.theme,
@@ -1659,6 +1533,7 @@ class _ChatBubble extends StatelessWidget {
     required this.onLongPress,
     this.isFirstInGroup = true,
     this.isLastInGroup = true,
+    this.preview = false,
   });
 
   @override
@@ -1694,191 +1569,217 @@ class _ChatBubble extends StatelessWidget {
           ],
 
           Flexible(
-            child: Stack(
-              clipBehavior: Clip.none,
+            child: Column(
+              crossAxisAlignment: isMe
+                  ? CrossAxisAlignment.end
+                  : CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
-                GestureDetector(
-                  onLongPress: onLongPress,
-                  child: Column(
-                    crossAxisAlignment: isMe
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
-                    children: [
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.70,
-                        ),
-                        child: Container(
-                          padding: isImage
-                              ? const EdgeInsets.all(4)
-                              : const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
-                                ),
-                          decoration: BoxDecoration(
-                            // A deleted message reads as a hollow "ghost"
-                            // bubble rather than a normal filled one.
-                            color: message.isDeleted
-                                ? Colors.transparent
-                                : (isMe
-                                      ? theme.userBubbleColor
-                                      : theme.agentBubbleColor),
-                            border: message.isDeleted
-                                ? Border.all(
-                                    color: theme.agentTextColor.withValues(
-                                      alpha: 0.22,
-                                    ),
-                                    width: 1,
-                                  )
-                                : null,
-                            borderRadius: BorderRadius.only(
-                              topLeft: const Radius.circular(20),
-                              topRight: const Radius.circular(20),
-                              bottomLeft: Radius.circular(
-                                !isMe && isLastInGroup ? 4 : 20,
-                              ),
-                              bottomRight: Radius.circular(
-                                isMe && isLastInGroup ? 4 : 20,
-                              ),
+                Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    GestureDetector(
+                      onLongPress: onLongPress,
+                      child: Column(
+                        crossAxisAlignment: isMe
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
+                        children: [
+                          ConstrainedBox(
+                            constraints: BoxConstraints(
+                              maxWidth:
+                                  MediaQuery.of(context).size.width * 0.70,
                             ),
-                            boxShadow: [
-                              // Flat, big-tech chat styling: no coloured glow
-                              // behind the sender bubble, and only a hairline
-                              // lift on the agent bubble so white separates
-                              // from the near-white background.
-                              if (!isMe && !message.isDeleted)
-                                const BoxShadow(
-                                  color: Color(0x0A000000),
-                                  blurRadius: 2,
-                                  offset: Offset(0, 1),
+                            child: Container(
+                              padding: isImage
+                                  ? const EdgeInsets.all(4)
+                                  : const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 12,
+                                    ),
+                              decoration: BoxDecoration(
+                                // A deleted message reads as a hollow "ghost"
+                                // bubble rather than a normal filled one.
+                                color: message.isDeleted
+                                    ? Colors.transparent
+                                    : (isMe
+                                          ? theme.userBubbleColor
+                                          : theme.agentBubbleColor),
+                                border: message.isDeleted
+                                    ? Border.all(
+                                        color: theme.agentTextColor.withValues(
+                                          alpha: 0.22,
+                                        ),
+                                        width: 1,
+                                      )
+                                    : null,
+                                borderRadius: BorderRadius.only(
+                                  topLeft: const Radius.circular(20),
+                                  topRight: const Radius.circular(20),
+                                  bottomLeft: Radius.circular(
+                                    !isMe && isLastInGroup ? 4 : 20,
+                                  ),
+                                  bottomRight: Radius.circular(
+                                    isMe && isLastInGroup ? 4 : 20,
+                                  ),
                                 ),
-                            ],
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              if (message.replyTo != null)
-                                _buildQuote(context, isMe),
+                                boxShadow: [
+                                  // Flat, big-tech chat styling: no coloured glow
+                                  // behind the sender bubble, and only a hairline
+                                  // lift on the agent bubble so white separates
+                                  // from the near-white background.
+                                  if (!isMe && !message.isDeleted)
+                                    const BoxShadow(
+                                      color: Color(0x0A000000),
+                                      blurRadius: 2,
+                                      offset: Offset(0, 1),
+                                    ),
+                                ],
+                              ),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  if (message.replyTo != null)
+                                    _buildQuote(context, isMe),
 
-                              if (message.isDeleted)
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Icon(
-                                      Icons.do_not_disturb_on_outlined,
-                                      size: 14,
-                                      color: theme.agentTextColor.withValues(
-                                        alpha: 0.55,
+                                  if (message.isDeleted)
+                                    Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.do_not_disturb_on_outlined,
+                                          size: 14,
+                                          color: theme.agentTextColor
+                                              .withValues(alpha: 0.55),
+                                        ),
+                                        const SizedBox(width: 6),
+                                        Flexible(
+                                          child: Text(
+                                            'This message was deleted',
+                                            style: theme.bodyStyle.copyWith(
+                                              color: theme.agentTextColor
+                                                  .withValues(alpha: 0.6),
+                                              fontStyle: FontStyle.italic,
+                                            ),
+                                          ),
+                                        ),
+                                      ],
+                                    )
+                                  else if (isImage)
+                                    _buildImage(context)
+                                  else if (isAudio)
+                                    _buildAudio(context, isMe)
+                                  else if (isDocument)
+                                    _buildPdf(context)
+                                  else
+                                    Text(
+                                      message.content,
+                                      style: theme.bodyStyle.copyWith(
+                                        color: isMe
+                                            ? theme.userTextColor
+                                            : theme.agentTextColor,
                                       ),
                                     ),
-                                    const SizedBox(width: 6),
-                                    Flexible(
+                                  if (!message.isDeleted &&
+                                      (isImage || isDocument) &&
+                                      attachmentCaption.isNotEmpty) ...[
+                                    const SizedBox(height: 8),
+                                    Padding(
+                                      // Images have 4px outer padding; add 12px
+                                      // to each side so caption matches the 16px
+                                      // horizontal padding of a plain text bubble.
+                                      padding: isImage
+                                          ? const EdgeInsets.fromLTRB(
+                                              12,
+                                              0,
+                                              12,
+                                              0,
+                                            )
+                                          : EdgeInsets.zero,
                                       child: Text(
-                                        'This message was deleted',
+                                        attachmentCaption,
                                         style: theme.bodyStyle.copyWith(
-                                          color: theme.agentTextColor
-                                              .withValues(alpha: 0.6),
-                                          fontStyle: FontStyle.italic,
+                                          color: isMe
+                                              ? theme.userTextColor
+                                              : theme.agentTextColor,
                                         ),
                                       ),
                                     ),
                                   ],
-                                )
-                              else if (isImage)
-                                _buildImage(context)
-                              else if (isAudio)
-                                _buildAudio(context, isMe)
-                              else if (isDocument)
-                                _buildPdf(context)
-                              else
-                                Text(
-                                  message.content,
-                                  style: theme.bodyStyle.copyWith(
-                                    color: isMe
-                                        ? theme.userTextColor
-                                        : theme.agentTextColor,
-                                  ),
-                                ),
-                              if (!message.isDeleted &&
-                                  (isImage || isDocument) &&
-                                  attachmentCaption.isNotEmpty) ...[
-                                const SizedBox(height: 8),
-                                Padding(
-                                  // Images have 4px outer padding; add 12px
-                                  // to each side so caption matches the 16px
-                                  // horizontal padding of a plain text bubble.
-                                  padding: isImage
-                                      ? const EdgeInsets.fromLTRB(12, 0, 12, 0)
-                                      : EdgeInsets.zero,
-                                  child: Text(
-                                    attachmentCaption,
-                                    style: theme.bodyStyle.copyWith(
-                                      color: isMe
-                                          ? theme.userTextColor
-                                          : theme.agentTextColor,
+                                  Padding(
+                                    padding: isImage
+                                        ? const EdgeInsets.fromLTRB(
+                                            12,
+                                            4,
+                                            12,
+                                            8,
+                                          )
+                                        : const EdgeInsets.only(top: 4),
+                                    child: Align(
+                                      alignment: Alignment.bottomRight,
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Text(
+                                            timeStr,
+                                            style: theme.timestampStyle
+                                                .copyWith(
+                                                  color: isMe
+                                                      ? theme.userTextColor
+                                                            .withValues(
+                                                              alpha: 0.7,
+                                                            )
+                                                      : theme
+                                                            .subtitleStyle
+                                                            .color,
+                                                ),
+                                          ),
+                                          if (isMe) ...[
+                                            const SizedBox(width: 4),
+                                            _buildStatusTicks(),
+                                          ],
+                                        ],
+                                      ),
                                     ),
                                   ),
-                                ),
-                              ],
-                              Padding(
-                                padding: isImage
-                                    ? const EdgeInsets.fromLTRB(12, 4, 12, 8)
-                                    : const EdgeInsets.only(top: 4),
-                                child: Align(
-                                  alignment: Alignment.bottomRight,
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text(
-                                        timeStr,
-                                        style: theme.timestampStyle.copyWith(
-                                          color: isMe
-                                              ? theme.userTextColor.withValues(
-                                                  alpha: 0.7,
-                                                )
-                                              : theme.subtitleStyle.color,
-                                        ),
-                                      ),
-                                      if (isMe) ...[
-                                        const SizedBox(width: 4),
-                                        _buildStatusTicks(),
-                                      ],
-                                    ],
-                                  ),
-                                ),
+                                ],
                               ),
-                            ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    // A deleted message is a hollow outlined bubble, so it gets
+                    // no solid tail - that would leave a filled nub hanging off an
+                    // empty bubble.
+                    if (isLastInGroup &&
+                        message.senderType != models.SenderType.system &&
+                        !message.isDeleted)
+                      Positioned(
+                        bottom: 0,
+                        right: isMe ? -8 : null,
+                        left: !isMe ? -8 : null,
+                        child: IgnorePointer(
+                          child: CustomPaint(
+                            size: const Size(14, 14),
+                            painter: _WhatsAppTailPainter(
+                              color: isMe
+                                  ? theme.userBubbleColor
+                                  : theme.agentBubbleColor,
+                              isRight: isMe,
+                              tailUp: false,
+                            ),
                           ),
                         ),
                       ),
-                      if (message.reactions.isNotEmpty && !message.isDeleted)
-                        _buildReactionsDisplay(),
-                    ],
-                  ),
+                  ],
                 ),
-                // A deleted message is a hollow outlined bubble, so it gets
-                // no solid tail - that would leave a filled nub hanging off an
-                // empty bubble.
-                if (isLastInGroup &&
-                    message.senderType != models.SenderType.system &&
+                // Below the tail stack, not inside it: with the reactions in
+                // the stack the tail anchored to the chip instead of the bubble.
+                if (!preview &&
+                    message.reactions.isNotEmpty &&
                     !message.isDeleted)
-                  Positioned(
-                    bottom: 0,
-                    right: isMe ? -8 : null,
-                    left: !isMe ? -8 : null,
-                    child: IgnorePointer(
-                      child: CustomPaint(
-                        size: const Size(14, 14),
-                        painter: _WhatsAppTailPainter(
-                          color: isMe
-                              ? theme.userBubbleColor
-                              : theme.agentBubbleColor,
-                          isRight: isMe,
-                          tailUp: false,
-                        ),
-                      ),
-                    ),
-                  ),
+                  _buildReactionsDisplay(context, isMe),
               ],
             ),
           ),
@@ -1889,37 +1790,49 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
-  Widget _buildReactionsDisplay() {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
-      decoration: BoxDecoration(
-        color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 4,
-            offset: const Offset(0, 2),
-          ),
+  Widget _buildReactionsDisplay(BuildContext context, bool isMe) {
+    final entries = message.reactions.entries
+        .where((e) => e.value is! List || (e.value as List).isNotEmpty)
+        .toList();
+    if (entries.isEmpty) return const SizedBox.shrink();
+
+    final controller = context.read<TalqController>();
+    final me = controller.visitor?.id;
+
+    return Padding(
+      // keep clear of the tail on the outer edge
+      padding: EdgeInsets.only(top: 4, left: isMe ? 0 : 6, right: isMe ? 6 : 0),
+      child: Wrap(
+        spacing: 6,
+        runSpacing: 6,
+        alignment: isMe ? WrapAlignment.end : WrapAlignment.start,
+        children: [
+          for (final e in entries)
+            _ReactionPill(
+              emoji: e.key,
+              count: e.value is List ? (e.value as List).length : 1,
+              mine:
+                  me != null &&
+                  e.value is List &&
+                  (e.value as List).contains(me),
+              accent: theme.primaryColor,
+              // visitors react to the agent's messages only
+              onTap: isMe
+                  ? null
+                  : () {
+                      HapticFeedback.lightImpact();
+                      final mine =
+                          me != null &&
+                          e.value is List &&
+                          (e.value as List).contains(me);
+                      if (mine) {
+                        controller.removeReaction(message.id, e.key);
+                      } else {
+                        controller.addReaction(message.id, e.key);
+                      }
+                    },
+            ),
         ],
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: message.reactions.keys
-            .map(
-              (emoji) => Padding(
-                padding: const EdgeInsets.symmetric(horizontal: 1),
-                child: Text(
-                  emoji,
-                  style: const TextStyle(
-                    fontFamily: 'Inter',
-                    package: 'talq_flutter',
-                    fontSize: 12,
-                  ),
-                ),
-              ),
-            )
-            .toList(),
       ),
     );
   }
@@ -2559,6 +2472,63 @@ class _MessageGroup {
   final List<models.TalqMessage> messages;
 
   _MessageGroup({required this.date, required this.messages});
+}
+
+class _ReactionPill extends StatelessWidget {
+  final String emoji;
+  final int count;
+  final bool mine;
+  final Color accent;
+  final VoidCallback? onTap;
+
+  const _ReactionPill({
+    required this.emoji,
+    required this.count,
+    required this.mine,
+    required this.accent,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      behavior: HitTestBehavior.opaque,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        decoration: BoxDecoration(
+          color: mine
+              ? accent.withValues(alpha: 0.14)
+              : Colors.black.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(14),
+          border: Border.all(
+            color: mine
+                ? accent.withValues(alpha: 0.55)
+                : Colors.black.withValues(alpha: 0.06),
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(emoji, style: const TextStyle(fontSize: 13)),
+            if (count > 1) ...[
+              const SizedBox(width: 4),
+              Text(
+                '$count',
+                style: TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_flutter',
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: mine ? accent : Colors.black.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
 }
 
 class _WhatsAppTailPainter extends CustomPainter {
