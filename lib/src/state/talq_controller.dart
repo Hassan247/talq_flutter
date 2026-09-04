@@ -88,6 +88,8 @@ class TalqController extends ChangeNotifier {
           primaryColor: c,
           userBubbleColor: c,
           userTextColor: _onPrimary(c),
+          resolvedTextColor: TalqTheme.resolvedAccentFor(c),
+          resolvedBackgroundColor: TalqTheme.resolvedSurfaceFor(c),
         );
         notifyListeners();
       } catch (_) {}
@@ -117,6 +119,8 @@ class TalqController extends ChangeNotifier {
                 primaryColor: c,
                 userBubbleColor: c,
                 userTextColor: _onPrimary(c),
+                resolvedTextColor: TalqTheme.resolvedAccentFor(c),
+                resolvedBackgroundColor: TalqTheme.resolvedSurfaceFor(c),
               );
             } catch (_) {}
           }
@@ -448,6 +452,8 @@ class TalqController extends ChangeNotifier {
             primaryColor: c,
             userBubbleColor: c,
             userTextColor: _onPrimary(c),
+            resolvedTextColor: TalqTheme.resolvedAccentFor(c),
+            resolvedBackgroundColor: TalqTheme.resolvedSurfaceFor(c),
           );
           AuthManager.savePrimaryColor(_workspace!.primaryColor);
         } catch (_) {
@@ -1535,6 +1541,8 @@ class TalqController extends ChangeNotifier {
                 primaryColor: c,
                 userBubbleColor: c,
                 userTextColor: _onPrimary(c),
+                resolvedTextColor: TalqTheme.resolvedAccentFor(c),
+                resolvedBackgroundColor: TalqTheme.resolvedSurfaceFor(c),
               );
               AuthManager.savePrimaryColor(_workspace!.primaryColor);
               debugPrint(

@@ -169,6 +169,25 @@ class TalqTheme {
     );
   }
 
+  /// Accent for the resolved / rated banner, derived from the workspace brand
+  /// colour. Previously this was a fixed material green, which clashed badly on
+  /// non-green brands (e.g. a purple workspace). Darkened when the brand is
+  /// light so it stays legible on [resolvedSurfaceFor].
+  static Color resolvedAccentFor(Color brand) {
+    final hsl = HSLColor.fromColor(brand);
+    final lightness = hsl.lightness > 0.45 ? 0.40 : hsl.lightness;
+    return hsl.withLightness(lightness).toColor();
+  }
+
+  /// Pale tint of the workspace brand used as the resolved / rated banner
+  /// background, replacing the old fixed pale green.
+  static Color resolvedSurfaceFor(Color brand) {
+    return Color.alphaBlend(
+      brand.withValues(alpha: 0.10),
+      const Color(0xFFFFFFFF),
+    );
+  }
+
   static Color fromHex(String hexString) {
     final cleaned = hexString.replaceFirst('#', '').trim();
     if (cleaned.isEmpty || !RegExp(r'^[0-9a-fA-F]{6,8}$').hasMatch(cleaned)) {
