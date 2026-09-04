@@ -42,6 +42,7 @@ class TalqView extends StatefulWidget {
 
 class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   final TextEditingController _messageController = TextEditingController();
+  final FocusNode _messageFocus = FocusNode();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
   Timer? _typingThrottle;
@@ -160,6 +161,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     WidgetsBinding.instance.removeObserver(this);
     _controller?.setChatVisible(false);
     _messageController.dispose();
+    _messageFocus.dispose();
     _scrollController.dispose();
     _typingThrottle?.cancel();
     _dateOverlayTimer?.cancel();
@@ -592,19 +594,36 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                             .senderType !=
                                                         message.senderType;
 
-                                                return _ChatBubble(
-                                                  message: message,
+                                                return _SwipeToReply(
                                                   theme: theme,
-                                                  isFirstInGroup:
-                                                      isFirstInGroup,
-                                                  isLastInGroup: isLastInGroup,
-                                                  onSwipe: () => controller
-                                                      .setReplyingTo(message),
-                                                  // Reactions are temporarily
-                                                  // disabled at the SDK level
-                                                  // and will be re-enabled in a
-                                                  // future release.
-                                                  onLongPress: () {},
+                                                  // no quoting once the
+                                                  // conversation is closed
+                                                  enabled:
+                                                      controller.roomStatus !=
+                                                      models
+                                                          .RoomStatus
+                                                          .resolved,
+                                                  onReply: () {
+                                                    controller.setReplyingTo(
+                                                      message,
+                                                    );
+                                                    _messageFocus
+                                                        .requestFocus();
+                                                  },
+                                                  child: _ChatBubble(
+                                                    message: message,
+                                                    theme: theme,
+                                                    isFirstInGroup:
+                                                        isFirstInGroup,
+                                                    isLastInGroup:
+                                                        isLastInGroup,
+                                                    onSwipe: () {},
+                                                    // Reactions are temporarily
+                                                    // disabled at the SDK level
+                                                    // and will be re-enabled in a
+                                                    // future release.
+                                                    onLongPress: () {},
+                                                  ),
                                                 );
                                               },
                                             ),
@@ -638,13 +657,11 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                       bottomRight: Radius.circular(18),
                                       bottomLeft: Radius.circular(4),
                                     ),
-                                    boxShadow: [
+                                    boxShadow: const [
                                       BoxShadow(
-                                        color: theme.cardShadowColor.withValues(
-                                          alpha: 0.06,
-                                        ),
-                                        blurRadius: 8,
-                                        offset: const Offset(0, 2),
+                                        color: Color(0x0A000000),
+                                        blurRadius: 2,
+                                        offset: Offset(0, 1),
                                       ),
                                     ],
                                   ),
@@ -658,6 +675,8 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                             ),
                           ),
                         if (controller.replyingTo != null &&
+                            controller.roomStatus !=
+                                models.RoomStatus.resolved &&
                             !(controller.isRoomLoading &&
                                 controller.roomId != null))
                           _buildReplyOverlay(controller, theme),
@@ -941,6 +960,7 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                 alignment: Alignment.center,
                 child: TextField(
                   controller: _messageController,
+                  focusNode: _messageFocus,
                   decoration: InputDecoration(
                     hintText:
                         controller.workspace?.messageInputPlaceholder ??
@@ -1174,63 +1194,69 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         (reply.senderType == models.SenderType.visitor ? 'YOU' : 'AGENT');
 
     return Container(
-      padding: const EdgeInsets.all(12),
-      margin: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-      decoration: BoxDecoration(
-        color: theme.surfaceColor,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: theme.cardShadowColor.withValues(alpha: 0.08),
-        ),
-      ),
+      width: double.infinity,
+      color: theme.surfaceColor,
       child: IntrinsicHeight(
         child: Row(
           children: [
-            Container(
-              width: 3.5,
-              decoration: BoxDecoration(
-                color: theme.primaryColor,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
+            // flush accent bar hugging the edge, like WhatsApp's reply strip
+            Container(width: 4, color: theme.primaryColor),
             const SizedBox(width: 12),
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    senderName,
-                    style: theme.titleStyle.copyWith(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      color: theme.primaryColor,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      senderName,
+                      style: theme.titleStyle.copyWith(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        color: theme.primaryColor,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    reply.contentType == models.ContentType.image
-                        ? 'Image'
-                        : reply.content,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: theme.subtitleStyle.copyWith(
-                      fontSize: 14,
-                      color: theme.subtitleStyle.color?.withValues(alpha: 0.8),
+                    const SizedBox(height: 2),
+                    Text(
+                      reply.contentType == models.ContentType.image
+                          ? 'Image'
+                          : reply.content,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: theme.subtitleStyle.copyWith(
+                        fontSize: 14,
+                        color: theme.subtitleStyle.color?.withValues(
+                          alpha: 0.8,
+                        ),
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ),
-            IconButton(
-              icon: const Icon(
-                Icons.close_rounded,
-                size: 20,
-                color: Colors.grey,
+            Padding(
+              padding: const EdgeInsets.only(left: 8, right: 12),
+              child: InkWell(
+                onTap: () => controller.setReplyingTo(null),
+                customBorder: const CircleBorder(),
+                child: Container(
+                  width: 26,
+                  height: 26,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: Colors.grey.withValues(alpha: 0.5),
+                      width: 1.5,
+                    ),
+                  ),
+                  child: const Icon(
+                    Icons.close_rounded,
+                    size: 15,
+                    color: Colors.grey,
+                  ),
+                ),
               ),
-              onPressed: () => controller.setReplyingTo(null),
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
             ),
           ],
         ),
@@ -1290,6 +1316,130 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
   }
 }
 
+/// WhatsApp-style swipe-to-reply: the bubble tracks your finger as you pull it
+/// right, a reply glyph fades in behind it, and it springs back on release.
+/// Pulling past [_triggerAt] fires [onReply] with a single haptic tick.
+class _SwipeToReply extends StatefulWidget {
+  final Widget child;
+  final VoidCallback onReply;
+  final TalqTheme theme;
+  final bool enabled;
+
+  const _SwipeToReply({
+    required this.child,
+    required this.onReply,
+    required this.theme,
+    this.enabled = true,
+  });
+
+  @override
+  State<_SwipeToReply> createState() => _SwipeToReplyState();
+}
+
+class _SwipeToReplyState extends State<_SwipeToReply>
+    with SingleTickerProviderStateMixin {
+  static const double _maxDrag = 72;
+  static const double _triggerAt = 48;
+
+  double _dragX = 0;
+  double _settleFrom = 0;
+  bool _armed = false;
+
+  late final AnimationController _return = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 220),
+  );
+
+  @override
+  void initState() {
+    super.initState();
+    _return.addListener(() {
+      final t = Curves.easeOutCubic.transform(_return.value);
+      setState(() => _dragX = _settleFrom * (1 - t));
+    });
+  }
+
+  @override
+  void dispose() {
+    _return.dispose();
+    super.dispose();
+  }
+
+  void _onUpdate(DragUpdateDetails d) {
+    var next = _dragX + d.delta.dx;
+    if (next < 0) next = 0; // right-pull only
+    if (next > _maxDrag) {
+      next = _maxDrag + (next - _maxDrag) * 0.22; // rubber-band past the max
+    }
+    setState(() => _dragX = next);
+
+    if (!_armed && _dragX >= _triggerAt) {
+      _armed = true;
+      HapticFeedback.selectionClick();
+    } else if (_armed && _dragX < _triggerAt) {
+      _armed = false;
+    }
+  }
+
+  void _onEnd(DragEndDetails d) {
+    final flung = (d.primaryVelocity ?? 0) > 600;
+    if (_dragX >= _triggerAt || flung) widget.onReply();
+    _settle();
+  }
+
+  void _settle() {
+    _armed = false;
+    if (_dragX == 0) return;
+    _settleFrom = _dragX;
+    _return.forward(from: 0);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!widget.enabled) return widget.child;
+
+    final progress = (_dragX.abs() / _triggerAt).clamp(0.0, 1.0);
+    final accent = widget.theme.primaryColor;
+
+    return Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // revealed in the gap as the bubble slides away
+        Positioned.fill(
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: Opacity(
+              opacity: progress,
+              child: Transform.scale(
+                scale: 0.7 + 0.3 * progress,
+                child: Container(
+                  width: 30,
+                  height: 30,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: 0.12),
+                  ),
+                  child: Icon(Icons.reply_rounded, size: 17, color: accent),
+                ),
+              ),
+            ),
+          ),
+        ),
+        GestureDetector(
+          onHorizontalDragStart: (_) => _return.stop(),
+          onHorizontalDragUpdate: _onUpdate,
+          onHorizontalDragEnd: _onEnd,
+          onHorizontalDragCancel: _settle,
+          child: Transform.translate(
+            offset: Offset(_dragX, 0),
+            child: widget.child,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
 class _ChatBubble extends StatelessWidget {
   final models.TalqMessage message;
   final bool isFirstInGroup;
@@ -1344,12 +1494,6 @@ class _ChatBubble extends StatelessWidget {
               clipBehavior: Clip.none,
               children: [
                 GestureDetector(
-                  onHorizontalDragEnd: (details) {
-                    if (details.primaryVelocity != null &&
-                        details.primaryVelocity! < -100) {
-                      onSwipe();
-                    }
-                  },
                   onLongPress: onLongPress,
                   child: Column(
                     crossAxisAlignment: isMe
@@ -1382,21 +1526,15 @@ class _ChatBubble extends StatelessWidget {
                               ),
                             ),
                             boxShadow: [
+                              // Flat, big-tech chat styling: no coloured glow
+                              // behind the sender bubble, and only a hairline
+                              // lift on the agent bubble so white separates
+                              // from the near-white background.
                               if (!isMe)
-                                BoxShadow(
-                                  color: theme.cardShadowColor.withValues(
-                                    alpha: 0.06,
-                                  ),
-                                  blurRadius: 8,
-                                  offset: const Offset(0, 3),
-                                ),
-                              if (isMe)
-                                BoxShadow(
-                                  color: theme.userBubbleColor.withValues(
-                                    alpha: 0.12,
-                                  ),
-                                  blurRadius: 10,
-                                  offset: const Offset(0, 4),
+                                const BoxShadow(
+                                  color: Color(0x0A000000),
+                                  blurRadius: 2,
+                                  offset: Offset(0, 1),
                                 ),
                             ],
                           ),
