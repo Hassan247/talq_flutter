@@ -406,10 +406,14 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                       MainAxisAlignment.center,
                                                   children: [
                                                     Container(
-                                                      padding:
-                                                          const EdgeInsets.all(
-                                                            24,
-                                                          ),
+                                                      padding: EdgeInsets.all(
+                                                        MediaQuery.of(context)
+                                                                    .viewInsets
+                                                                    .bottom >
+                                                                0
+                                                            ? 14
+                                                            : 24,
+                                                      ),
                                                       decoration: BoxDecoration(
                                                         color: theme
                                                             .primaryColor
@@ -429,11 +433,35 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                                   ),
                                                               BlendMode.srcIn,
                                                             ),
-                                                        width: 56,
-                                                        height: 56,
+                                                        width:
+                                                            MediaQuery.of(
+                                                                      context,
+                                                                    )
+                                                                    .viewInsets
+                                                                    .bottom >
+                                                                0
+                                                            ? 38
+                                                            : 56,
+                                                        height:
+                                                            MediaQuery.of(
+                                                                      context,
+                                                                    )
+                                                                    .viewInsets
+                                                                    .bottom >
+                                                                0
+                                                            ? 38
+                                                            : 56,
                                                       ),
                                                     ),
-                                                    const SizedBox(height: 32),
+                                                    SizedBox(
+                                                      height:
+                                                          MediaQuery.of(context)
+                                                                  .viewInsets
+                                                                  .bottom >
+                                                              0
+                                                          ? 14
+                                                          : 32,
+                                                    ),
                                                     Text(
                                                       controller
                                                               .workspace

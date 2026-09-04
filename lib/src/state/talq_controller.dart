@@ -730,10 +730,22 @@ class TalqController extends ChangeNotifier {
       if (isSwitchingRoom) {
         _roomId = targetRoomId;
         _hasMoreMessages = false;
-        _roomStatus = RoomStatus.open;
-        _rating = null;
-        _ratingComment = null;
-        _isRatingSubmitted = false;
+        // Seed status/rating from the room we already hold in the list, so the
+        // closed + rating banner renders the moment the conversation opens.
+        // Previously this blanked to `open` and only corrected once the
+        // network round-trip landed, so the banner appeared late (or not at
+        // all on a slow connection). _fetchRoomStatus() still confirms it.
+        TalqRoom? known;
+        for (final r in _rooms) {
+          if (r.id == targetRoomId) {
+            known = r;
+            break;
+          }
+        }
+        _roomStatus = known?.status ?? RoomStatus.open;
+        _rating = known?.rating;
+        _ratingComment = known?.ratingComment;
+        _isRatingSubmitted = known?.rating != null;
         _showRatingPrompt = false;
         _replyingTo = null;
 
