@@ -385,8 +385,15 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                               ? ListView(
                                   children: [
                                     SizedBox(
+                                      // Measure against the height actually
+                                      // visible: with the keyboard up, a box
+                                      // sized to the FULL screen centres the
+                                      // greeting behind the keyboard.
                                       height:
-                                          MediaQuery.of(context).size.height *
+                                          (MediaQuery.of(context).size.height -
+                                              MediaQuery.of(
+                                                context,
+                                              ).viewInsets.bottom) *
                                           0.6,
                                       child: Center(
                                         child: Padding(
@@ -499,16 +506,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                             letterSpacing: -0.2,
                                                           ),
                                                     ),
-                                                    // lift the block clear of
-                                                    // the composer while the
-                                                    // keyboard is up
-                                                    if (MediaQuery.of(
-                                                          context,
-                                                        ).viewInsets.bottom >
-                                                        0)
-                                                      const SizedBox(
-                                                        height: 88,
-                                                      ),
                                                   ],
                                                 ),
                                         ),
