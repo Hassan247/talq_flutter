@@ -790,8 +790,6 @@ class TalqController extends ChangeNotifier {
       }
     }
 
-    final currentFetchVersion = _fetchVersion;
-
     String? afterCursor;
     if (isLoadMore && _messages.isNotEmpty) {
       afterCursor = _messages.last.id;
@@ -806,13 +804,15 @@ class TalqController extends ChangeNotifier {
       afterCursor: afterCursor,
     );
 
-    // Only discard the response if we've since navigated to a different room.
-    // Keying this on the version alone meant two racing fetches for the SAME
-    // room could both be thrown away, leaving the thread showing "No messages
-    // yet" until it was reopened.
-    if (!isLoadMore &&
-        currentFetchVersion != _fetchVersion &&
-        targetRoomId != _roomId) {
+    // Discard any response that is not for the room currently open. This must
+    // be keyed on the room ALONE: several call sites reassign _roomId without
+    // bumping _fetchVersion, so a version check (or an AND of the two) let a
+    // late response for a previous room merge into the open thread — which is
+    // how messages from one chat started appearing inside another.
+    // Room-only is also what fixes the opposite bug: two racing fetches for the
+    // SAME room may both apply, instead of both being thrown away and leaving
+    // the thread empty.
+    if (!isLoadMore && targetRoomId != _roomId) {
       return;
     }
 
