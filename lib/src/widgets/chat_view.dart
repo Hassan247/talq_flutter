@@ -635,8 +635,18 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                     controller.setReplyingTo(
                                                       message,
                                                     );
-                                                    _messageFocus
-                                                        .requestFocus();
+                                                    // Defer to after the reply bar is laid out: focus requested
+                                                    // synchronously during the rebuild that setReplyingTo triggers
+                                                    // gets dropped, so the keyboard never came up.
+                                                    WidgetsBinding.instance
+                                                        .addPostFrameCallback((
+                                                          _,
+                                                        ) {
+                                                          if (mounted) {
+                                                            _messageFocus
+                                                                .requestFocus();
+                                                          }
+                                                        });
                                                   },
                                                   child: _ChatBubble(
                                                     message: message,
