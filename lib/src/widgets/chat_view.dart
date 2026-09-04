@@ -1792,12 +1792,30 @@ class _ChatBubble extends StatelessWidget {
 
   Widget _buildReactionsDisplay(BuildContext context, bool isMe) {
     final entries = message.reactions.entries
-        .where((e) => e.value is! List || (e.value as List).isNotEmpty)
+        .where((e) => e.value is List && (e.value as List).isNotEmpty)
         .toList();
     if (entries.isEmpty) return const SizedBox.shrink();
 
     final controller = context.read<TalqController>();
     final me = controller.visitor?.id;
+
+    // Reactions carry user ids only. The visitor is "me"; anyone else is on
+    // the workspace side, so show the conversation's agent.
+    String? agentAvatar;
+    for (final r in controller.rooms) {
+      if (r.id == (message.roomId ?? controller.roomId)) {
+        agentAvatar = r.assigneeAvatarUrl;
+        break;
+      }
+    }
+    agentAvatar ??= message.senderType == models.SenderType.visitor
+        ? null
+        : message.senderAvatarUrl;
+    final first = controller.visitor?.firstName?.trim() ?? '';
+    final email = controller.visitor?.email?.trim() ?? '';
+    final myInitial = first.isNotEmpty
+        ? first[0].toUpperCase()
+        : (email.isNotEmpty ? email[0].toUpperCase() : 'Y');
 
     return Padding(
       // keep clear of the tail on the outer edge
@@ -1810,21 +1828,22 @@ class _ChatBubble extends StatelessWidget {
           for (final e in entries)
             _ReactionPill(
               emoji: e.key,
-              count: e.value is List ? (e.value as List).length : 1,
-              mine:
-                  me != null &&
-                  e.value is List &&
-                  (e.value as List).contains(me),
+              reactors: [
+                for (final id in (e.value as List).cast<String>())
+                  _Reactor(
+                    isMe: id == me,
+                    avatarUrl: id == me ? null : agentAvatar,
+                    initial: myInitial,
+                  ),
+              ],
+              mine: me != null && (e.value as List).contains(me),
               accent: theme.primaryColor,
               // visitors react to the agent's messages only
               onTap: isMe
                   ? null
                   : () {
                       HapticFeedback.lightImpact();
-                      final mine =
-                          me != null &&
-                          e.value is List &&
-                          (e.value as List).contains(me);
+                      final mine = me != null && (e.value as List).contains(me);
                       if (mine) {
                         controller.removeReaction(message.id, e.key);
                       } else {
@@ -2474,51 +2493,134 @@ class _MessageGroup {
   _MessageGroup({required this.date, required this.messages});
 }
 
+class _Reactor {
+  final bool isMe;
+  final String? avatarUrl;
+  final String initial;
+  const _Reactor({
+    required this.isMe,
+    required this.avatarUrl,
+    required this.initial,
+  });
+}
+
+/// Emoji plus who reacted (the agent's avatar, or your initial), as on the
+/// dashboard.
 class _ReactionPill extends StatelessWidget {
   final String emoji;
-  final int count;
+  final List<_Reactor> reactors;
   final bool mine;
   final Color accent;
   final VoidCallback? onTap;
 
   const _ReactionPill({
     required this.emoji,
-    required this.count,
+    required this.reactors,
     required this.mine,
     required this.accent,
     required this.onTap,
   });
 
+  Widget _avatar(_Reactor r) {
+    const size = 16.0;
+    if (r.isMe || r.avatarUrl == null || r.avatarUrl!.isEmpty) {
+      return Container(
+        width: size,
+        height: size,
+        alignment: Alignment.center,
+        decoration: BoxDecoration(
+          color: r.isMe ? accent : const Color(0xFFB0B4BC),
+          shape: BoxShape.circle,
+        ),
+        child: r.isMe
+            ? Text(
+                r.initial,
+                style: const TextStyle(
+                  fontFamily: 'Inter',
+                  package: 'talq_flutter',
+                  fontSize: 9,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  height: 1,
+                ),
+              )
+            : const Icon(Icons.person, size: 11, color: Colors.white),
+      );
+    }
+    return ClipOval(
+      child: CachedNetworkImage(
+        imageUrl: r.avatarUrl!,
+        width: size,
+        height: size,
+        fit: BoxFit.cover,
+        errorWidget: (_, __, ___) => Container(
+          width: size,
+          height: size,
+          color: const Color(0xFFB0B4BC),
+          child: const Icon(Icons.person, size: 11, color: Colors.white),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final shown = reactors.take(3).toList();
+    final extra = reactors.length - shown.length;
+
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 4),
+        padding: const EdgeInsets.fromLTRB(7, 3, 5, 3),
         decoration: BoxDecoration(
-          color: mine
-              ? accent.withValues(alpha: 0.14)
-              : Colors.black.withValues(alpha: 0.04),
+          color: mine ? accent.withValues(alpha: 0.10) : Colors.white,
           borderRadius: BorderRadius.circular(14),
           border: Border.all(
             color: mine
-                ? accent.withValues(alpha: 0.55)
+                ? accent.withValues(alpha: 0.45)
                 : Colors.black.withValues(alpha: 0.06),
           ),
+          boxShadow: const [
+            BoxShadow(
+              color: Color(0x0F000000),
+              blurRadius: 3,
+              offset: Offset(0, 1),
+            ),
+          ],
         ),
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Text(emoji, style: const TextStyle(fontSize: 13)),
-            if (count > 1) ...[
-              const SizedBox(width: 4),
+            Text(emoji, style: talqEmojiStyle(13)),
+            const SizedBox(width: 4),
+            SizedBox(
+              width: 16.0 + (shown.length - 1) * 11.0,
+              height: 16,
+              child: Stack(
+                children: [
+                  for (var i = 0; i < shown.length; i++)
+                    Positioned(
+                      left: i * 11.0,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 1),
+                        ),
+                        child: _avatar(shown[i]),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            if (extra > 0) ...[
+              const SizedBox(width: 3),
               Text(
-                '$count',
+                '+$extra',
                 style: TextStyle(
                   fontFamily: 'Inter',
                   package: 'talq_flutter',
-                  fontSize: 12,
+                  fontSize: 11,
                   fontWeight: FontWeight.w700,
                   color: mine ? accent : Colors.black.withValues(alpha: 0.6),
                 ),

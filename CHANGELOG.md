@@ -1,3 +1,16 @@
+## 1.2.0
+
+- Fix messages from one conversation appearing inside another (thread and cache
+  were keyed on the wrong room).
+- Deleted messages keep their deleted state after a refetch; hollow bubble, no tail.
+- Long-press menu matches the agent app: blurred thread, reaction bar, Reply / Copy text.
+- Reactions render below the bubble as pills with the reactor's avatar; one
+  reaction per person.
+- Keyboard opens on every swipe-to-quote; system notices can't be quoted.
+- Greeting stays visible above the keyboard on a new chat.
+- Talq logo in the "Powered by" attribution.
+- Conversation list no longer spins forever at the end.
+
 ## 1.1.0
 
 - Fixed visitors losing their chat history on a new device or app version: the

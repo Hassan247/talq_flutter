@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
@@ -49,6 +50,19 @@ const List<String> kTalqMoreReactions = [
 const TextStyle _kBase = TextStyle(
   fontFamily: 'Inter',
   package: 'talq_flutter',
+);
+
+/// Emoji must come from the platform's colour emoji font. Left to the app's
+/// text font, text-presentation emoji such as ❤️ pick up its monochrome glyph
+/// and get tinted like text — a grey heart in a grey pill.
+TextStyle talqEmojiStyle(double size) => TextStyle(
+  fontSize: size,
+  fontFamily: Platform.isIOS ? 'Apple Color Emoji' : 'Noto Color Emoji',
+  fontFamilyFallback: const [
+    'Apple Color Emoji',
+    'Noto Color Emoji',
+    'Segoe UI Emoji',
+  ],
 );
 
 /// Long-press menu for a message, mirroring the agent app: the thread blurs
@@ -292,7 +306,7 @@ class _ReactionBar extends StatelessWidget {
                       : Colors.transparent,
                   shape: BoxShape.circle,
                 ),
-                child: Text(emoji, style: _kBase.copyWith(fontSize: 26)),
+                child: Text(emoji, style: talqEmojiStyle(26)),
               ),
             ),
           GestureDetector(
@@ -480,10 +494,7 @@ class _MoreReactionsSheet extends StatelessWidget {
                               : Colors.transparent,
                           shape: BoxShape.circle,
                         ),
-                        child: Text(
-                          emoji,
-                          style: _kBase.copyWith(fontSize: 26),
-                        ),
+                        child: Text(emoji, style: talqEmojiStyle(26)),
                       ),
                     ),
                 ],

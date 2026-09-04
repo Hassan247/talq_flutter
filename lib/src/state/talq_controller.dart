@@ -27,6 +27,11 @@ class TalqController extends ChangeNotifier {
   static const int _roomListChunkSize = 15;
   int _visibleRoomCount = _roomListChunkSize;
   bool _isFetchingMoreRooms = false;
+  // visitorRooms is not paginated server-side: once a load-more fetch comes
+  // back with nothing new there is nothing more to get until the next
+  // refresh. Without this, every scroll near the bottom re-fetched and the
+  // spinner never went away.
+  bool _roomsExhausted = false;
   List<TalqFAQ> _faqs = [];
 
   List<TalqFAQ> _paginatedFaqs = [];
@@ -646,6 +651,7 @@ class TalqController extends ChangeNotifier {
 
   /// Refreshes the list of visitor rooms
   Future<void> fetchRooms({bool resetVisibleWindow = false}) async {
+    if (!_isFetchingMoreRooms) _roomsExhausted = false;
     final result = await _useCases.fetchRooms();
     if (!result.hasException) {
       _clearError(notify: true);
@@ -728,6 +734,8 @@ class TalqController extends ChangeNotifier {
       return;
     }
 
+    if (_roomsExhausted) return;
+
     _isFetchingMoreRooms = true;
     notifyListeners();
 
@@ -739,6 +747,8 @@ class TalqController extends ChangeNotifier {
           _visibleRoomCount + _roomListChunkSize,
           _rooms.length,
         );
+      } else {
+        _roomsExhausted = true;
       }
     } finally {
       _isFetchingMoreRooms = false;
@@ -1773,19 +1783,7 @@ class TalqController extends ChangeNotifier {
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
         final oldMsg = _messages[messageIndex];
-        _messages[messageIndex] = TalqMessage(
-          id: oldMsg.id,
-          roomId: oldMsg.roomId,
-          content: oldMsg.content,
-          senderType: oldMsg.senderType,
-          senderName: oldMsg.senderName,
-          senderAvatarUrl: oldMsg.senderAvatarUrl,
-          contentType: oldMsg.contentType,
-          fileUrl: oldMsg.fileUrl,
-          fileName: oldMsg.fileName,
-          createdAt: oldMsg.createdAt,
-          isRead: oldMsg.isRead,
-          replyTo: oldMsg.replyTo,
+        _messages[messageIndex] = oldMsg.copyWith(
           reactions: Map<String, dynamic>.from(
             updatedData['reactions'] is String
                 ? json.decode(updatedData['reactions'])
@@ -1815,25 +1813,15 @@ class TalqController extends ChangeNotifier {
       final messageIndex = _messages.indexWhere((m) => m.id == messageId);
       if (messageIndex != -1) {
         final oldMsg = _messages[messageIndex];
-        _messages[messageIndex] = TalqMessage(
-          id: oldMsg.id,
-          roomId: oldMsg.roomId,
-          content: oldMsg.content,
-          senderType: oldMsg.senderType,
-          senderName: oldMsg.senderName,
-          senderAvatarUrl: oldMsg.senderAvatarUrl,
-          contentType: oldMsg.contentType,
-          fileUrl: oldMsg.fileUrl,
-          fileName: oldMsg.fileName,
-          createdAt: oldMsg.createdAt,
-          isRead: oldMsg.isRead,
-          replyTo: oldMsg.replyTo,
+        _messages[messageIndex] = oldMsg.copyWith(
           reactions: Map<String, dynamic>.from(
             updatedData['reactions'] is String
                 ? json.decode(updatedData['reactions'])
                 : updatedData['reactions'],
           ),
         );
+        _cacheCurrentRoomMessages();
+        notifyListeners();
       }
     } else {
       _setError(
