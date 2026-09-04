@@ -37,6 +37,10 @@ class TalqController extends ChangeNotifier {
 
   bool _isLoading = false;
   bool _isInitialized = false;
+
+  /// Email this session was last successfully identified with, so a later
+  /// identify call carrying a NEW email is not swallowed by the guard below.
+  String? _identifiedEmail;
   String? _errorMessage;
   TalqVisitor? _visitor;
   TalqWorkspace? _workspace;
@@ -368,7 +372,16 @@ class TalqController extends ChangeNotifier {
     Map<String, dynamic>? metadata,
     String? pushToken,
   }) async {
-    if (_isInitialized && _workspace != null) return;
+    // Re-initialise when a newly-supplied email differs from the one we last
+    // identified with. The backend merges visitors by email, so skipping that
+    // call strands the visitor's history on their old device-scoped id — which
+    // is why past conversations vanished on a new device or app version.
+    // (Cache hydration also flips _isInitialized, so without this check the
+    // email never reached the backend after the very first run.)
+    final normalizedEmail = email?.trim().toLowerCase();
+    final needsIdentify =
+        normalizedEmail != null && normalizedEmail != _identifiedEmail;
+    if (_isInitialized && _workspace != null && !needsIdentify) return;
     if (_isLoading) return;
 
     _clearError(notify: true);
@@ -421,6 +434,7 @@ class TalqController extends ChangeNotifier {
         // skeleton up so the user doesn't see a row of empty white cards.
         if (_workspace != null) {
           _isInitialized = true;
+          _identifiedEmail = normalizedEmail ?? _identifiedEmail;
         }
         _setError(
           result.exception,
