@@ -1991,9 +1991,9 @@ class _ChatBubble extends StatelessWidget {
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: accent.withValues(alpha: 0.08),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: accent.withValues(alpha: 0.03),
+                    blurRadius: 4,
+                    offset: const Offset(0, 1),
                   ),
                 ],
               ),
@@ -2563,6 +2563,7 @@ class _ReactionPill extends StatelessWidget {
           color: r.isMe ? accent : const Color(0xFFB0B4BC),
           shape: BoxShape.circle,
         ),
+        clipBehavior: Clip.antiAlias,
         child: r.isMe
             ? Text(
                 r.initial,
@@ -2626,19 +2627,26 @@ class _ReactionPill extends StatelessWidget {
             Text(emoji, style: talqEmojiStyle(13)),
             const SizedBox(width: 4),
             SizedBox(
-              width: 16.0 + (shown.length - 1) * 11.0,
-              height: 16,
+              width: 18.0 + (shown.length - 1) * 11.0,
+              height: 18,
               child: Stack(
                 children: [
                   for (var i = 0; i < shown.length; i++)
                     Positioned(
                       left: i * 11.0,
+                      // The white ring is drawn as a clipped circle rather than
+                      // a border: a bordered box left the avatar's corners
+                      // showing, so it read as a rounded square.
                       child: Container(
-                        decoration: BoxDecoration(
+                        width: 18,
+                        height: 18,
+                        padding: const EdgeInsets.all(1),
+                        decoration: const BoxDecoration(
+                          color: Colors.white,
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1),
                         ),
-                        child: _avatar(shown[i]),
+                        clipBehavior: Clip.antiAlias,
+                        child: ClipOval(child: _avatar(shown[i])),
                       ),
                     ),
                 ],

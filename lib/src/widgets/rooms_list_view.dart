@@ -176,10 +176,13 @@ class _RoomsListViewState extends State<RoomsListView> {
           ),
           const SizedBox(width: 5),
           SvgPicture.asset(
-            'assets/icons/talq-logo.svg',
+            'assets/icons/talq-logo-mono.svg',
             package: 'talq_flutter',
             height: 14,
             width: 14,
+            colorFilter: muted == null
+                ? null
+                : ColorFilter.mode(muted, BlendMode.srcIn),
           ),
           const SizedBox(width: 3),
           Text(
