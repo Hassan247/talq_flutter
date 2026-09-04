@@ -142,6 +142,8 @@ class _RoomsListViewState extends State<RoomsListView> {
                               _buildMessagesSection(context, theme, controller),
                               const SizedBox(height: 20),
                               FAQListSection(theme: theme),
+                              const SizedBox(height: 28),
+                              _buildPoweredByTalq(theme),
                             ],
                           ),
                         ),
@@ -149,6 +151,38 @@ class _RoomsListViewState extends State<RoomsListView> {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  /// Subtle vendor attribution at the foot of the home screen — the
+  /// conventional spot for live-chat branding: seen on every open without
+  /// crowding the conversation thread or competing with the composer.
+  Widget _buildPoweredByTalq(TalqTheme theme) {
+    final muted = theme.subtitleStyle.color?.withValues(alpha: 0.5);
+    const base = TextStyle(
+      fontFamily: 'Inter',
+      package: 'talq_flutter',
+      fontSize: 12,
+    );
+    return Center(
+      child: Text.rich(
+        TextSpan(
+          children: [
+            TextSpan(
+              text: 'Powered by ',
+              style: base.copyWith(fontWeight: FontWeight.w500, color: muted),
+            ),
+            TextSpan(
+              text: 'Talq',
+              style: base.copyWith(
+                fontWeight: FontWeight.w800,
+                letterSpacing: -0.1,
+                color: muted,
+              ),
+            ),
+          ],
         ),
       ),
     );

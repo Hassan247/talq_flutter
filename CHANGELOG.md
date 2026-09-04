@@ -1,3 +1,22 @@
+## 1.1.0
+
+- Fixed visitors losing their chat history on a new device or app version: the
+  user's email never reached the backend after the first run, so each install
+  stayed pinned to its own device id and the backend's merge-by-email never ran.
+- Fixed conversations sometimes opening empty until you backed out and reopened.
+- The closed / rating banner now appears immediately on open instead of after a
+  network round-trip.
+- Added swipe-right-to-reply: the bubble tracks your finger with a reply glyph
+  and haptic, and the quote bar is now a flush strip that focuses the keyboard.
+  Quoting is disabled once a conversation is closed.
+- Added message reactions: long-press an agent message for quick emojis plus a
+  full picker. Visitors can only react to agent messages.
+- Redesigned deleted messages as a hollow outlined bubble.
+- The rated / closed banner now follows the workspace brand colour instead of a
+  fixed green, and chat bubbles use a flatter, less shadowed style.
+- The welcome greeting stays visible when the keyboard is open.
+- Added a "Powered by Talq" line to the chat home screen.
+
 ## 0.1.1
 
 - Made `TalqClient` API-key-first: only `apiKey` is required for standard integration.
