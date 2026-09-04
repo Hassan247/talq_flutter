@@ -646,11 +646,27 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                                                     isLastInGroup:
                                                         isLastInGroup,
                                                     onSwipe: () {},
-                                                    // Reactions are temporarily
-                                                    // disabled at the SDK level
-                                                    // and will be re-enabled in a
-                                                    // future release.
-                                                    onLongPress: () {},
+                                                    // React to agent/bot messages only - never your own.
+                                                    onLongPress:
+                                                        (message.senderType ==
+                                                                    models
+                                                                        .SenderType
+                                                                        .agent ||
+                                                                message.senderType ==
+                                                                    models
+                                                                        .SenderType
+                                                                        .bot) &&
+                                                            !message.isDeleted
+                                                        ? () {
+                                                            HapticFeedback.mediumImpact();
+                                                            _showReactions(
+                                                              context,
+                                                              controller,
+                                                              message,
+                                                              theme,
+                                                            );
+                                                          }
+                                                        : () {},
                                                   ),
                                                 );
                                               },
@@ -1292,7 +1308,6 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
     );
   }
 
-  // ignore: unused_element
   void _showReactions(
     BuildContext context,
     TalqController controller,
@@ -1320,13 +1335,16 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-          children: reactions
-              .map(
-                (emoji) => InkWell(
-                  onTap: () {
-                    Navigator.pop(context);
-                    controller.addReaction(message.id, emoji);
-                  },
+          children: [
+            for (final emoji in reactions)
+              InkWell(
+                onTap: () {
+                  Navigator.pop(context);
+                  controller.addReaction(message.id, emoji);
+                },
+                customBorder: const CircleBorder(),
+                child: Padding(
+                  padding: const EdgeInsets.all(6),
                   child: Text(
                     emoji,
                     style: const TextStyle(
@@ -1336,12 +1354,144 @@ class _TalqViewState extends State<TalqView> with WidgetsBindingObserver {
                     ),
                   ),
                 ),
-              )
-              .toList(),
+              ),
+            InkWell(
+              onTap: () {
+                Navigator.pop(context);
+                _showAllReactions(context, controller, message, theme);
+              },
+              customBorder: const CircleBorder(),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: theme.primaryColor.withValues(alpha: 0.08),
+                ),
+                child: Icon(
+                  Icons.add_rounded,
+                  size: 22,
+                  color: theme.primaryColor,
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+/// Full emoji grid, opened from the "+" in the quick reaction bar.
+void _showAllReactions(
+  BuildContext context,
+  TalqController controller,
+  models.TalqMessage message,
+  TalqTheme theme,
+) {
+  const all = [
+    '\u{1F44D}',
+    '\u{2764}\u{FE0F}',
+    '\u{1F602}',
+    '\u{1F62E}',
+    '\u{1F622}',
+    '\u{1F64F}',
+    '\u{1F525}',
+    '\u{1F389}',
+    '\u{1F44F}',
+    '\u{1F4AF}',
+    '\u{2705}',
+    '\u{1F91D}',
+    '\u{1F60A}',
+    '\u{1F60D}',
+    '\u{1F914}',
+    '\u{1F605}',
+    '\u{1F60E}',
+    '\u{1F973}',
+    '\u{1F607}',
+    '\u{1F64C}',
+    '\u{1F4AA}',
+    '\u{1F44C}',
+    '\u{2728}',
+    '\u{2B50}',
+    '\u{1F611}',
+    '\u{1F615}',
+    '\u{1F624}',
+    '\u{1F62D}',
+    '\u{1F631}',
+    '\u{1F92F}',
+    '\u{1F494}',
+    '\u{26A0}\u{FE0F}',
+  ];
+
+  showModalBottomSheet(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (sheetContext) => Container(
+      decoration: BoxDecoration(
+        color: theme.surfaceColor,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      child: SafeArea(
+        top: false,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const SizedBox(height: 10),
+            Container(
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey.withValues(alpha: 0.3),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  'Pick a reaction',
+                  style: theme.titleStyle.copyWith(
+                    fontSize: 16,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+              ),
+            ),
+            Flexible(
+              child: GridView.count(
+                crossAxisCount: 8,
+                shrinkWrap: true,
+                padding: const EdgeInsets.fromLTRB(12, 4, 12, 16),
+                children: [
+                  for (final emoji in all)
+                    InkWell(
+                      onTap: () {
+                        Navigator.pop(sheetContext);
+                        controller.addReaction(message.id, emoji);
+                      },
+                      customBorder: const CircleBorder(),
+                      child: Center(
+                        child: Text(
+                          emoji,
+                          style: const TextStyle(
+                            fontFamily: 'Inter',
+                            package: 'talq_flutter',
+                            fontSize: 24,
+                          ),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    ),
+  );
 }
 
 /// WhatsApp-style swipe-to-reply: the bubble tracks your finger as you pull it
@@ -1540,9 +1690,21 @@ class _ChatBubble extends StatelessWidget {
                                   vertical: 12,
                                 ),
                           decoration: BoxDecoration(
-                            color: isMe
-                                ? theme.userBubbleColor
-                                : theme.agentBubbleColor,
+                            // A deleted message reads as a hollow "ghost"
+                            // bubble rather than a normal filled one.
+                            color: message.isDeleted
+                                ? Colors.transparent
+                                : (isMe
+                                      ? theme.userBubbleColor
+                                      : theme.agentBubbleColor),
+                            border: message.isDeleted
+                                ? Border.all(
+                                    color: theme.agentTextColor.withValues(
+                                      alpha: 0.22,
+                                    ),
+                                    width: 1,
+                                  )
+                                : null,
                             borderRadius: BorderRadius.only(
                               topLeft: const Radius.circular(20),
                               topRight: const Radius.circular(20),
@@ -1558,7 +1720,7 @@ class _ChatBubble extends StatelessWidget {
                               // behind the sender bubble, and only a hairline
                               // lift on the agent bubble so white separates
                               // from the near-white background.
-                              if (!isMe)
+                              if (!isMe && !message.isDeleted)
                                 const BoxShadow(
                                   color: Color(0x0A000000),
                                   blurRadius: 2,
@@ -1579,22 +1741,17 @@ class _ChatBubble extends StatelessWidget {
                                     Icon(
                                       Icons.do_not_disturb_on_outlined,
                                       size: 14,
-                                      color:
-                                          (isMe
-                                                  ? theme.userTextColor
-                                                  : theme.agentTextColor)
-                                              .withValues(alpha: 0.7),
+                                      color: theme.agentTextColor.withValues(
+                                        alpha: 0.55,
+                                      ),
                                     ),
                                     const SizedBox(width: 6),
                                     Flexible(
                                       child: Text(
                                         'This message was deleted',
                                         style: theme.bodyStyle.copyWith(
-                                          color:
-                                              (isMe
-                                                      ? theme.userTextColor
-                                                      : theme.agentTextColor)
-                                                  .withValues(alpha: 0.75),
+                                          color: theme.agentTextColor
+                                              .withValues(alpha: 0.6),
                                           fontStyle: FontStyle.italic,
                                         ),
                                       ),
@@ -1668,11 +1825,8 @@ class _ChatBubble extends StatelessWidget {
                           ),
                         ),
                       ),
-                      // Reactions UI temporarily disabled. Existing reaction
-                      // data on messages is preserved on the model and will
-                      // be rendered again when the feature ships properly.
-                      // if (message.reactions.isNotEmpty)
-                      //   _buildReactionsDisplay(),
+                      if (message.reactions.isNotEmpty && !message.isDeleted)
+                        _buildReactionsDisplay(),
                     ],
                   ),
                 ),
@@ -1705,7 +1859,6 @@ class _ChatBubble extends StatelessWidget {
     );
   }
 
-  // ignore: unused_element
   Widget _buildReactionsDisplay() {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
