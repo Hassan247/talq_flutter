@@ -1,12 +1,12 @@
 import 'dart:io';
 
-import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:pdfx/pdfx.dart';
 
 import '../core/talq_client.dart';
 import '../models/models.dart';
+import 'retrying_cached_image.dart';
 
 class MediaViewerPage extends StatefulWidget {
   final String? url;
@@ -152,19 +152,31 @@ class _MediaViewerPageState extends State<MediaViewerPage> {
           child:
               widget.localPath != null && File(widget.localPath!).existsSync()
               ? Image.file(File(widget.localPath!), fit: BoxFit.contain)
-              : CachedNetworkImage(
-                  imageUrl: widget.url!,
+              : RetryingCachedImage(
+                  url: widget.url!,
                   fit: BoxFit.contain,
-                  placeholder: (context, url) => const Center(
+                  placeholderBuilder: (context) => const Center(
                     child: CircularProgressIndicator(
                       color: Colors.white,
                       strokeWidth: 2,
                     ),
                   ),
-                  errorWidget: (context, url, error) => const Icon(
-                    Icons.broken_image,
-                    color: Colors.white54,
-                    size: 64,
+                  failedBuilder: (context) => const Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.broken_image, color: Colors.white54, size: 64),
+                      SizedBox(height: 12),
+                      Text(
+                        'Tap to retry',
+                        style: TextStyle(
+                          fontFamily: 'Inter',
+                          package: 'talq_flutter',
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
         ),

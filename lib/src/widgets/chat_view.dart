@@ -20,6 +20,7 @@ import 'media_viewer_page.dart';
 import 'message_actions_overlay.dart';
 import 'messages_list_view.dart';
 import 'rating_view.dart';
+import 'retrying_cached_image.dart';
 import 'shared_widgets.dart';
 import 'shimmer_skeleton.dart';
 import 'start_conversation_card.dart';
@@ -2126,17 +2127,17 @@ class _ChatBubble extends StatelessWidget {
         fit: BoxFit.cover,
       );
     } else if (message.fileUrl != null && message.fileUrl!.isNotEmpty) {
-      imageWidget = CachedNetworkImage(
-        imageUrl: message.fileUrl!,
+      imageWidget = RetryingCachedImage(
+        url: message.fileUrl!,
         fit: BoxFit.cover,
         width: double.infinity,
-        placeholder: (context, url) => Container(
+        placeholderBuilder: (context) => Container(
           width: double.infinity,
           height: 180,
           color: Colors.grey[100],
           child: const Center(child: CircularProgressIndicator(strokeWidth: 2)),
         ),
-        errorWidget: (context, url, error) => Container(
+        failedBuilder: (context) => Container(
           width: double.infinity,
           height: 140,
           color: Colors.grey[100],
@@ -2157,6 +2158,28 @@ class _ChatBubble extends StatelessWidget {
                   color: Colors.grey[500],
                   fontSize: 12,
                 ),
+              ),
+              const SizedBox(height: 4),
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(
+                    Icons.refresh_rounded,
+                    size: 14,
+                    color: Colors.grey[600],
+                  ),
+                  const SizedBox(width: 4),
+                  Text(
+                    'Tap to retry',
+                    style: TextStyle(
+                      fontFamily: 'Inter',
+                      package: 'talq_flutter',
+                      color: Colors.grey[600],
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
