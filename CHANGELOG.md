@@ -1,3 +1,12 @@
+## 1.2.1
+
+- Chat images that fail to load now retry by themselves after 1s, 3s and 8s,
+  and a download that stalls for 20s is treated as failed and retried instead
+  of spinning forever. If an image still can't load, the bubble shows "Tap to
+  retry"; tapping retries instead of opening an empty viewer. A failed image
+  also retries when the app returns to the foreground. Applies to the chat
+  bubble and the full-screen viewer.
+
 ## 1.2.0
 
 - Fix messages from one conversation appearing inside another (thread and cache
